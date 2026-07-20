@@ -1,0 +1,54 @@
+generated: '2026-07-18'
+method: searched
+source: openapi/duvo-ai-openapi-original.json
+docs: https://www.duvo.ai/auth.md
+summary:
+  types:
+  - http
+  - oauth2
+  api_key_in:
+  - header
+  oauth2_flows:
+  - clientCredentials
+  notes: >-
+    Duvo access is workspace-scoped. The public OpenAPI declares a single http
+    bearer scheme (workspace-issued API tokens). The docs auth guide additionally
+    documents scoped OAuth client credentials for enterprise workspaces where Duvo
+    has enabled OAuth for the tenant, plus SSO/RBAC for human users and managed
+    OAuth/API connections for third-party business systems. Public self-serve
+    dynamic agent registration is NOT available; API/MCP/OAuth/sandbox access is
+    provisioned by Duvo during an approved customer or pilot onboarding.
+schemes:
+- name: bearerAuth
+  type: http
+  scheme: bearer
+  description: >-
+    Workspace-issued bearer API token. Sent as Authorization: Bearer <token>.
+    Get an API key from the Duvo dashboard (provisioned per approved workspace).
+  sources:
+  - openapi/duvo-ai-openapi-original.json
+- name: oauth2ClientCredentials
+  type: oauth2
+  flow: clientCredentials
+  token_url: https://login.duvo.ai/oauth/token
+  authorization_server: https://login.duvo.ai/.well-known/oauth-authorization-server
+  protected_resource_metadata: https://api.duvo.ai/.well-known/oauth-protected-resource
+  description: >-
+    Scoped OAuth client credentials for enterprise workspaces where Duvo has
+    enabled OAuth for the customer tenant. Access token used as
+    Authorization: Bearer <access_token>. Not declared in the public OpenAPI;
+    documented at https://www.duvo.ai/auth.md and discoverable via RFC 9728
+    protected-resource metadata + RFC 8414 authorization-server metadata.
+  sources:
+  - https://www.duvo.ai/auth.md
+  - well-known/duvo-ai-oauth-protected-resource.json
+  - well-known/duvo-ai-oauth-authorization-server.json
+error_semantics:
+  status_401: missing, expired, malformed, or revoked credentials
+  status_403: insufficient scope, workspace policy denial, RBAC denial, or human approval requirement
+  documented_error_ids:
+  - invalid_token
+  - insufficient_scope
+  - workspace_policy_denied
+  - approval_required
+  - rate_limited
