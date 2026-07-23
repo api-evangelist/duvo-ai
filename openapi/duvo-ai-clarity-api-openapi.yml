@@ -1,0 +1,4473 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Clarity API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Clarity
+paths:
+  /v2/clarity/processes/{id}:
+    get:
+      operationId: getLegacyClarityProcess
+      tags:
+      - Clarity
+      description: Get a legacy v1 Clarity process with process metadata, generated analysis, transformation guidance, generation progress, and captures. Use this for rows from listClarityProcesses where version=1; v2 rows should use getClarityProcess and snapshot detail tools.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  teamId:
+                    type: string
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                    - draft
+                    - collecting
+                    - generating
+                    - generating-current-process
+                    - generating-transformation-proposal
+                    - review
+                    - complete
+                    - generation_failed
+                  visibility:
+                    type: string
+                    enum:
+                    - team
+                    - restricted
+                  version:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  analysis:
+                    nullable: true
+                  generationError:
+                    nullable: true
+                    type: string
+                  customPrompt:
+                    nullable: true
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+                  captures:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        processId:
+                          type: string
+                          format: uuid
+                        userId:
+                          type: string
+                          format: uuid
+                        userName:
+                          type: string
+                        type:
+                          type: string
+                          x-extensible-enum:
+                          - video
+                          - interview
+                          - document
+                          - screenshare
+                          - meeting
+                        videoUrl:
+                          nullable: true
+                          type: string
+                        videoTranscript:
+                          nullable: true
+                          type: string
+                        documentFileName:
+                          nullable: true
+                          type: string
+                        documentTextMetadata:
+                          nullable: true
+                          type: object
+                          properties:
+                            pages:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  pageNumber:
+                                    type: integer
+                                    exclusiveMinimum: true
+                                    maximum: 9007199254740991
+                                  startOffset:
+                                    type: integer
+                                    minimum: 0
+                                    maximum: 9007199254740991
+                                  endOffset:
+                                    type: integer
+                                    minimum: 0
+                                    maximum: 9007199254740991
+                                  lines:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        pageNumber:
+                                          type: integer
+                                          exclusiveMinimum: true
+                                          maximum: 9007199254740991
+                                        lineNumber:
+                                          type: integer
+                                          exclusiveMinimum: true
+                                          maximum: 9007199254740991
+                                        startOffset:
+                                          type: integer
+                                          minimum: 0
+                                          maximum: 9007199254740991
+                                        endOffset:
+                                          type: integer
+                                          minimum: 0
+                                          maximum: 9007199254740991
+                                      required:
+                                      - pageNumber
+                                      - lineNumber
+                                      - startOffset
+                                      - endOffset
+                                      additionalProperties: false
+                                required:
+                                - pageNumber
+                                - startOffset
+                                - endOffset
+                                - lines
+                                additionalProperties: false
+                          required:
+                          - pages
+                          additionalProperties: false
+                        transcript:
+                          nullable: true
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              source:
+                                type: string
+                                enum:
+                                - ai
+                                - user
+                                - interviewer
+                              speakerName:
+                                type: string
+                              message:
+                                type: string
+                                minLength: 1
+                              timestamp:
+                                type: number
+                            required:
+                            - source
+                            - message
+                            additionalProperties: false
+                        hasTranscript:
+                          type: boolean
+                        hasVideoTranscript:
+                          type: boolean
+                        transcriptQuestionCount:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - recording
+                          - processing
+                          - complete
+                          - failed
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+                      required:
+                      - id
+                      - processId
+                      - userId
+                      - type
+                      - videoUrl
+                      - videoTranscript
+                      - transcript
+                      - status
+                      - createdAt
+                      - updatedAt
+                      additionalProperties: false
+                  createdByName:
+                    type: string
+                  creatorUserId:
+                    type: string
+                    format: uuid
+                  generationProgress:
+                    nullable: true
+                    type: object
+                    properties:
+                      steps:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            label:
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                              - pending
+                              - in_progress
+                              - complete
+                            order:
+                              type: number
+                            count:
+                              type: number
+                          required:
+                          - key
+                          - label
+                          - status
+                          - order
+                          additionalProperties: false
+                    required:
+                    - steps
+                    additionalProperties: false
+                  transformationGuidance:
+                    nullable: true
+                    type: string
+                  transformationGuidanceAuthor:
+                    nullable: true
+                    type: string
+                  transformationGuidanceDate:
+                    nullable: true
+                    type: string
+                  usedGuidanceMessages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        content:
+                          type: string
+                        author:
+                          nullable: true
+                          type: string
+                        date:
+                          nullable: true
+                          type: string
+                      required:
+                      - content
+                      - author
+                      - date
+                      additionalProperties: false
+                required:
+                - id
+                - teamId
+                - userId
+                - name
+                - status
+                - visibility
+                - version
+                - analysis
+                - generationError
+                - customPrompt
+                - createdAt
+                - updatedAt
+                - captures
+                - creatorUserId
+                - generationProgress
+                - transformationGuidance
+                - transformationGuidanceAuthor
+                - transformationGuidanceDate
+                - usedGuidanceMessages
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Legacy Clarity Process
+  /v2/organizations/{orgId}/clarity/hierarchy/nodes/{nodeId}:
+    patch:
+      operationId: updateClarityLandscapeNode
+      tags:
+      - Clarity
+      description: Rename a process landscape node or update its owner label (team manager or above for team processes; organization admin for areas)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                ownerLabel:
+                  nullable: true
+                  type: string
+                  maxLength: 200
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: nodeId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  parentId:
+                    nullable: true
+                    type: string
+                    format: uuid
+                  processId:
+                    nullable: true
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  ownerLabel:
+                    nullable: true
+                    type: string
+                  sortOrder:
+                    type: number
+                  existence:
+                    type: string
+                    enum:
+                    - proposed
+                    - active
+                  contentConfirmedAt:
+                    nullable: true
+                    type: string
+                  existenceConfirmedAt:
+                    nullable: true
+                    type: string
+                  source:
+                    type: string
+                    enum:
+                    - ai
+                    - human
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                  team:
+                    nullable: true
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - name
+                    additionalProperties: false
+                required:
+                - id
+                - parentId
+                - processId
+                - name
+                - ownerLabel
+                - sortOrder
+                - existence
+                - contentConfirmedAt
+                - existenceConfirmedAt
+                - source
+                - createdAt
+                - updatedAt
+                - team
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '422':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Clarity Landscape Node
+    delete:
+      operationId: deleteClarityLandscapeNode
+      tags:
+      - Clarity
+      description: Soft-delete a tree node and its descendants. Organization admins may delete any subtree; team managers may delete a childless process node owned by their team. The targeted node's linked clarity process and captures are deleted, while nested processes detach to the Unsorted bag.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: nodeId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deletedCount:
+                    type: number
+                  detachedCount:
+                    type: number
+                required:
+                - deletedCount
+                - detachedCount
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '422':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Clarity Landscape Node
+  /v2/organizations/{orgId}/clarity/hierarchy/nodes/{nodeId}/placement:
+    put:
+      operationId: setClarityLandscapeNodePlacement
+      tags:
+      - Clarity
+      description: Move a process landscape node (team manager or above for team processes; organization admin for areas)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parentId:
+                  nullable: true
+                  type: string
+                  format: uuid
+              required:
+              - parentId
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: nodeId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  parentId:
+                    nullable: true
+                    type: string
+                    format: uuid
+                  processId:
+                    nullable: true
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  ownerLabel:
+                    nullable: true
+                    type: string
+                  sortOrder:
+                    type: number
+                  existence:
+                    type: string
+                    enum:
+                    - proposed
+                    - active
+                  contentConfirmedAt:
+                    nullable: true
+                    type: string
+                  existenceConfirmedAt:
+                    nullable: true
+                    type: string
+                  source:
+                    type: string
+                    enum:
+                    - ai
+                    - human
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                  team:
+                    nullable: true
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - name
+                    additionalProperties: false
+                required:
+                - id
+                - parentId
+                - processId
+                - name
+                - ownerLabel
+                - sortOrder
+                - existence
+                - contentConfirmedAt
+                - existenceConfirmedAt
+                - source
+                - createdAt
+                - updatedAt
+                - team
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '422':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Set Clarity Landscape Node Placement
+  /v2/organizations/{orgId}/clarity/hierarchy/proposed-processes:
+    post:
+      operationId: proposeClarityLandscapeProcess
+      tags:
+      - Clarity
+      description: Create a manual process in the organization's Process Landscape, either as an unassigned proposal or atomically assigned to an eligible team.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                description:
+                  description: 'One short paragraph (1-3 sentences) saying why this process belongs in the landscape. Use only what you saw in the captures. Say what the process is (don''t just repeat the name), show proof it really happens, and name where you heard it - be as specific as the captures allow, like "a warehouse lead said so in their interview" or "it came up in two returns recordings". Use only facts from the captures: never make up sources, people, dates, quotes, or numbers, and don''t stretch what was said. If you have no real proof the process happens, don''t propose it.'
+                  nullable: true
+                  type: string
+                  maxLength: 5000
+                parentId:
+                  default: null
+                  nullable: true
+                  type: string
+                  format: uuid
+                teamId:
+                  default: null
+                  nullable: true
+                  type: string
+                  format: uuid
+              required:
+              - name
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  parentId:
+                    nullable: true
+                    type: string
+                    format: uuid
+                  processId:
+                    nullable: true
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  ownerLabel:
+                    nullable: true
+                    type: string
+                  sortOrder:
+                    type: number
+                  existence:
+                    type: string
+                    enum:
+                    - proposed
+                    - active
+                  contentConfirmedAt:
+                    nullable: true
+                    type: string
+                  existenceConfirmedAt:
+                    nullable: true
+                    type: string
+                  source:
+                    type: string
+                    enum:
+                    - ai
+                    - human
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                  team:
+                    nullable: true
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - name
+                    additionalProperties: false
+                required:
+                - id
+                - parentId
+                - processId
+                - name
+                - ownerLabel
+                - sortOrder
+                - existence
+                - contentConfirmedAt
+                - existenceConfirmedAt
+                - source
+                - createdAt
+                - updatedAt
+                - team
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '422':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Propose Clarity Landscape Process
+  /v2/organizations/{orgId}/clarity/hierarchy/tree:
+    get:
+      operationId: getClarityProcessTree
+      tags:
+      - Clarity
+      description: Fetch the organization's process tree, or the subtree under rootId
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: rootId
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nodes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        parentId:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        processId:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        ownerLabel:
+                          nullable: true
+                          type: string
+                        sortOrder:
+                          type: number
+                        existence:
+                          type: string
+                          enum:
+                          - proposed
+                          - active
+                        contentConfirmedAt:
+                          nullable: true
+                          type: string
+                        existenceConfirmedAt:
+                          nullable: true
+                          type: string
+                        source:
+                          type: string
+                          enum:
+                          - ai
+                          - human
+                        createdAt:
+                          type: string
+                        updatedAt:
+                          type: string
+                        team:
+                          nullable: true
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          additionalProperties: false
+                        depth:
+                          type: number
+                      required:
+                      - id
+                      - parentId
+                      - processId
+                      - name
+                      - ownerLabel
+                      - sortOrder
+                      - existence
+                      - contentConfirmedAt
+                      - existenceConfirmedAt
+                      - source
+                      - createdAt
+                      - updatedAt
+                      - team
+                      - depth
+                      additionalProperties: false
+                  truncated:
+                    type: boolean
+                required:
+                - nodes
+                - truncated
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Clarity Process Tree
+  /v2/organizations/{orgId}/clarity/hierarchy/landscape:
+    get:
+      operationId: getClarityProcessLandscape
+      tags:
+      - Clarity
+      description: 'Fetch the organization''s process landscape: hierarchy nodes joined to lean process summaries and team assignments, with page-level stats'
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: rootId
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nodes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        parentId:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        processId:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        ownerLabel:
+                          nullable: true
+                          type: string
+                        sortOrder:
+                          type: number
+                        depth:
+                          type: number
+                        existence:
+                          type: string
+                          enum:
+                          - proposed
+                          - active
+                        contentConfirmedAt:
+                          nullable: true
+                          type: string
+                        existenceConfirmedAt:
+                          nullable: true
+                          type: string
+                        source:
+                          type: string
+                          enum:
+                          - ai
+                          - human
+                        createdAt:
+                          type: string
+                        updatedAt:
+                          type: string
+                        process:
+                          nullable: true
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                              - draft
+                              - collecting
+                              - generating
+                              - generating-current-process
+                              - generating-transformation-proposal
+                              - review
+                              - complete
+                              - generation_failed
+                            version:
+                              anyOf:
+                              - type: number
+                                enum:
+                                - 1
+                              - type: number
+                                enum:
+                                - 2
+                            summary:
+                              nullable: true
+                              type: string
+                            captureCount:
+                              type: number
+                            captureCounts:
+                              type: object
+                              properties:
+                                video:
+                                  type: number
+                                interview:
+                                  type: number
+                                document:
+                                  type: number
+                              required:
+                              - video
+                              - interview
+                              - document
+                              additionalProperties: false
+                            contributors:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  userId:
+                                    type: string
+                                  userName:
+                                    type: string
+                                required:
+                                - userId
+                                - userName
+                                additionalProperties: false
+                            people:
+                              default: []
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                  userId:
+                                    nullable: true
+                                    type: string
+                                  email:
+                                    nullable: true
+                                    type: string
+                                  name:
+                                    type: string
+                                required:
+                                - id
+                                - userId
+                                - email
+                                - name
+                                additionalProperties: false
+                            updatedAt:
+                              type: string
+                              format: date-time
+                          required:
+                          - id
+                          - name
+                          - status
+                          - version
+                          - summary
+                          - captureCount
+                          - captureCounts
+                          - contributors
+                          - people
+                          - updatedAt
+                          additionalProperties: false
+                        proposedSummary:
+                          nullable: true
+                          type: string
+                        teamId:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        teamName:
+                          nullable: true
+                          type: string
+                        assignedTeam:
+                          nullable: true
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          additionalProperties: false
+                        teamAssignmentSuggestions:
+                          default: []
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              suggestedTeamId:
+                                nullable: true
+                                type: string
+                                format: uuid
+                              suggestedTeamName:
+                                type: string
+                              confidence:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                              rationale:
+                                type: string
+                              status:
+                                type: string
+                                enum:
+                                - pending
+                                - accepted
+                                - dismissed
+                              createdAt:
+                                type: string
+                            required:
+                            - id
+                            - suggestedTeamId
+                            - suggestedTeamName
+                            - confidence
+                            - rationale
+                            - status
+                            - createdAt
+                            additionalProperties: false
+                        captureSuggestions:
+                          default: []
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              suggestedUserId:
+                                nullable: true
+                                type: string
+                                format: uuid
+                              suggestedUserName:
+                                nullable: true
+                                type: string
+                              suggestedTeamId:
+                                nullable: true
+                                type: string
+                                format: uuid
+                              suggestedTeamName:
+                                nullable: true
+                                type: string
+                              gap:
+                                type: string
+                                minLength: 1
+                              suggestedPrompt:
+                                nullable: true
+                                type: string
+                              confidence:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                              rationale:
+                                type: string
+                                minLength: 1
+                              status:
+                                type: string
+                                enum:
+                                - pending
+                                - accepted
+                                - dismissed
+                              createdAt:
+                                type: string
+                            required:
+                            - id
+                            - suggestedUserId
+                            - suggestedUserName
+                            - suggestedTeamId
+                            - suggestedTeamName
+                            - gap
+                            - suggestedPrompt
+                            - confidence
+                            - rationale
+                            - status
+                            - createdAt
+                            additionalProperties: false
+                        captureRequests:
+                          default: []
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              requestedUserId:
+                                nullable: true
+                                type: string
+                                format: uuid
+                              requestedUserName:
+                                nullable: true
+                                type: string
+                              assignedByUserId:
+                                nullable: true
+                                type: string
+                                format: uuid
+                              requestedTeamId:
+                                nullable: true
+                                type: string
+                                format: uuid
+                              requestedTeamName:
+                                nullable: true
+                                type: string
+                              gap:
+                                type: string
+                                minLength: 1
+                              prompt:
+                                nullable: true
+                                type: string
+                              status:
+                                type: string
+                                enum:
+                                - open
+                                - completed
+                                - cancelled
+                              createdAt:
+                                type: string
+                            required:
+                            - id
+                            - requestedUserId
+                            - requestedUserName
+                            - requestedTeamId
+                            - requestedTeamName
+                            - gap
+                            - prompt
+                            - status
+                            - createdAt
+                            additionalProperties: false
+                        labels:
+                          default: []
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              value:
+                                type: string
+                              colorHue:
+                                type: integer
+                                minimum: 0
+                                maximum: 360
+                              source:
+                                type: string
+                                enum:
+                                - human
+                                - agent
+                            required:
+                            - id
+                            - value
+                            - colorHue
+                            - source
+                            additionalProperties: false
+                      required:
+                      - id
+                      - parentId
+                      - processId
+                      - name
+                      - ownerLabel
+                      - sortOrder
+                      - depth
+                      - existence
+                      - contentConfirmedAt
+                      - existenceConfirmedAt
+                      - source
+                      - createdAt
+                      - updatedAt
+                      - process
+                      - proposedSummary
+                      - labels
+                      additionalProperties: false
+                  links:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        sourceNodeId:
+                          type: string
+                          format: uuid
+                        targetNodeId:
+                          type: string
+                          format: uuid
+                        type:
+                          type: string
+                          enum:
+                          - hands_off_to
+                          - shares_step_with
+                          - variant_of
+                        state:
+                          type: string
+                          enum:
+                          - suggested
+                          - confirmed
+                        confidence:
+                          nullable: true
+                          type: number
+                        rationale:
+                          default: null
+                          nullable: true
+                          type: string
+                      required:
+                      - id
+                      - sourceNodeId
+                      - targetNodeId
+                      - type
+                      - state
+                      - confidence
+                      - rationale
+                      additionalProperties: false
+                  unlinkedProcesses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                          - draft
+                          - collecting
+                          - generating
+                          - generating-current-process
+                          - generating-transformation-proposal
+                          - review
+                          - complete
+                          - generation_failed
+                        version:
+                          anyOf:
+                          - type: number
+                            enum:
+                            - 1
+                          - type: number
+                            enum:
+                            - 2
+                        summary:
+                          nullable: true
+                          type: string
+                        captureCount:
+                          type: number
+                        captureCounts:
+                          type: object
+                          properties:
+                            video:
+                              type: number
+                            interview:
+                              type: number
+                            document:
+                              type: number
+                          required:
+                          - video
+                          - interview
+                          - document
+                          additionalProperties: false
+                        contributors:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              userId:
+                                type: string
+                              userName:
+                                type: string
+                            required:
+                            - userId
+                            - userName
+                            additionalProperties: false
+                        people:
+                          default: []
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              userId:
+                                nullable: true
+                                type: string
+                              email:
+                                nullable: true
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - id
+                            - userId
+                            - email
+                            - name
+                            additionalProperties: false
+                        updatedAt:
+                          type: string
+                          format: date-time
+                        teamId:
+                          type: string
+                          format: uuid
+                        teamName:
+                          nullable: true
+                          type: string
+                        labels:
+                          default: []
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              value:
+                                type: string
+                              colorHue:
+                                type: integer
+                                minimum: 0
+                                maximum: 360
+                              source:
+                                type: string
+                                enum:
+                                - human
+                                - agent
+                            required:
+                            - id
+                            - value
+                            - colorHue
+                            - source
+                            additionalProperties: false
+                      required:
+                      - id
+                      - name
+                      - status
+                      - version
+                      - summary
+                      - captureCount
+                      - captureCounts
+                      - contributors
+                      - people
+                      - updatedAt
+                      - teamId
+                      - teamName
+                      - labels
+                      additionalProperties: false
+                  stats:
+                    type: object
+                    properties:
+                      totalNodes:
+                        type: number
+                      processNodes:
+                        type: number
+                      proposedNodes:
+                        type: number
+                      unsortedProcesses:
+                        type: number
+                      latestUpdatedAt:
+                        nullable: true
+                        type: string
+                    required:
+                    - totalNodes
+                    - processNodes
+                    - proposedNodes
+                    - unsortedProcesses
+                    - latestUpdatedAt
+                    additionalProperties: false
+                  generation:
+                    type: object
+                    properties:
+                      eligibleCaptureCount:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      eligibleProcessCount:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      status:
+                        type: string
+                        enum:
+                        - idle
+                        - starting
+                        - running
+                        - completed
+                        - failed
+                    required:
+                    - eligibleCaptureCount
+                    - eligibleProcessCount
+                    - status
+                    additionalProperties: false
+                  truncated:
+                    type: boolean
+                required:
+                - nodes
+                - links
+                - unlinkedProcesses
+                - stats
+                - generation
+                - truncated
+                additionalProperties: false
+      summary: Get Clarity Process Landscape
+  /v2/organizations/{orgId}/clarity/hierarchy/captures:
+    get:
+      operationId: listClarityLandscapeCaptures
+      tags:
+      - Clarity
+      description: List the organization's eligible Process Landscape captures (completed interview/document transcripts not yet tied to a process) so they can seed new process proposals.
+      parameters:
+      - schema:
+          default: 100
+          type: integer
+          minimum: 1
+          maximum: 200
+        in: query
+        name: limit
+        required: false
+        description: Number of captures to return (1-200, default 100)
+      - schema:
+          default: 'false'
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: includeTranscripts
+        required: false
+        description: Include full capture transcripts (large); off by default. Pass the literal string 'true' or 'false' (z.coerce.boolean treats any non-empty value, including 'false', as true).
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  captures:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Unique capture identifier
+                        scope:
+                          type: string
+                          enum:
+                          - team
+                          - organization
+                          description: Whether the capture is owned by a team or the organization
+                        type:
+                          type: string
+                          enum:
+                          - interview
+                          - document
+                          description: 'Capture source: a voice interview or an uploaded document'
+                        title:
+                          type: string
+                          description: Human-readable capture title
+                        organizationId:
+                          nullable: true
+                          description: Owning organization id, when org-scoped
+                          type: string
+                          format: uuid
+                        organizationName:
+                          nullable: true
+                          description: Owning organization name, when available
+                          type: string
+                        teamId:
+                          nullable: true
+                          description: Owning team id, when team-scoped
+                          type: string
+                          format: uuid
+                        teamName:
+                          nullable: true
+                          description: Owning team name, when available
+                          type: string
+                        processNodeId:
+                          nullable: true
+                          description: Hierarchy node the capture is filed under, when any
+                          type: string
+                          format: uuid
+                        createdAt:
+                          type: string
+                          description: ISO 8601 creation timestamp
+                        transcriptMessageCount:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                          description: Number of messages in the capture transcript
+                        transcript:
+                          description: Full capture transcript, included only when requested
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              source:
+                                type: string
+                                enum:
+                                - ai
+                                - user
+                                - interviewer
+                              speakerName:
+                                type: string
+                              message:
+                                type: string
+                              timestamp:
+                                type: number
+                            required:
+                            - source
+                            - message
+                            additionalProperties: false
+                      required:
+                      - id
+                      - scope
+                      - type
+                      - title
+                      - organizationId
+                      - organizationName
+                      - teamId
+                      - teamName
+                      - processNodeId
+                      - createdAt
+                      - transcriptMessageCount
+                      additionalProperties: false
+                    description: Eligible Process Landscape captures, newest first
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                    description: Total eligible captures in the organization
+                  truncated:
+                    type: boolean
+                    description: True when more captures exist than were returned
+                required:
+                - captures
+                - total
+                - truncated
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Clarity Landscape Captures
+  /v2/organizations/{orgId}/clarity/hierarchy/landscape/generate:
+    post:
+      operationId: generateClarityProcessLandscape
+      tags:
+      - Clarity
+      description: Start a process-landscape generation run for the organization from its eligible Clarity captures (organization executives and owners)
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  started:
+                    type: boolean
+                    enum:
+                    - true
+                  generationId:
+                    type: string
+                    format: uuid
+                  eligibleCaptureCount:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  eligibleProcessCount:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - started
+                - generationId
+                - eligibleCaptureCount
+                - eligibleProcessCount
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '422':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Generate Clarity Process Landscape
+  /v2/organizations/{orgId}/clarity/hierarchy/nodes:
+    post:
+      operationId: createClarityLandscapeNode
+      tags:
+      - Clarity
+      description: Create an area folder in the process tree (organization admin+)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                parentId:
+                  default: null
+                  nullable: true
+                  type: string
+                  format: uuid
+                ownerLabel:
+                  default: null
+                  nullable: true
+                  type: string
+                  maxLength: 200
+              required:
+              - name
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  parentId:
+                    nullable: true
+                    type: string
+                    format: uuid
+                  processId:
+                    nullable: true
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  ownerLabel:
+                    nullable: true
+                    type: string
+                  sortOrder:
+                    type: number
+                  existence:
+                    type: string
+                    enum:
+                    - proposed
+                    - active
+                  contentConfirmedAt:
+                    nullable: true
+                    type: string
+                  existenceConfirmedAt:
+                    nullable: true
+                    type: string
+                  source:
+                    type: string
+                    enum:
+                    - ai
+                    - human
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                  team:
+                    nullable: true
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - name
+                    additionalProperties: false
+                required:
+                - id
+                - parentId
+                - processId
+                - name
+                - ownerLabel
+                - sortOrder
+                - existence
+                - contentConfirmedAt
+                - existenceConfirmedAt
+                - source
+                - createdAt
+                - updatedAt
+                - team
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '422':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Clarity Landscape Node
+  /v2/organizations/{orgId}/clarity/hierarchy/process-links:
+    get:
+      operationId: listClarityProcessLinks
+      tags:
+      - Clarity
+      description: List process-to-process links in the organization's Clarity landscape that are visible within the caller's team access scope. Use `node_id` to find links touching a specific process node.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: node_id
+        required: false
+        description: Only return links that touch this hierarchy process node
+      - schema:
+          default: 100
+          type: integer
+          minimum: 1
+          maximum: 500
+        in: query
+        name: limit
+        required: false
+        description: Number of links per page (1-500, default 100)
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of links to skip (default 0)
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  process_links:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Unique process-link identifier
+                        source_node_id:
+                          type: string
+                          format: uuid
+                          description: Hierarchy node id for the source process
+                        target_node_id:
+                          type: string
+                          format: uuid
+                          description: Hierarchy node id for the target process
+                        type:
+                          type: string
+                          enum:
+                          - hands_off_to
+                          - shares_step_with
+                          - variant_of
+                          description: Relationship type between the source process node and target process node
+                        state:
+                          type: string
+                          enum:
+                          - suggested
+                          - confirmed
+                          description: Whether the link is suggested by Duvo or confirmed by a user
+                        confidence:
+                          nullable: true
+                          description: Optional confidence score from 0 to 1
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                        rationale:
+                          nullable: true
+                          description: Why Duvo suggested this process relationship
+                          type: string
+                        created_at:
+                          type: string
+                          description: ISO 8601 creation timestamp
+                        updated_at:
+                          type: string
+                          description: ISO 8601 last-updated timestamp
+                      required:
+                      - id
+                      - source_node_id
+                      - target_node_id
+                      - type
+                      - state
+                      - confidence
+                      - rationale
+                      - created_at
+                      - updated_at
+                      additionalProperties: false
+                    description: Process links in the current team
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                    description: Total links matching the query
+                  limit:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                    description: Number of links requested
+                  offset:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                    description: Number of links skipped
+                required:
+                - process_links
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Clarity Process Links
+    post:
+      operationId: createClarityProcessLink
+      tags:
+      - Clarity
+      description: Create a process-to-process link in the organization's Clarity landscape when the caller can manage both endpoint teams. If the same live source, target, and type already exists, the existing link is returned.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_node_id:
+                  type: string
+                  format: uuid
+                  description: Hierarchy node id for the source process
+                target_node_id:
+                  type: string
+                  format: uuid
+                  description: Hierarchy node id for the target process
+                type:
+                  type: string
+                  enum:
+                  - hands_off_to
+                  - shares_step_with
+                  - variant_of
+                  description: Relationship type between the source process node and target process node
+                state:
+                  default: confirmed
+                  type: string
+                  enum:
+                  - suggested
+                  - confirmed
+                  description: Whether the link is suggested by Duvo or confirmed by a user
+                confidence:
+                  description: Optional confidence score from 0 to 1
+                  nullable: true
+                  type: number
+                  minimum: 0
+                  maximum: 1
+              required:
+              - source_node_id
+              - target_node_id
+              - type
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  process_link:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique process-link identifier
+                      source_node_id:
+                        type: string
+                        format: uuid
+                        description: Hierarchy node id for the source process
+                      target_node_id:
+                        type: string
+                        format: uuid
+                        description: Hierarchy node id for the target process
+                      type:
+                        type: string
+                        enum:
+                        - hands_off_to
+                        - shares_step_with
+                        - variant_of
+                        description: Relationship type between the source process node and target process node
+                      state:
+                        type: string
+                        enum:
+                        - suggested
+                        - confirmed
+                        description: Whether the link is suggested by Duvo or confirmed by a user
+                      confidence:
+                        nullable: true
+                        description: Optional confidence score from 0 to 1
+                        type: number
+                        minimum: 0
+                        maximum: 1
+                      rationale:
+                        nullable: true
+                        description: Why Duvo suggested this process relationship
+                        type: string
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      updated_at:
+                        type: string
+                        description: ISO 8601 last-updated timestamp
+                    required:
+                    - id
+                    - source_node_id
+                    - target_node_id
+                    - type
+                    - state
+                    - confidence
+                    - rationale
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                  created:
+                    description: True when a create request inserted a new link
+                    type: boolean
+                required:
+                - process_link
+                additionalProperties: false
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  process_link:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique process-link identifier
+                      source_node_id:
+                        type: string
+                        format: uuid
+                        description: Hierarchy node id for the source process
+                      target_node_id:
+                        type: string
+                        format: uuid
+                        description: Hierarchy node id for the target process
+                      type:
+                        type: string
+                        enum:
+                        - hands_off_to
+                        - shares_step_with
+                        - variant_of
+                        description: Relationship type between the source process node and target process node
+                      state:
+                        type: string
+                        enum:
+                        - suggested
+                        - confirmed
+                        description: Whether the link is suggested by Duvo or confirmed by a user
+                      confidence:
+                        nullable: true
+                        description: Optional confidence score from 0 to 1
+                        type: number
+                        minimum: 0
+                        maximum: 1
+                      rationale:
+                        nullable: true
+                        description: Why Duvo suggested this process relationship
+                        type: string
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      updated_at:
+                        type: string
+                        description: ISO 8601 last-updated timestamp
+                    required:
+                    - id
+                    - source_node_id
+                    - target_node_id
+                    - type
+                    - state
+                    - confidence
+                    - rationale
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                  created:
+                    description: True when a create request inserted a new link
+                    type: boolean
+                required:
+                - process_link
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '422':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Clarity Process Link
+  /v2/organizations/{orgId}/clarity/hierarchy/process-links/{process_link_id}:
+    patch:
+      operationId: updateClarityProcessLink
+      tags:
+      - Clarity
+      description: Update a process-to-process link in the organization's Clarity landscape when the caller can manage both endpoint teams.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_node_id:
+                  description: Replacement hierarchy node id for the source process
+                  type: string
+                  format: uuid
+                target_node_id:
+                  description: Replacement hierarchy node id for the target process
+                  type: string
+                  format: uuid
+                type:
+                  type: string
+                  enum:
+                  - hands_off_to
+                  - shares_step_with
+                  - variant_of
+                  description: Relationship type between the source process node and target process node
+                state:
+                  type: string
+                  enum:
+                  - suggested
+                  - confirmed
+                  description: Whether the link is suggested by Duvo or confirmed by a user
+                confidence:
+                  description: Confidence score from 0 to 1, or null to clear it
+                  nullable: true
+                  type: number
+                  minimum: 0
+                  maximum: 1
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: process_link_id
+        required: true
+        description: Unique process-link identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  process_link:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique process-link identifier
+                      source_node_id:
+                        type: string
+                        format: uuid
+                        description: Hierarchy node id for the source process
+                      target_node_id:
+                        type: string
+                        format: uuid
+                        description: Hierarchy node id for the target process
+                      type:
+                        type: string
+                        enum:
+                        - hands_off_to
+                        - shares_step_with
+                        - variant_of
+                        description: Relationship type between the source process node and target process node
+                      state:
+                        type: string
+                        enum:
+                        - suggested
+                        - confirmed
+                        description: Whether the link is suggested by Duvo or confirmed by a user
+                      confidence:
+                        nullable: true
+                        description: Optional confidence score from 0 to 1
+                        type: number
+                        minimum: 0
+                        maximum: 1
+                      rationale:
+                        nullable: true
+                        description: Why Duvo suggested this process relationship
+                        type: string
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      updated_at:
+                        type: string
+                        description: ISO 8601 last-updated timestamp
+                    required:
+                    - id
+                    - source_node_id
+                    - target_node_id
+                    - type
+                    - state
+                    - confidence
+                    - rationale
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                  created:
+                    description: True when a create request inserted a new link
+                    type: boolean
+                required:
+                - process_link
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '422':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Clarity Process Link
+    delete:
+      operationId: deleteClarityProcessLink
+      tags:
+      - Clarity
+      description: Delete a process-to-process link from the organization's Clarity landscape when the caller can manage both endpoint teams.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: process_link_id
+        required: true
+        description: Unique process-link identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                    description: True when the process link was deleted
+                required:
+                - deleted
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '422':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Clarity Process Link
+  /v2/organizations/{orgId}/clarity/process-labels:
+    get:
+      operationId: listClarityProcessLabels
+      tags:
+      - Clarity
+      description: List process tags available in an organization.
+      parameters:
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+      - schema:
+          default: 0
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+      - schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+        in: query
+        name: search
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        value:
+                          type: string
+                        colorHue:
+                          type: integer
+                          minimum: 0
+                          maximum: 360
+                        processCount:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                      required:
+                      - id
+                      - value
+                      - colorHue
+                      - processCount
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  limit:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                - data
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Clarity Process Labels
+    post:
+      operationId: createClarityProcessLabel
+      tags:
+      - Clarity
+      description: Create process tags for an organization.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                colorHue:
+                  default: 215
+                  type: integer
+                  minimum: 0
+                  maximum: 360
+              required:
+              - value
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  label:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      value:
+                        type: string
+                      colorHue:
+                        type: integer
+                        minimum: 0
+                        maximum: 360
+                    required:
+                    - id
+                    - value
+                    - colorHue
+                    additionalProperties: false
+                required:
+                - label
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Clarity Process Label
+  /v2/organizations/{orgId}/clarity/process-labels/{labelId}:
+    patch:
+      operationId: updateClarityProcessLabel
+      tags:
+      - Clarity
+      description: Update process tags for an organization.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                value:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                colorHue:
+                  type: integer
+                  minimum: 0
+                  maximum: 360
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: labelId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  label:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      value:
+                        type: string
+                      colorHue:
+                        type: integer
+                        minimum: 0
+                        maximum: 360
+                    required:
+                    - id
+                    - value
+                    - colorHue
+                    additionalProperties: false
+                required:
+                - label
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Clarity Process Label
+    delete:
+      operationId: deleteClarityProcessLabel
+      tags:
+      - Clarity
+      description: Delete process tags from an organization.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: labelId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Clarity Process Label
+  /v2/clarity/processes/{id}/labels:
+    get:
+      operationId: listClarityProcessAssignedLabels
+      tags:
+      - Clarity
+      description: List process tags on a process.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        value:
+                          type: string
+                        colorHue:
+                          type: integer
+                          minimum: 0
+                          maximum: 360
+                        source:
+                          type: string
+                          enum:
+                          - human
+                          - agent
+                      required:
+                      - id
+                      - value
+                      - colorHue
+                      - source
+                      additionalProperties: false
+                required:
+                - labels
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Clarity Process Assigned Labels
+  /v2/clarity/processes/{id}/labels/assign:
+    post:
+      operationId: assignClarityProcessLabels
+      tags:
+      - Clarity
+      description: Assign process tags to a process.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                labelIds:
+                  minItems: 1
+                  maxItems: 50
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                labels:
+                  minItems: 1
+                  maxItems: 50
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      value:
+                        type: string
+                        minLength: 1
+                        maxLength: 100
+                      colorHue:
+                        default: 215
+                        type: integer
+                        minimum: 0
+                        maximum: 360
+                    required:
+                    - value
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        value:
+                          type: string
+                        colorHue:
+                          type: integer
+                          minimum: 0
+                          maximum: 360
+                        source:
+                          type: string
+                          enum:
+                          - human
+                          - agent
+                      required:
+                      - id
+                      - value
+                      - colorHue
+                      - source
+                      additionalProperties: false
+                required:
+                - labels
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Assign Clarity Process Labels
+  /v2/clarity/processes/{id}/labels/unlink:
+    post:
+      operationId: unlinkClarityProcessLabels
+      tags:
+      - Clarity
+      description: Remove process tags from a process.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                labelIds:
+                  minItems: 1
+                  maxItems: 50
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+              required:
+              - labelIds
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        value:
+                          type: string
+                        colorHue:
+                          type: integer
+                          minimum: 0
+                          maximum: 360
+                        source:
+                          type: string
+                          enum:
+                          - human
+                          - agent
+                      required:
+                      - id
+                      - value
+                      - colorHue
+                      - source
+                      additionalProperties: false
+                required:
+                - labels
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Unlink Clarity Process Labels
+  /v2/clarity/processes/{id}/available-labels:
+    get:
+      operationId: listAvailableClarityProcessLabels
+      tags:
+      - Clarity
+      description: List process tags available for a process.
+      parameters:
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+      - schema:
+          default: 0
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+      - schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+        in: query
+        name: search
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        value:
+                          type: string
+                        colorHue:
+                          type: integer
+                          minimum: 0
+                          maximum: 360
+                        processCount:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                      required:
+                      - id
+                      - value
+                      - colorHue
+                      - processCount
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  limit:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                - data
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Available Clarity Process Labels
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

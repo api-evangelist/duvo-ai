@@ -1,0 +1,2691 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Duvo Pulse API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Duvo Pulse
+  description: Create, list, iterate on, and delete Duvo Pulse dashboards — live, agent-generated visualizations of your Duvo data
+paths:
+  /v2/artifacts:
+    get:
+      operationId: listPulseDashboards
+      tags:
+      - Duvo Pulse
+      description: List your Duvo Pulse dashboards (live, agent-generated visualizations of your Duvo data), most recently updated first.
+      parameters:
+      - schema:
+          default: 20
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of results per page (1-100, default 20)
+      - schema:
+          default: 0
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of results to skip
+      - schema:
+          default: created
+          type: string
+          enum:
+          - created
+          - shared
+          - team
+        in: query
+        name: scope
+        required: false
+        description: 'Which dashboards to return: ''created'' (yours, the default), ''team'' (published to your whole team by a teammate), or ''shared'' (shared with you individually by a teammate).'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        team_id:
+                          type: string
+                          format: uuid
+                        created_by_user_id:
+                          type: string
+                          format: uuid
+                        title:
+                          nullable: true
+                          type: string
+                        html_code_present:
+                          type: boolean
+                        status:
+                          type: string
+                          enum:
+                          - not_started
+                          - pending
+                          - running
+                          - completed
+                          - failed
+                          - interrupted
+                        visibility:
+                          type: string
+                          enum:
+                          - private
+                          - team
+                          - organization
+                          - teams
+                        publish_permission:
+                          type: string
+                          enum:
+                          - view
+                          - edit
+                        thumbnail_url:
+                          nullable: true
+                          type: string
+                        refresh_frequency:
+                          nullable: true
+                          type: string
+                          enum:
+                          - every_15_minutes
+                          - every_30_minutes
+                          - hourly
+                          - every_6_hours
+                          - daily
+                          - weekly
+                        last_refresh_at:
+                          nullable: true
+                          type: string
+                        next_refresh_at:
+                          nullable: true
+                          type: string
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                      required:
+                      - id
+                      - team_id
+                      - created_by_user_id
+                      - title
+                      - html_code_present
+                      - status
+                      - visibility
+                      - publish_permission
+                      - created_at
+                      - updated_at
+                      additionalProperties: false
+                  total:
+                    type: number
+                  limit:
+                    type: number
+                  offset:
+                    type: number
+                required:
+                - artifacts
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Pulse Dashboards
+    post:
+      operationId: createPulseDashboard
+      tags:
+      - Duvo Pulse
+      description: Create a new Duvo Pulse dashboard from a natural-language prompt (e.g. 'open cases by queue this week') and dispatch the first generation turn. Generation is asynchronous — poll GET /artifacts/{artifactId} until status is completed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
+                connection_ids:
+                  maxItems: 10
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+              required:
+              - message
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifact_id:
+                    type: string
+                    format: uuid
+                  user_message:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      artifact_id:
+                        type: string
+                        format: uuid
+                      author_user_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      role:
+                        type: string
+                        enum:
+                        - user
+                        - assistant
+                      content:
+                        type: string
+                      created_at:
+                        type: string
+                      revision_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      message:
+                        nullable: true
+                      selected_element:
+                        nullable: true
+                        type: object
+                        properties:
+                          selector:
+                            type: string
+                            minLength: 1
+                            maxLength: 2000
+                          label:
+                            type: string
+                            minLength: 1
+                            maxLength: 200
+                          tag_name:
+                            type: string
+                            minLength: 1
+                            maxLength: 50
+                          text:
+                            type: string
+                            maxLength: 500
+                          outer_html:
+                            type: string
+                            minLength: 1
+                            maxLength: 4000
+                        required:
+                        - selector
+                        - label
+                        - tag_name
+                        - outer_html
+                        additionalProperties: false
+                    required:
+                    - id
+                    - artifact_id
+                    - role
+                    - content
+                    - created_at
+                    additionalProperties: false
+                required:
+                - artifact_id
+                - user_message
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Pulse Dashboard
+  /v2/artifacts/{artifactId}:
+    get:
+      operationId: getPulseDashboard
+      tags:
+      - Duvo Pulse
+      description: Get a Duvo Pulse dashboard's metadata and generation status. When status is completed and html_code_present is true, fetch the rendered HTML from GET /artifacts/{artifactId}/render; the conversation is served by GET /artifacts/{artifactId}/messages.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifact:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      team_id:
+                        type: string
+                        format: uuid
+                      created_by_user_id:
+                        type: string
+                        format: uuid
+                      title:
+                        nullable: true
+                        type: string
+                      html_code_present:
+                        type: boolean
+                      status:
+                        type: string
+                        enum:
+                        - not_started
+                        - pending
+                        - running
+                        - completed
+                        - failed
+                        - interrupted
+                      visibility:
+                        type: string
+                        enum:
+                        - private
+                        - team
+                        - organization
+                        - teams
+                      publish_permission:
+                        type: string
+                        enum:
+                        - view
+                        - edit
+                      thumbnail_url:
+                        nullable: true
+                        type: string
+                      refresh_frequency:
+                        nullable: true
+                        type: string
+                        enum:
+                        - every_15_minutes
+                        - every_30_minutes
+                        - hourly
+                        - every_6_hours
+                        - daily
+                        - weekly
+                      last_refresh_at:
+                        nullable: true
+                        type: string
+                      next_refresh_at:
+                        nullable: true
+                        type: string
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                    required:
+                    - id
+                    - team_id
+                    - created_by_user_id
+                    - title
+                    - html_code_present
+                    - status
+                    - visibility
+                    - publish_permission
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                  is_creator:
+                    type: boolean
+                  can_edit:
+                    type: boolean
+                required:
+                - artifact
+                - is_creator
+                - can_edit
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Pulse Dashboard
+    patch:
+      operationId: updatePulseDashboard
+      tags:
+      - Duvo Pulse
+      description: Update a Duvo Pulse dashboard's settings — rename it or change its auto-refresh frequency. Only the creator can update it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                refresh_frequency:
+                  nullable: true
+                  type: string
+                  enum:
+                  - every_15_minutes
+                  - every_30_minutes
+                  - hourly
+                  - every_6_hours
+                  - daily
+                  - weekly
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  team_id:
+                    type: string
+                    format: uuid
+                  created_by_user_id:
+                    type: string
+                    format: uuid
+                  title:
+                    nullable: true
+                    type: string
+                  html_code_present:
+                    type: boolean
+                  status:
+                    type: string
+                    enum:
+                    - not_started
+                    - pending
+                    - running
+                    - completed
+                    - failed
+                    - interrupted
+                  visibility:
+                    type: string
+                    enum:
+                    - private
+                    - team
+                    - organization
+                    - teams
+                  publish_permission:
+                    type: string
+                    enum:
+                    - view
+                    - edit
+                  thumbnail_url:
+                    nullable: true
+                    type: string
+                  refresh_frequency:
+                    nullable: true
+                    type: string
+                    enum:
+                    - every_15_minutes
+                    - every_30_minutes
+                    - hourly
+                    - every_6_hours
+                    - daily
+                    - weekly
+                  last_refresh_at:
+                    nullable: true
+                    type: string
+                  next_refresh_at:
+                    nullable: true
+                    type: string
+                  created_at:
+                    type: string
+                  updated_at:
+                    type: string
+                required:
+                - id
+                - team_id
+                - created_by_user_id
+                - title
+                - html_code_present
+                - status
+                - visibility
+                - publish_permission
+                - created_at
+                - updated_at
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Pulse Dashboard
+    delete:
+      operationId: deletePulseDashboard
+      tags:
+      - Duvo Pulse
+      description: Delete a Duvo Pulse dashboard. Only the creator can delete it.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - success
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Pulse Dashboard
+  /v2/artifacts/{artifactId}/render:
+    get:
+      operationId: getPulseDashboardHtml
+      tags:
+      - Duvo Pulse
+      description: Serve a Duvo Pulse dashboard's rendered HTML document (text/html, not JSON). 404 until the first generation turn has produced HTML.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: string
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Pulse Dashboard Html
+  /v2/artifacts/{artifactId}/export/pdf:
+    get:
+      operationId: getPulseDashboardPdf
+      tags:
+      - Duvo Pulse
+      description: Render a Duvo Pulse dashboard to a PDF document (application/pdf, not JSON). 404 until the first generation turn has produced HTML.
+      parameters:
+      - schema:
+          default: light
+          type: string
+          enum:
+          - light
+          - dark
+        in: query
+        name: theme
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Pulse Dashboard Pdf
+  /v2/artifacts/{artifactId}/export/html:
+    get:
+      operationId: exportPulseDashboardHtml
+      tags:
+      - Duvo Pulse
+      description: Render a Duvo Pulse dashboard to a self-contained static HTML snapshot (text/html, data baked in). 404 until the first generation turn has produced HTML.
+      parameters:
+      - schema:
+          default: light
+          type: string
+          enum:
+          - light
+          - dark
+        in: query
+        name: theme
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: string
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Export Pulse Dashboard Html
+  /v2/artifacts/{artifactId}/publish:
+    post:
+      operationId: publishPulseDashboard
+      tags:
+      - Duvo Pulse
+      description: Publish (share) a Duvo Pulse dashboard to your whole team or your whole organization, or revert it to private (creator only). When publishing, set permission to 'view' (teammates see the dashboard) or 'edit' (teammates can also iterate on it); organization-wide viewers outside the team always get view-only access.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visibility:
+                  type: string
+                  enum:
+                  - private
+                  - team
+                  - organization
+                permission:
+                  type: string
+                  enum:
+                  - view
+                  - edit
+              required:
+              - visibility
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  team_id:
+                    type: string
+                    format: uuid
+                  created_by_user_id:
+                    type: string
+                    format: uuid
+                  title:
+                    nullable: true
+                    type: string
+                  html_code_present:
+                    type: boolean
+                  status:
+                    type: string
+                    enum:
+                    - not_started
+                    - pending
+                    - running
+                    - completed
+                    - failed
+                    - interrupted
+                  visibility:
+                    type: string
+                    enum:
+                    - private
+                    - team
+                    - organization
+                    - teams
+                  publish_permission:
+                    type: string
+                    enum:
+                    - view
+                    - edit
+                  thumbnail_url:
+                    nullable: true
+                    type: string
+                  refresh_frequency:
+                    nullable: true
+                    type: string
+                    enum:
+                    - every_15_minutes
+                    - every_30_minutes
+                    - hourly
+                    - every_6_hours
+                    - daily
+                    - weekly
+                  last_refresh_at:
+                    nullable: true
+                    type: string
+                  next_refresh_at:
+                    nullable: true
+                    type: string
+                  created_at:
+                    type: string
+                  updated_at:
+                    type: string
+                required:
+                - id
+                - team_id
+                - created_by_user_id
+                - title
+                - html_code_present
+                - status
+                - visibility
+                - publish_permission
+                - created_at
+                - updated_at
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Publish Pulse Dashboard
+  /v2/artifacts/{artifactId}/duplicate:
+    post:
+      operationId: duplicatePulseDashboard
+      tags:
+      - Duvo Pulse
+      description: Duplicate a Duvo Pulse dashboard, producing an idle clone of the current rendered dashboard. The conversation history, shares, and connections are not copied.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  team_id:
+                    type: string
+                    format: uuid
+                  created_by_user_id:
+                    type: string
+                    format: uuid
+                  title:
+                    nullable: true
+                    type: string
+                  html_code_present:
+                    type: boolean
+                  status:
+                    type: string
+                    enum:
+                    - not_started
+                    - pending
+                    - running
+                    - completed
+                    - failed
+                    - interrupted
+                  visibility:
+                    type: string
+                    enum:
+                    - private
+                    - team
+                    - organization
+                    - teams
+                  publish_permission:
+                    type: string
+                    enum:
+                    - view
+                    - edit
+                  thumbnail_url:
+                    nullable: true
+                    type: string
+                  refresh_frequency:
+                    nullable: true
+                    type: string
+                    enum:
+                    - every_15_minutes
+                    - every_30_minutes
+                    - hourly
+                    - every_6_hours
+                    - daily
+                    - weekly
+                  last_refresh_at:
+                    nullable: true
+                    type: string
+                  next_refresh_at:
+                    nullable: true
+                    type: string
+                  created_at:
+                    type: string
+                  updated_at:
+                    type: string
+                required:
+                - id
+                - team_id
+                - created_by_user_id
+                - title
+                - html_code_present
+                - status
+                - visibility
+                - publish_permission
+                - created_at
+                - updated_at
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Duplicate Pulse Dashboard
+  /v2/artifacts/{artifactId}/messages:
+    post:
+      operationId: sendPulseDashboardMessage
+      tags:
+      - Duvo Pulse
+      description: Send an instruction to iterate on a Duvo Pulse dashboard (e.g. 'make it a bar chart', 'filter to last 14 days'). The creator can always iterate; teammates can too when the Pulse is published to the team with edit access. The agent regenerates asynchronously — poll GET /artifacts/{artifactId} for status.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
+                from_revision_id:
+                  type: string
+                  format: uuid
+                selected_element:
+                  type: object
+                  properties:
+                    selector:
+                      type: string
+                      minLength: 1
+                      maxLength: 2000
+                    label:
+                      type: string
+                      minLength: 1
+                      maxLength: 200
+                    tag_name:
+                      type: string
+                      minLength: 1
+                      maxLength: 50
+                    text:
+                      type: string
+                      maxLength: 500
+                    outer_html:
+                      type: string
+                      minLength: 1
+                      maxLength: 4000
+                  required:
+                  - selector
+                  - label
+                  - tag_name
+                  - outer_html
+              required:
+              - message
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_message:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      artifact_id:
+                        type: string
+                        format: uuid
+                      author_user_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      role:
+                        type: string
+                        enum:
+                        - user
+                        - assistant
+                      content:
+                        type: string
+                      created_at:
+                        type: string
+                      revision_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      message:
+                        nullable: true
+                      selected_element:
+                        nullable: true
+                        type: object
+                        properties:
+                          selector:
+                            type: string
+                            minLength: 1
+                            maxLength: 2000
+                          label:
+                            type: string
+                            minLength: 1
+                            maxLength: 200
+                          tag_name:
+                            type: string
+                            minLength: 1
+                            maxLength: 50
+                          text:
+                            type: string
+                            maxLength: 500
+                          outer_html:
+                            type: string
+                            minLength: 1
+                            maxLength: 4000
+                        required:
+                        - selector
+                        - label
+                        - tag_name
+                        - outer_html
+                        additionalProperties: false
+                    required:
+                    - id
+                    - artifact_id
+                    - role
+                    - content
+                    - created_at
+                    additionalProperties: false
+                required:
+                - user_message
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Send Pulse Dashboard Message
+    get:
+      operationId: listPulseDashboardMessages
+      tags:
+      - Duvo Pulse
+      description: List the chat transcript of a Duvo Pulse dashboard's live version (requires edit access). Returns the most recent page by default, oldest first within the page; pass `before` (a message id from a previous page) to walk back through older messages. Messages from other version branches are not included.
+      parameters:
+      - schema:
+          type: integer
+          exclusiveMinimum: true
+          maximum: 500
+        in: query
+        name: limit
+        required: false
+        description: Maximum number of messages to return (1-500, default 50).
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: before
+        required: false
+        description: 'Message id cursor: return the page of messages immediately older than this message. Omit for the most recent page.'
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        artifact_id:
+                          type: string
+                          format: uuid
+                        author_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        role:
+                          type: string
+                          enum:
+                          - user
+                          - assistant
+                        content:
+                          type: string
+                        created_at:
+                          type: string
+                        revision_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        message:
+                          nullable: true
+                        selected_element:
+                          nullable: true
+                          type: object
+                          properties:
+                            selector:
+                              type: string
+                              minLength: 1
+                              maxLength: 2000
+                            label:
+                              type: string
+                              minLength: 1
+                              maxLength: 200
+                            tag_name:
+                              type: string
+                              minLength: 1
+                              maxLength: 50
+                            text:
+                              type: string
+                              maxLength: 500
+                            outer_html:
+                              type: string
+                              minLength: 1
+                              maxLength: 4000
+                          required:
+                          - selector
+                          - label
+                          - tag_name
+                          - outer_html
+                          additionalProperties: false
+                      required:
+                      - id
+                      - artifact_id
+                      - role
+                      - content
+                      - created_at
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  has_more:
+                    type: boolean
+                required:
+                - data
+                - total
+                - has_more
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Pulse Dashboard Messages
+  /v2/artifacts/{artifactId}/refresh:
+    post:
+      operationId: refreshPulseDashboard
+      tags:
+      - Duvo Pulse
+      description: Trigger an on-demand data refresh of a Duvo Pulse dashboard. The dashboard regenerates its connection-sourced values in the background — poll GET /artifacts/{artifactId} for status.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  team_id:
+                    type: string
+                    format: uuid
+                  created_by_user_id:
+                    type: string
+                    format: uuid
+                  title:
+                    nullable: true
+                    type: string
+                  html_code_present:
+                    type: boolean
+                  status:
+                    type: string
+                    enum:
+                    - not_started
+                    - pending
+                    - running
+                    - completed
+                    - failed
+                    - interrupted
+                  visibility:
+                    type: string
+                    enum:
+                    - private
+                    - team
+                    - organization
+                    - teams
+                  publish_permission:
+                    type: string
+                    enum:
+                    - view
+                    - edit
+                  thumbnail_url:
+                    nullable: true
+                    type: string
+                  refresh_frequency:
+                    nullable: true
+                    type: string
+                    enum:
+                    - every_15_minutes
+                    - every_30_minutes
+                    - hourly
+                    - every_6_hours
+                    - daily
+                    - weekly
+                  last_refresh_at:
+                    nullable: true
+                    type: string
+                  next_refresh_at:
+                    nullable: true
+                    type: string
+                  created_at:
+                    type: string
+                  updated_at:
+                    type: string
+                required:
+                - id
+                - team_id
+                - created_by_user_id
+                - title
+                - html_code_present
+                - status
+                - visibility
+                - publish_permission
+                - created_at
+                - updated_at
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Refresh Pulse Dashboard
+  /v2/artifacts/{artifactId}/stop:
+    post:
+      operationId: stopPulseDashboardMessage
+      tags:
+      - Duvo Pulse
+      description: Stop an in-flight Duvo Pulse generation turn. Only the creator can stop. Flips the dashboard to 'interrupted' and keeps any streamed-so-far reply; stopping when nothing is generating is a successful no-op.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                partial_text:
+                  description: The assistant text streamed so far, kept in the conversation as the partial reply. Omit when calling from an API client without streaming state.
+                  type: string
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifact:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      team_id:
+                        type: string
+                        format: uuid
+                      created_by_user_id:
+                        type: string
+                        format: uuid
+                      title:
+                        nullable: true
+                        type: string
+                      html_code_present:
+                        type: boolean
+                      status:
+                        type: string
+                        enum:
+                        - not_started
+                        - pending
+                        - running
+                        - completed
+                        - failed
+                        - interrupted
+                      visibility:
+                        type: string
+                        enum:
+                        - private
+                        - team
+                        - organization
+                        - teams
+                      publish_permission:
+                        type: string
+                        enum:
+                        - view
+                        - edit
+                      thumbnail_url:
+                        nullable: true
+                        type: string
+                      refresh_frequency:
+                        nullable: true
+                        type: string
+                        enum:
+                        - every_15_minutes
+                        - every_30_minutes
+                        - hourly
+                        - every_6_hours
+                        - daily
+                        - weekly
+                      last_refresh_at:
+                        nullable: true
+                        type: string
+                      next_refresh_at:
+                        nullable: true
+                        type: string
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                    required:
+                    - id
+                    - team_id
+                    - created_by_user_id
+                    - title
+                    - html_code_present
+                    - status
+                    - visibility
+                    - publish_permission
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                required:
+                - artifact
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Stop Pulse Dashboard Message
+  /v2/artifacts/{artifactId}/connections:
+    get:
+      operationId: listPulseDashboardConnections
+      tags:
+      - Duvo Pulse
+      description: List the connections (data sources) attached to a Duvo Pulse dashboard (creator only).
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        connection_id:
+                          type: string
+                          format: uuid
+                        integration_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        custom_integration_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        type:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                      required:
+                      - connection_id
+                      - integration_id
+                      - custom_integration_id
+                      - type
+                      - created_at
+                      additionalProperties: false
+                required:
+                - connections
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Pulse Dashboard Connections
+    post:
+      operationId: attachPulseDashboardConnection
+      tags:
+      - Duvo Pulse
+      description: Attach one of your connections (data sources) to a Duvo Pulse dashboard so the agent can use its tools (creator only).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                connection_id:
+                  type: string
+                  format: uuid
+              required:
+              - connection_id
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Attach Pulse Dashboard Connection
+  /v2/artifacts/{artifactId}/connections/{connectionId}:
+    delete:
+      operationId: detachPulseDashboardConnection
+      tags:
+      - Duvo Pulse
+      description: Detach a connection (data source) from a Duvo Pulse dashboard (creator only).
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: connectionId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                - success
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Detach Pulse Dashboard Connection
+  /v2/artifacts/{artifactId}/answer:
+    post:
+      operationId: answerPulseDashboardQuestion
+      tags:
+      - Duvo Pulse
+      description: Answer a pending question the Duvo Pulse agent asked and resume the paused run (creator or team editors). Use the toolCallId from the dashboard's message transcript.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                toolCallId:
+                  type: string
+                  minLength: 1
+                answers:
+                  type: object
+                  additionalProperties:
+                    type: string
+              required:
+              - toolCallId
+              - answers
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - ok
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Answer Pulse Dashboard Question
+  /v2/artifacts/{artifactId}/revisions:
+    get:
+      operationId: listPulseDashboardVersions
+      tags:
+      - Duvo Pulse
+      description: List the version history of a Duvo Pulse dashboard, newest first (requires edit access). Use the version id with the restore and version-render endpoints.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revisions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        artifact_id:
+                          type: string
+                          format: uuid
+                        version:
+                          type: integer
+                          exclusiveMinimum: true
+                          maximum: 9007199254740991
+                        parent_revision_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        restored_from_version:
+                          nullable: true
+                          type: integer
+                          exclusiveMinimum: true
+                          maximum: 9007199254740991
+                        created_at:
+                          type: string
+                      required:
+                      - id
+                      - artifact_id
+                      - version
+                      - parent_revision_id
+                      - restored_from_version
+                      - created_at
+                      additionalProperties: false
+                  total:
+                    type: number
+                  current_revision_id:
+                    nullable: true
+                    type: string
+                    format: uuid
+                  current_version:
+                    nullable: true
+                    type: integer
+                    exclusiveMinimum: true
+                    maximum: 9007199254740991
+                required:
+                - revisions
+                - total
+                - current_revision_id
+                - current_version
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Pulse Dashboard Versions
+  /v2/artifacts/{artifactId}/revisions/{revisionId}/render:
+    get:
+      operationId: getPulseDashboardVersionHtml
+      tags:
+      - Duvo Pulse
+      description: Serve a specific version's rendered HTML document for a Duvo Pulse dashboard (text/html, requires edit access).
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: revisionId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: string
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Pulse Dashboard Version Html
+  /v2/artifacts/{artifactId}/revisions/{revisionId}/restore:
+    post:
+      operationId: restorePulseDashboardVersion
+      tags:
+      - Duvo Pulse
+      description: Restore a previous version of a Duvo Pulse dashboard, making it live again (requires edit access). Non-destructive — it moves the head pointer to the chosen version.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: revisionId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  current_revision_id:
+                    type: string
+                    format: uuid
+                  current_version:
+                    type: integer
+                    exclusiveMinimum: true
+                    maximum: 9007199254740991
+                required:
+                - success
+                - current_revision_id
+                - current_version
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Restore Pulse Dashboard Version
+  /v2/teams/{teamId}/artifacts/{artifactId}/move:
+    post:
+      operationId: movePulseDashboard
+      tags:
+      - Duvo Pulse
+      description: Move a Pulse dashboard from the team in the URL to another team, keeping only its latest revision (chat history and older revisions are deleted). The caller must be a Manager or above on both teams. Pass dryRun=true to preview which Connections reconnect vs drop without applying changes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targetTeamId:
+                  type: string
+                  format: uuid
+                  description: ID of the destination team the dashboard moves to.
+              required:
+              - targetTeamId
+              additionalProperties: false
+      parameters:
+      - schema:
+          anyOf:
+          - type: boolean
+          - type: string
+            enum:
+            - 'true'
+          - type: string
+            enum:
+            - 'false'
+        in: query
+        name: dryRun
+        required: false
+        description: 'When true, only previews the move: reports which Connections would reconnect vs drop without changing anything.'
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: teamId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifactId:
+                    type: string
+                    format: uuid
+                  artifactTitle:
+                    nullable: true
+                    type: string
+                  sourceTeamId:
+                    type: string
+                    format: uuid
+                  targetTeamId:
+                    type: string
+                    format: uuid
+                  ownershipReassigned:
+                    type: boolean
+                  visibilityReset:
+                    type: boolean
+                  connections:
+                    type: object
+                    properties:
+                      reused:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            integrationType:
+                              type: string
+                            integrationName:
+                              type: string
+                            instanceName:
+                              type: string
+                            decision:
+                              type: string
+                              enum:
+                              - reuse
+                              - needs_reconnect
+                              - custom_to_rebuild
+                          required:
+                          - integrationType
+                          - integrationName
+                          - instanceName
+                          - decision
+                          additionalProperties: false
+                      disconnected:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            integrationType:
+                              type: string
+                            integrationName:
+                              type: string
+                            instanceName:
+                              type: string
+                            decision:
+                              type: string
+                              enum:
+                              - reuse
+                              - needs_reconnect
+                              - custom_to_rebuild
+                          required:
+                          - integrationType
+                          - integrationName
+                          - instanceName
+                          - decision
+                          additionalProperties: false
+                      customToRebuild:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            integrationType:
+                              type: string
+                            integrationName:
+                              type: string
+                            instanceName:
+                              type: string
+                            decision:
+                              type: string
+                              enum:
+                              - reuse
+                              - needs_reconnect
+                              - custom_to_rebuild
+                          required:
+                          - integrationType
+                          - integrationName
+                          - instanceName
+                          - decision
+                          additionalProperties: false
+                    required:
+                    - reused
+                    - disconnected
+                    - customToRebuild
+                    additionalProperties: false
+                  applied:
+                    type: boolean
+                required:
+                - artifactId
+                - artifactTitle
+                - sourceTeamId
+                - targetTeamId
+                - ownershipReassigned
+                - visibilityReset
+                - connections
+                - applied
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Move Pulse Dashboard
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

@@ -1,0 +1,1469 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Runs API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Runs
+  description: Start, monitor, and manage agent runs (Runs in the Duvo UI)
+paths:
+  /v2/agent/{agentId}/runs/{runId}/evaluation:
+    get:
+      operationId: getRunEvaluation
+      tags:
+      - Runs
+      description: Get the latest evaluation analysis for a specific agent run (Run).
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agentId
+        required: true
+        description: The agent's unique identifier (Agent ID)
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: runId
+        required: true
+        description: The run's unique identifier (Run ID)
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    nullable: true
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      created_at:
+                        type: string
+                      run_id:
+                        type: string
+                        format: uuid
+                      source:
+                        nullable: true
+                        type: string
+                      output:
+                        type: object
+                        properties:
+                          schemaId:
+                            type: string
+                          schemaVersion:
+                            type: string
+                          data:
+                            type: object
+                            additionalProperties:
+                              anyOf:
+                              - type: boolean
+                              - type: string
+                              - type: string
+                                nullable: true
+                                enum:
+                                - null
+                        required:
+                        - data
+                        additionalProperties: false
+                    required:
+                    - id
+                    - created_at
+                    - run_id
+                    - source
+                    - output
+                    additionalProperties: false
+                required:
+                - data
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Run Evaluation
+  /v2/runs/{run_id}:
+    get:
+      operationId: getRun
+      tags:
+      - Runs
+      description: Get information about an agent run. Can be polled to check status.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: run_id
+        required: true
+        description: The run's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run:
+                    nullable: true
+                    description: The run details, or null if the run no longer exists
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique run identifier
+                      agent_id:
+                        type: string
+                        format: uuid
+                        description: ID of the agent being run
+                      build_id:
+                        type: string
+                        format: uuid
+                        description: ID of the build being run
+                      status:
+                        type: string
+                        description: Current run status
+                      source:
+                        nullable: true
+                        description: How the run was initiated
+                        type: string
+                      sandbox_id:
+                        nullable: true
+                        description: The sandbox ID for this run
+                        type: string
+                      started_at:
+                        nullable: true
+                        description: ISO 8601 timestamp when the run started
+                        type: string
+                      completed_at:
+                        nullable: true
+                        description: ISO 8601 timestamp when the run completed
+                        type: string
+                      created_at:
+                        type: string
+                        description: ISO 8601 timestamp when the run was created
+                      updated_at:
+                        type: string
+                        description: ISO 8601 timestamp when the run was last updated
+                      human_in_the_loop_enabled:
+                        type: boolean
+                        description: Whether this agent can request human input during execution
+                    required:
+                    - id
+                    - agent_id
+                    - build_id
+                    - status
+                    - source
+                    - sandbox_id
+                    - started_at
+                    - completed_at
+                    - created_at
+                    - updated_at
+                    - human_in_the_loop_enabled
+                    additionalProperties: false
+                  pending_human_request:
+                    description: The pending human request blocking the run, if any
+                    nullable: true
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique human-request identifier
+                      title:
+                        type: string
+                        description: Short title for the request
+                      description:
+                        nullable: true
+                        description: Longer description of the request
+                        type: string
+                      created_at:
+                        type: string
+                        description: ISO 8601 timestamp when the request was created
+                      type:
+                        type: string
+                        enum:
+                        - approval
+                        - question
+                        description: 'Type of human request: ''approval'' for yes/no decisions, ''question'' for structured questions with optional predefined answers'
+                      questions:
+                        description: For 'question' type requests, the structured questions with optional predefined answer options
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            question:
+                              type: string
+                              description: The question being asked
+                            header:
+                              description: Short header for the question
+                              type: string
+                            options:
+                              description: Predefined answer options
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  label:
+                                    type: string
+                                    description: Display label for the option
+                                  description:
+                                    description: Optional explanation of what this option means
+                                    type: string
+                                required:
+                                - label
+                                additionalProperties: false
+                            multi_select:
+                              description: Whether multiple options can be selected
+                              type: boolean
+                          required:
+                          - question
+                          additionalProperties: false
+                    required:
+                    - id
+                    - title
+                    - description
+                    - created_at
+                    - type
+                    additionalProperties: false
+                required:
+                - run
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Run
+  /v2/runs/{run_id}/messages:
+    post:
+      operationId: postRunMessage
+      tags:
+      - Runs
+      description: Post a message to an agent run. This will persist the message and resume the agent execution if the run is in a resumable state (waiting, completed, or interrupted).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  description: The message content to send to the agent
+              required:
+              - message
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: run_id
+        required: true
+        description: The run's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Unique message identifier
+                      type:
+                        type: string
+                        description: Message type
+                      role:
+                        type: string
+                        description: Sender role
+                      timestamp:
+                        type: string
+                        description: ISO 8601 timestamp when the message was posted
+                      text_content:
+                        type: string
+                        description: Plain text content of the message
+                    required:
+                    - id
+                    - type
+                    - role
+                    - timestamp
+                    - text_content
+                    additionalProperties: false
+                    description: The message that was posted to the run
+                required:
+                - message
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Post Run Message
+    get:
+      operationId: listRunMessages
+      tags:
+      - Runs
+      description: Get paginated messages for an agent run. Messages are returned in chronological order.
+      parameters:
+      - schema:
+          default: 20
+          type: integer
+          minimum: 1
+          maximum: 50
+        in: query
+        name: limit
+        required: false
+        description: Number of messages per page (1-50, default 20)
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of messages to skip
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: run_id
+        required: true
+        description: The run's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Unique message identifier
+                        type:
+                          type: string
+                          description: Message type
+                        role:
+                          type: string
+                          description: Sender role (e.g., user, assistant, tool)
+                        timestamp:
+                          type: string
+                          description: ISO 8601 timestamp when the message was sent
+                        text_content:
+                          description: Plain text content of the message
+                          type: string
+                        tool_call:
+                          description: Tool invocation details when role is assistant
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              description: Tool call identifier
+                            name:
+                              type: string
+                              description: Tool name being invoked
+                            arguments:
+                              description: Arguments passed to the tool
+                              type: object
+                              additionalProperties: {}
+                          required:
+                          - id
+                          - name
+                          additionalProperties: false
+                        tool_result:
+                          description: Tool result details when role is tool
+                          type: object
+                          properties:
+                            tool_call_id:
+                              type: string
+                              description: ID of the tool call this result corresponds to
+                            result:
+                              description: Serialized tool output
+                            error:
+                              description: Error message if the tool invocation failed
+                              type: string
+                          required:
+                          - tool_call_id
+                          additionalProperties: false
+                      required:
+                      - id
+                      - type
+                      - role
+                      - timestamp
+                      additionalProperties: false
+                    description: Messages for the run, in chronological order
+                  total:
+                    type: number
+                    description: Total number of messages for the run
+                  limit:
+                    type: number
+                    description: Number of messages per page
+                  offset:
+                    type: number
+                    description: Number of messages skipped
+                required:
+                - messages
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Run Messages
+  /v2/runs/{run_id}/human-requests/{request_id}/respond:
+    post:
+      operationId: respondToHumanRequest
+      tags:
+      - Runs
+      description: 'Respond to a human-in-the-loop request. Use ''approved'' (true/false) for approval-type requests, or ''answers'' ({question: answer}) for question-type requests. Only works when the run is in ''waiting'' status.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  description: 'For question-type requests: a map of question text to answer. Multi-select answers should be comma-separated.'
+                  type: object
+                  additionalProperties:
+                    type: string
+                approved:
+                  description: 'For approval-type requests: true to approve, false to deny'
+                  type: boolean
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: run_id
+        required: true
+        description: The run's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: request_id
+        required: true
+        description: The human request's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  human_request:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique human-request identifier
+                      run_id:
+                        type: string
+                        format: uuid
+                        description: ID of the run this request belongs to
+                      title:
+                        type: string
+                        description: Short title for the request
+                      description:
+                        nullable: true
+                        description: Longer description of the request
+                        type: string
+                      response:
+                        nullable: true
+                        description: The response provided by the user
+                        type: string
+                      responded_at:
+                        nullable: true
+                        description: ISO 8601 timestamp when the user responded
+                        type: string
+                      created_at:
+                        type: string
+                        description: ISO 8601 timestamp when the request was created
+                    required:
+                    - id
+                    - run_id
+                    - title
+                    - description
+                    - response
+                    - responded_at
+                    - created_at
+                    additionalProperties: false
+                required:
+                - human_request
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Respond To Human Request
+  /v2/runs/{run_id}/stop:
+    post:
+      operationId: stopRun
+      tags:
+      - Runs
+      description: Stop an agent run. No-op if the run is not currently running.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: run_id
+        required: true
+        description: The run's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Whether the stop request succeeded
+                  message:
+                    description: Optional human-readable detail
+                    type: string
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '502':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Stop Run
+  /v2/teams/{teamId}/runs:
+    get:
+      operationId: listRuns
+      tags:
+      - Runs
+      description: List runs for the current team. Supports filtering by agent, user, queue, status, etc. Messages, evaluation data, and queue metadata are included where available.
+      parameters:
+      - schema:
+          default: 20
+          type: number
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of runs per page (1-100, default 20)
+      - schema:
+          type: number
+          minimum: 0
+        in: query
+        name: offset
+        required: false
+        description: Number of runs to skip
+      - schema:
+          default: created_at
+          type: string
+          enum:
+          - created_at
+        in: query
+        name: sort_by
+        required: false
+        description: Field to sort by (default created_at)
+      - schema:
+          default: desc
+          type: string
+          enum:
+          - asc
+          - desc
+        in: query
+        name: sort_order
+        required: false
+        description: Sort direction (default desc)
+      - schema:
+          type: string
+          enum:
+          - not_started
+          - pending
+          - starting
+          - running
+          - waiting
+          - completed
+          - failed
+          - interrupted
+          - stopped
+          - needs_attention
+        in: query
+        name: status
+        required: false
+        description: Filter to runs with this status
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: agent_id
+        required: false
+        description: Filter to runs for this agent
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: user_id
+        required: false
+        description: Filter to runs owned by this user; non-superadmin callers are scoped to themselves regardless of this value
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: case_queue_id
+        required: false
+        description: Filter to runs associated with this queue
+      - schema:
+          type: string
+        in: query
+        name: source
+        required: false
+        description: Filter to runs created from this source (e.g. api, schedule)
+      - schema:
+          type: string
+        in: query
+        name: search
+        required: false
+        description: Full-text search across run titles and case titles
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: has_issues
+        required: false
+        description: If true, only return runs that have evaluation issues
+      - schema:
+          type: string
+          enum:
+          - critical
+          - medium
+          - low
+        in: query
+        name: issue_severity
+        required: false
+        description: If set, only return runs whose latest successful evaluation has at least one failing rubric with this severity (critical | medium | low). Implies has_issues; legacy evaluations without severity companion fields do not match this filter.
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: since
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: digest_id
+        required: false
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                        started_at:
+                          nullable: true
+                          type: string
+                          format: date-time
+                        completed_at:
+                          nullable: true
+                          type: string
+                          format: date-time
+                        status:
+                          type: string
+                          enum:
+                          - not_started
+                          - pending
+                          - starting
+                          - running
+                          - waiting
+                          - completed
+                          - failed
+                          - interrupted
+                        source:
+                          nullable: true
+                          type: string
+                        title:
+                          type: string
+                        run_number:
+                          type: number
+                        agent_id:
+                          type: string
+                          format: uuid
+                        agent_name:
+                          type: string
+                        build_id:
+                          type: string
+                          format: uuid
+                        user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        case_queue_item_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        case_queue_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        case_queue_name:
+                          nullable: true
+                          type: string
+                        case_title:
+                          nullable: true
+                          type: string
+                        postponed_to:
+                          nullable: true
+                          type: string
+                          format: date-time
+                        submitted_prompt_count:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        eval_summaries:
+                          nullable: true
+                          type: object
+                          properties:
+                            passed:
+                              type: number
+                            total:
+                              type: number
+                            final_comment:
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                              - ready
+                              - unavailable
+                              - in_progress
+                            severityCounts:
+                              type: object
+                              properties:
+                                critical:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                medium:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                low:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                              required:
+                              - critical
+                              - medium
+                              - low
+                              additionalProperties: false
+                          required:
+                          - passed
+                          - total
+                          - status
+                          additionalProperties: false
+                      required:
+                      - id
+                      - created_at
+                      - updated_at
+                      - started_at
+                      - completed_at
+                      - status
+                      - source
+                      - title
+                      - run_number
+                      - agent_id
+                      - agent_name
+                      - build_id
+                      - user_id
+                      - case_queue_item_id
+                      - case_queue_id
+                      - case_queue_name
+                      - case_title
+                      - postponed_to
+                      - submitted_prompt_count
+                      additionalProperties: false
+                  total:
+                    type: number
+                required:
+                - data
+                - total
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Runs
+    post:
+      operationId: startRun
+      tags:
+      - Runs
+      description: Start a new agent run. Returns immediately with run info - does not wait for completion.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agent_id:
+                  type: string
+                  format: uuid
+                  description: The agent ID to run
+                message:
+                  description: Optional initial message to start the run with (e.g. a trigger payload or user instruction)
+                  type: string
+                sandbox_id:
+                  description: Optional sandbox ID with pre-uploaded files
+                  type: string
+                webhook_url:
+                  description: Webhook URL to POST events to (human_request, run_completed, run_failed, run_interrupted)
+                  type: string
+                  format: uri
+              required:
+              - agent_id
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  run:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique run identifier
+                      agent_id:
+                        type: string
+                        format: uuid
+                        description: ID of the agent being run
+                      build_id:
+                        type: string
+                        format: uuid
+                        description: ID of the build being run
+                      status:
+                        type: string
+                        description: Current run status
+                      source:
+                        nullable: true
+                        description: How the run was initiated
+                        type: string
+                      sandbox_id:
+                        nullable: true
+                        description: The sandbox ID for this run
+                        type: string
+                      started_at:
+                        nullable: true
+                        description: ISO 8601 timestamp when the run started
+                        type: string
+                      completed_at:
+                        nullable: true
+                        description: ISO 8601 timestamp when the run completed
+                        type: string
+                      created_at:
+                        type: string
+                        description: ISO 8601 timestamp when the run was created
+                      updated_at:
+                        type: string
+                        description: ISO 8601 timestamp when the run was last updated
+                      human_in_the_loop_enabled:
+                        type: boolean
+                        description: Whether this agent can request human input during execution
+                    required:
+                    - id
+                    - agent_id
+                    - build_id
+                    - status
+                    - source
+                    - sandbox_id
+                    - started_at
+                    - completed_at
+                    - created_at
+                    - updated_at
+                    - human_in_the_loop_enabled
+                    additionalProperties: false
+                    description: The newly created run
+                required:
+                - run
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Start Run
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

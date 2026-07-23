@@ -1,0 +1,636 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Agent Folders
+  description: Organize agents into folders
+paths:
+  /v2/agent-folders/{folder_id}:
+    patch:
+      operationId: updateAgentFolder
+      tags:
+      - Agent Folders
+      description: Rename an agent folder or move it to a new parent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: New folder name
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                parent_folder_id:
+                  description: New parent folder ID. Pass null to move the folder to the root level.
+                  nullable: true
+                  type: string
+                  format: uuid
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: folder_id
+        required: true
+        description: The folder's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folder:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique folder identifier
+                      name:
+                        type: string
+                        description: Human-readable folder name
+                      team_id:
+                        type: string
+                        format: uuid
+                        description: Team that owns the folder
+                      parent_folder_id:
+                        nullable: true
+                        description: Parent folder ID, or null if at the root level
+                        type: string
+                        format: uuid
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      updated_at:
+                        type: string
+                        description: ISO 8601 last-updated timestamp
+                    required:
+                    - id
+                    - name
+                    - team_id
+                    - parent_folder_id
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                required:
+                - folder
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Agent Folder
+    delete:
+      operationId: deleteAgentFolder
+      tags:
+      - Agent Folders
+      description: Delete an agent folder. If the folder contains assignments or subfolders, pass `force=true` to delete it and move the contained assignments to the root level.
+      parameters:
+      - schema:
+          type: string
+        in: query
+        name: force
+        required: false
+        description: Pass 'true' to delete a folder that still contains assignments or subfolders. Any contained assignments will be moved to the root level.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: folder_id
+        required: true
+        description: The folder's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Always true on success
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Short error message
+                  message:
+                    description: Human-readable error detail
+                    type: string
+                  has_contents:
+                    description: True when the folder still contains assignments or subfolders
+                    type: boolean
+                  agent_count:
+                    description: Number of assignments that would be moved to the root level if force=true were passed
+                    type: number
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Agent Folder
+  /v2/teams/{teamId}/agent-folders:
+    get:
+      operationId: listAgentFolders
+      tags:
+      - Agent Folders
+      description: List all agent folders for the authenticated team.
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Unique folder identifier
+                        name:
+                          type: string
+                          description: Folder display name
+                        team_id:
+                          type: string
+                          format: uuid
+                          description: ID of the team that owns the folder
+                        parent_folder_id:
+                          nullable: true
+                          description: Parent folder ID, or null if this is a root folder
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                          description: ISO 8601 creation timestamp
+                        updated_at:
+                          type: string
+                          description: ISO 8601 last-update timestamp
+                        agent_count:
+                          type: number
+                          description: Number of agents directly inside this folder
+                        subfolder_count:
+                          type: number
+                          description: Number of direct subfolders inside this folder
+                      required:
+                      - id
+                      - name
+                      - team_id
+                      - parent_folder_id
+                      - created_at
+                      - updated_at
+                      - agent_count
+                      - subfolder_count
+                      additionalProperties: false
+                    description: Agent folders owned by the authenticated team
+                required:
+                - folders
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Agent Folders
+    post:
+      operationId: createAgentFolder
+      tags:
+      - Agent Folders
+      description: Create a new agent folder.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Human-readable folder name
+                parent_folder_id:
+                  nullable: true
+                  description: Parent folder ID for nested folders. Omit or null to create at the root level.
+                  type: string
+                  format: uuid
+              required:
+              - name
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folder:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique folder identifier
+                      name:
+                        type: string
+                        description: Human-readable folder name
+                      team_id:
+                        type: string
+                        format: uuid
+                        description: Team that owns the folder
+                      parent_folder_id:
+                        nullable: true
+                        description: Parent folder ID, or null if at the root level
+                        type: string
+                        format: uuid
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      updated_at:
+                        type: string
+                        description: ISO 8601 last-updated timestamp
+                    required:
+                    - id
+                    - name
+                    - team_id
+                    - parent_folder_id
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                required:
+                - folder
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Agent Folder
+  /v2/teams/{teamId}/agent-folders/move-agents:
+    post:
+      operationId: moveAgentsToFolder
+      tags:
+      - Agent Folders
+      description: Move one or more agents (assignments) into a folder, or to the root level.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agent_ids:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: IDs of the agents (assignments) to move. Must be unique.
+                folder_id:
+                  nullable: true
+                  description: Destination folder ID. Pass null to move the agents to the root level.
+                  type: string
+                  format: uuid
+              required:
+              - agent_ids
+              - folder_id
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Always true on success
+                  moved_count:
+                    type: number
+                    description: Number of agents that were moved
+                required:
+                - success
+                - moved_count
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Move Agents To Folder
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

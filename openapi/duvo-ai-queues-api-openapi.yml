@@ -1,0 +1,871 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Queues API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Queues
+  description: Manage queues and their agent bindings
+paths:
+  /v2/queues/{queue_id}:
+    get:
+      operationId: getQueue
+      tags:
+      - Queues
+      description: Get a queue by ID.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queue:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      description:
+                        nullable: true
+                        type: string
+                      folder_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      automation_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      team_id:
+                        nullable: true
+                        type: string
+                      created_at:
+                        type: string
+                      has_approvals:
+                        type: boolean
+                    required:
+                    - id
+                    - name
+                    - description
+                    - folder_id
+                    - created_at
+                    - has_approvals
+                    additionalProperties: false
+                required:
+                - queue
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Queue
+    patch:
+      operationId: updateQueue
+      tags:
+      - Queues
+      description: Update a queue.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  description: New queue name. Must be unique within the team.
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                description:
+                  description: New description, or null to clear.
+                  nullable: true
+                  type: string
+                  maxLength: 500
+                folder_id:
+                  description: New folder id, or null to move to the root.
+                  nullable: true
+                  type: string
+                  format: uuid
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queue:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      description:
+                        nullable: true
+                        type: string
+                      folder_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      automation_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      team_id:
+                        nullable: true
+                        type: string
+                      created_at:
+                        type: string
+                      has_approvals:
+                        type: boolean
+                    required:
+                    - id
+                    - name
+                    - description
+                    - folder_id
+                    - created_at
+                    - has_approvals
+                    additionalProperties: false
+                required:
+                - queue
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Queue
+    delete:
+      operationId: deleteQueue
+      tags:
+      - Queues
+      description: Delete a queue. Interrupts all associated active runs first and returns the number of deleted cases plus the IDs of runs that were stopped.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  deleted_case_count:
+                    type: number
+                  interrupted_run_ids:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                required:
+                - success
+                - deleted_case_count
+                - interrupted_run_ids
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Queue
+  /v2/queues/{queue_id}/agents:
+    get:
+      operationId: listQueueAgents
+      tags:
+      - Queues
+      description: List agents bound to a queue as producers (agents that push cases into the queue) or consumers (agents triggered by cases in the queue).
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queue_name:
+                    type: string
+                  producers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        agent_id:
+                          type: string
+                          format: uuid
+                        agent_name:
+                          type: string
+                        case_trigger_enabled:
+                          type: boolean
+                        case_trigger_queue_name:
+                          nullable: true
+                          type: string
+                        problems:
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                            - multiple_triggers
+                            - producer_consumer_mix
+                      required:
+                      - agent_id
+                      - agent_name
+                      - case_trigger_enabled
+                      - case_trigger_queue_name
+                      - problems
+                      additionalProperties: false
+                  consumers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        agent_id:
+                          type: string
+                          format: uuid
+                        agent_name:
+                          type: string
+                        case_trigger_enabled:
+                          type: boolean
+                        is_handover_target:
+                          type: boolean
+                        problems:
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                            - multiple_triggers
+                            - producer_consumer_mix
+                        concurrency_limit:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        at_concurrency_limit:
+                          type: boolean
+                      required:
+                      - agent_id
+                      - agent_name
+                      - case_trigger_enabled
+                      - is_handover_target
+                      - problems
+                      additionalProperties: false
+                required:
+                - queue_name
+                - producers
+                - consumers
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Queue Agents
+  /v2/teams/{teamId}/queues:
+    get:
+      operationId: listQueues
+      tags:
+      - Queues
+      description: List queues for your team.
+      parameters:
+      - schema:
+          default: 250
+          type: integer
+          minimum: 1
+          maximum: 250
+        in: query
+        name: limit
+        required: false
+        description: Number of queues per page (1-250, default 250)
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of queues to skip
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: automation_id
+        required: false
+        description: Only return queues belonging to this automation.
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queues:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        description:
+                          nullable: true
+                          type: string
+                        folder_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        automation_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        team_id:
+                          nullable: true
+                          type: string
+                        created_at:
+                          type: string
+                        has_approvals:
+                          type: boolean
+                      required:
+                      - id
+                      - name
+                      - description
+                      - folder_id
+                      - created_at
+                      - has_approvals
+                      additionalProperties: false
+                  total:
+                    type: number
+                  limit:
+                    type: number
+                  offset:
+                    type: number
+                required:
+                - queues
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Queues
+    post:
+      operationId: createQueue
+      tags:
+      - Queues
+      description: Create a new queue.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Queue name. Must be unique within the team.
+                description:
+                  description: Optional human-readable description.
+                  nullable: true
+                  type: string
+                  maxLength: 500
+                folder_id:
+                  description: Optional folder to nest the queue under.
+                  nullable: true
+                  type: string
+                  format: uuid
+                automation_id:
+                  description: Automation this queue belongs to. Optional for teams not yet migrated to Automations; required once a team has migrated.
+                  nullable: true
+                  type: string
+                  format: uuid
+              required:
+              - name
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queue:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      description:
+                        nullable: true
+                        type: string
+                      folder_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      automation_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      team_id:
+                        nullable: true
+                        type: string
+                      created_at:
+                        type: string
+                      has_approvals:
+                        type: boolean
+                    required:
+                    - id
+                    - name
+                    - description
+                    - folder_id
+                    - created_at
+                    - has_approvals
+                    additionalProperties: false
+                required:
+                - queue
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Queue
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

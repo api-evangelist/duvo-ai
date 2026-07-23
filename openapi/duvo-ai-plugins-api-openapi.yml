@@ -1,0 +1,88 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Plugins API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Plugins
+  description: Discover plugins that can be referenced from a revision.
+paths:
+  /v2/plugins/catalog:
+    get:
+      operationId: listPluginCatalog
+      tags:
+      - Plugins
+      description: List plugins that can be referenced by name in a build's plugins array. Builds may also reference any public GitHub repository URL (https://github.com/owner/repo) as a plugin; those are not enumerated here.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plugins:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Identifier to pass in the build's plugins array.
+                        type:
+                          type: string
+                          description: Plugin source. 'duvo-platform' plugins are pre-baked into the Duvo runtime; 'knowledge-work' plugins are role-oriented bundles (engineering, sales, legal, …) also baked into the runtime; 'github' plugins are downloaded from a user-supplied repository URL at run time.
+                          x-extensible-enum:
+                          - duvo-platform
+                          - knowledge-work
+                          - github
+                        description:
+                          type: string
+                      required:
+                      - name
+                      - type
+                      - description
+                      additionalProperties: false
+                required:
+                - plugins
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Plugin Catalog
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

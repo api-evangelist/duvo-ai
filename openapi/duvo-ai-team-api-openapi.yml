@@ -1,0 +1,453 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Team API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Team
+  description: Inspect the team and members associated with the API key
+paths:
+  /v2/teams/{teamId}:
+    get:
+      operationId: getTeam
+      tags:
+      - Team
+      description: Get a team by ID. The caller must be scoped to the requested team.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: teamId
+        required: true
+        description: Team ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  team:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        description: Unique team identifier
+                      name:
+                        type: string
+                        description: Human-readable team name
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      organization_id:
+                        nullable: true
+                        description: Parent organization ID, or null if the team is standalone
+                        type: string
+                        format: uuid
+                      slack_team_id:
+                        nullable: true
+                        description: Linked Slack workspace ID, or null if Slack is not connected
+                        type: string
+                      discovery_mode:
+                        type: string
+                        description: How the team handles agent discovery
+                        x-extensible-enum:
+                        - request
+                        - auto
+                    required:
+                    - id
+                    - name
+                    - created_at
+                    - organization_id
+                    - slack_team_id
+                    - discovery_mode
+                    additionalProperties: false
+                required:
+                - team
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Team
+  /v2/profile:
+    get:
+      operationId: getProfile
+      tags:
+      - Team
+      description: Get the profile of the authenticated user (the owner of the API key).
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        nullable: true
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      teamId:
+                        nullable: true
+                        type: string
+                        format: uuid
+                    required:
+                    - id
+                    - name
+                    - email
+                    - teamId
+                    additionalProperties: false
+                required:
+                - profile
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Profile
+  /v2/teams:
+    get:
+      operationId: listMyTeams
+      tags:
+      - Team
+      description: List teams the authenticated caller can act on. Team-scoped API keys see only the key's team; user-scoped API keys and OAuth callers see every team they're a member of.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  teams:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        organization_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                      required:
+                      - id
+                      - name
+                      - organization_id
+                      additionalProperties: false
+                required:
+                - teams
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List My Teams
+  /v2/teams/{teamId}/members:
+    get:
+      operationId: listTeamMembers
+      tags:
+      - Team
+      description: List members of a team. The authenticated session or API key must be scoped to the requested team.
+      parameters:
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of members per page (1-100, default 50)
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of members to skip
+      - schema:
+          type: string
+          minLength: 1
+          maxLength: 200
+        in: query
+        name: search
+        required: false
+        description: Optional case-insensitive name or email search
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: teamId
+        required: true
+        description: Team ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          nullable: true
+                          type: string
+                        email:
+                          type: string
+                          format: email
+                        role:
+                          type: string
+                        inheritedFromOrg:
+                          default: false
+                          type: boolean
+                      required:
+                      - id
+                      - name
+                      - email
+                      - role
+                      - inheritedFromOrg
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  limit:
+                    type: integer
+                    exclusiveMinimum: true
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - members
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Team Members
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

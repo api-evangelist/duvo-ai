@@ -1,0 +1,683 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Files API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Files
+  description: Manage team files.
+paths:
+  /v2/teams/{teamId}/files:
+    get:
+      operationId: listFiles
+      tags:
+      - Files
+      description: List files for the current team.
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Unique file identifier
+                        name:
+                          type: string
+                          description: File name (basename)
+                        path:
+                          type: string
+                          description: Relative path of the file inside the team's storage
+                        created_at:
+                          description: ISO 8601 timestamp when the file was created
+                          type: string
+                        updated_at:
+                          description: ISO 8601 timestamp of the last update
+                          type: string
+                        metadata:
+                          description: File metadata from object storage
+                          nullable: true
+                          type: object
+                          properties:
+                            mimetype:
+                              description: MIME type of the file
+                              type: string
+                            size:
+                              description: File size in bytes
+                              type: number
+                          additionalProperties: false
+                      required:
+                      - id
+                      - name
+                      - path
+                      additionalProperties: false
+                    description: Files visible to the current team
+                required:
+                - files
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Files
+    patch:
+      operationId: renameFile
+      tags:
+      - Files
+      description: Rename a file in team storage.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                relativePath:
+                  type: string
+                  minLength: 1
+                  description: Current path of the file relative to the team's storage root
+                newFilenameOnly:
+                  type: string
+                  minLength: 1
+                  description: New file name (no extension; the existing extension is preserved)
+              required:
+              - relativePath
+              - newFilenameOnly
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if the operation succeeded
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Rename File
+  /v2/teams/{teamId}/files/create-upload-url:
+    post:
+      operationId: createFileUploadUrl
+      tags:
+      - Files
+      description: Generate a signed URL for uploading a file directly to GCS.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  minLength: 1
+                  description: Name of the file to upload
+                contentType:
+                  type: string
+                  minLength: 1
+                  description: MIME type of the file
+              required:
+              - fileName
+              - contentType
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signedUrl:
+                    type: string
+                    format: uri
+                    description: The signed URL for uploading
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    description: When the URL expires
+                  filePath:
+                    type: string
+                    description: The path where the file will be stored
+                required:
+                - signedUrl
+                - expiresAt
+                - filePath
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create File Upload URL
+  /v2/teams/{teamId}/files/{*}:
+    delete:
+      operationId: deleteFile
+      tags:
+      - Files
+      description: Delete a file from team storage.
+      parameters:
+      - schema:
+          type: string
+          minLength: 1
+        in: path
+        name: '*'
+        required: true
+        description: Path of the file to delete relative to the team's storage root
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if the operation succeeded
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete File
+  /v2/teams/{teamId}/files/download-url/{*}:
+    get:
+      operationId: getFileDownloadUrl
+      tags:
+      - Files
+      description: Generate a signed download URL for a file.
+      parameters:
+      - schema:
+          type: string
+          minLength: 1
+        in: path
+        name: '*'
+        required: true
+        description: Path of the file relative to the team's storage root
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+                    description: Signed download URL
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    description: ISO 8601 timestamp when the URL expires
+                required:
+                - url
+                - expiresAt
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get File Download URL
+  /v2/teams/{teamId}/files/content/{*}:
+    get:
+      operationId: getFileContent
+      tags:
+      - Files
+      description: Get the content of a text file.
+      parameters:
+      - schema:
+          type: string
+          minLength: 1
+        in: path
+        name: '*'
+        required: true
+        description: Path of the file relative to the team's storage root
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+                    description: UTF-8 decoded contents of the file
+                  path:
+                    type: string
+                    description: Relative path of the file
+                  contentType:
+                    description: MIME content type inferred from the file extension
+                    type: string
+                required:
+                - content
+                - path
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get File Content
+    put:
+      operationId: updateFileContent
+      tags:
+      - Files
+      description: Update the content of a text file.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: New UTF-8 text content for the file
+              required:
+              - content
+      parameters:
+      - schema:
+          type: string
+          minLength: 1
+        in: path
+        name: '*'
+        required: true
+        description: Path of the file relative to the team's storage root
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if the operation succeeded
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update File Content
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

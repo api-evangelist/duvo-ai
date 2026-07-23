@@ -1,0 +1,2483 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Suggestions API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Suggestions
+  description: List, apply, and dismiss an Agent's improvement suggestions (the suggestions inbox in the Duvo UI)
+paths:
+  /v2/agents/{agent_id}/suggestions:
+    get:
+      operationId: listAgentSuggestions
+      tags:
+      - Suggestions
+      description: List an Agent's suggestions. status=pending is the inbox; status=history is consumed/dismissed/auto-cleared. Reads lazily auto-clear stale pending items.
+      parameters:
+      - schema:
+          default: pending
+          type: string
+          enum:
+          - pending
+          - history
+        in: query
+        name: status
+        required: false
+      - schema:
+          default: 100
+          type: integer
+          minimum: 1
+          maximum: 250
+        in: query
+        name: limit
+        required: false
+      - schema:
+          default: 0
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The Agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      oneOf:
+                      - type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          agent_id:
+                            type: string
+                            format: uuid
+                          status:
+                            type: string
+                            enum:
+                            - pending
+                            - consumed
+                            - rejected
+                            - superseded
+                          generated_by:
+                            type: string
+                            enum:
+                            - connection_llm
+                            - eval
+                            - dreaming
+                          title:
+                            type: string
+                          description:
+                            type: string
+                          dedup_key:
+                            type: string
+                          resolved_at:
+                            nullable: true
+                            type: string
+                          resolved_by_user_id:
+                            nullable: true
+                            type: string
+                            format: uuid
+                          superseded_reason:
+                            nullable: true
+                            type: string
+                          superseded_by_suggestion_id:
+                            nullable: true
+                            type: string
+                            format: uuid
+                          created_at:
+                            type: string
+                          updated_at:
+                            type: string
+                          sources:
+                            minItems: 1
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                agent_run_id:
+                                  type: string
+                                  format: uuid
+                                run_number:
+                                  type: integer
+                                  exclusiveMinimum: true
+                                  maximum: 9007199254740991
+                                created_at:
+                                  type: string
+                              required:
+                              - agent_run_id
+                              - run_number
+                              - created_at
+                              additionalProperties: false
+                          type:
+                            type: string
+                            enum:
+                            - aop
+                          payload:
+                            type: object
+                            properties:
+                              oldSop:
+                                type: string
+                              newSop:
+                                type: string
+                            required:
+                            - oldSop
+                            - newSop
+                            additionalProperties: false
+                        required:
+                        - id
+                        - agent_id
+                        - status
+                        - generated_by
+                        - title
+                        - description
+                        - dedup_key
+                        - resolved_at
+                        - resolved_by_user_id
+                        - superseded_reason
+                        - superseded_by_suggestion_id
+                        - created_at
+                        - updated_at
+                        - sources
+                        - type
+                        - payload
+                        additionalProperties: false
+                      - type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          agent_id:
+                            type: string
+                            format: uuid
+                          status:
+                            type: string
+                            enum:
+                            - pending
+                            - consumed
+                            - rejected
+                            - superseded
+                          generated_by:
+                            type: string
+                            enum:
+                            - connection_llm
+                            - eval
+                            - dreaming
+                          title:
+                            type: string
+                          description:
+                            type: string
+                          dedup_key:
+                            type: string
+                          resolved_at:
+                            nullable: true
+                            type: string
+                          resolved_by_user_id:
+                            nullable: true
+                            type: string
+                            format: uuid
+                          superseded_reason:
+                            nullable: true
+                            type: string
+                          superseded_by_suggestion_id:
+                            nullable: true
+                            type: string
+                            format: uuid
+                          created_at:
+                            type: string
+                          updated_at:
+                            type: string
+                          sources:
+                            minItems: 1
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                agent_run_id:
+                                  type: string
+                                  format: uuid
+                                run_number:
+                                  type: integer
+                                  exclusiveMinimum: true
+                                  maximum: 9007199254740991
+                                created_at:
+                                  type: string
+                              required:
+                              - agent_run_id
+                              - run_number
+                              - created_at
+                              additionalProperties: false
+                          type:
+                            type: string
+                            enum:
+                            - connection_add
+                          payload:
+                            type: object
+                            properties:
+                              toSlug:
+                                type: string
+                                enum:
+                                - googlecalendar
+                                - google-calendar
+                                - gmail
+                                - slack
+                                - googledocs
+                                - googlesheets
+                                - googledrive
+                                - firecrawl
+                                - exa
+                                - exa-search
+                                - exa-company-search
+                                - exa-people-search
+                                - deep-research
+                                - system
+                                - browser-agent
+                                - browser-agent-devtools
+                                - notion
+                                - linear
+                                - confluence
+                                - custom_mcp
+                                - user_mcp
+                                - snowflake
+                                - sharepoint
+                                - teams
+                                - onedrive
+                                - bigquery
+                                - databricks
+                                - netsuite
+                                - outlook
+                                - microsoft-calendar
+                                - excel
+                                - word
+                                - saps4hana
+                                - md365
+                                - businesscentral
+                                - oraclefusion
+                                - workday
+                                - coupa
+                                - signavio
+                                - sap-ecc
+                                - msteams
+                                - human-in-the-loop
+                                - email-attachments-reader
+                                - document-processor
+                                - google-docs
+                                - google-sheets
+                                - google-drive
+                                - outbound-call
+                                - case-queue-producer
+                                - case-queue-consumer
+                                - handover
+                                - shopify
+                                - hubspot
+                                - zendesk
+                                - intercom
+                                - powerbi
+                                - salesforce
+                                - pipedrive
+                                - tableau
+                                - image-generation
+                                - forecasting
+                                - supabase
+                                - attio
+                                - amplitude
+                                - websets
+                                - firecrawl-platform
+                                - duvo-computer-use
+                                - duvo-computer-use-rdp
+                                - eu-commodity-prices
+                                - asana
+                                - ssh
+                                - scheduling
+                                - github
+                                - linear-native
+                                - notion-native
+                                - granola
+                                - apify
+                                - bamboohr
+                              toIntegrationId:
+                                type: string
+                                format: uuid
+                            required:
+                            - toSlug
+                            - toIntegrationId
+                            additionalProperties: false
+                        required:
+                        - id
+                        - agent_id
+                        - status
+                        - generated_by
+                        - title
+                        - description
+                        - dedup_key
+                        - resolved_at
+                        - resolved_by_user_id
+                        - superseded_reason
+                        - superseded_by_suggestion_id
+                        - created_at
+                        - updated_at
+                        - sources
+                        - type
+                        - payload
+                        additionalProperties: false
+                      - type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          agent_id:
+                            type: string
+                            format: uuid
+                          status:
+                            type: string
+                            enum:
+                            - pending
+                            - consumed
+                            - rejected
+                            - superseded
+                          generated_by:
+                            type: string
+                            enum:
+                            - connection_llm
+                            - eval
+                            - dreaming
+                          title:
+                            type: string
+                          description:
+                            type: string
+                          dedup_key:
+                            type: string
+                          resolved_at:
+                            nullable: true
+                            type: string
+                          resolved_by_user_id:
+                            nullable: true
+                            type: string
+                            format: uuid
+                          superseded_reason:
+                            nullable: true
+                            type: string
+                          superseded_by_suggestion_id:
+                            nullable: true
+                            type: string
+                            format: uuid
+                          created_at:
+                            type: string
+                          updated_at:
+                            type: string
+                          sources:
+                            minItems: 1
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                agent_run_id:
+                                  type: string
+                                  format: uuid
+                                run_number:
+                                  type: integer
+                                  exclusiveMinimum: true
+                                  maximum: 9007199254740991
+                                created_at:
+                                  type: string
+                              required:
+                              - agent_run_id
+                              - run_number
+                              - created_at
+                              additionalProperties: false
+                          type:
+                            type: string
+                            enum:
+                            - connection_replace
+                          payload:
+                            type: object
+                            properties:
+                              fromSlug:
+                                type: string
+                                enum:
+                                - googlecalendar
+                                - google-calendar
+                                - gmail
+                                - slack
+                                - googledocs
+                                - googlesheets
+                                - googledrive
+                                - firecrawl
+                                - exa
+                                - exa-search
+                                - exa-company-search
+                                - exa-people-search
+                                - deep-research
+                                - system
+                                - browser-agent
+                                - browser-agent-devtools
+                                - notion
+                                - linear
+                                - confluence
+                                - custom_mcp
+                                - user_mcp
+                                - snowflake
+                                - sharepoint
+                                - teams
+                                - onedrive
+                                - bigquery
+                                - databricks
+                                - netsuite
+                                - outlook
+                                - microsoft-calendar
+                                - excel
+                                - word
+                                - saps4hana
+                                - md365
+                                - businesscentral
+                                - oraclefusion
+                                - workday
+                                - coupa
+                                - signavio
+                                - sap-ecc
+                                - msteams
+                                - human-in-the-loop
+                                - email-attachments-reader
+                                - document-processor
+                                - google-docs
+                                - google-sheets
+                                - google-drive
+                                - outbound-call
+                                - case-queue-producer
+                                - case-queue-consumer
+                                - handover
+                                - shopify
+                                - hubspot
+                                - zendesk
+                                - intercom
+                                - powerbi
+                                - salesforce
+                                - pipedrive
+                                - tableau
+                                - image-generation
+                                - forecasting
+                                - supabase
+                                - attio
+                                - amplitude
+                                - websets
+                                - firecrawl-platform
+                                - duvo-computer-use
+                                - duvo-computer-use-rdp
+                                - eu-commodity-prices
+                                - asana
+                                - ssh
+                                - scheduling
+                                - github
+                                - linear-native
+                                - notion-native
+                                - granola
+                                - apify
+                                - bamboohr
+                              toSlug:
+                                type: string
+                                enum:
+                                - googlecalendar
+                                - google-calendar
+                                - gmail
+                                - slack
+                                - googledocs
+                                - googlesheets
+                                - googledrive
+                                - firecrawl
+                                - exa
+                                - exa-search
+                                - exa-company-search
+                                - exa-people-search
+                                - deep-research
+                                - system
+                                - browser-agent
+                                - browser-agent-devtools
+                                - notion
+                                - linear
+                                - confluence
+                                - custom_mcp
+                                - user_mcp
+                                - snowflake
+                                - sharepoint
+                                - teams
+                                - onedrive
+                                - bigquery
+                                - databricks
+                                - netsuite
+                                - outlook
+                                - microsoft-calendar
+                                - excel
+                                - word
+                                - saps4hana
+                                - md365
+                                - businesscentral
+                                - oraclefusion
+                                - workday
+                                - coupa
+                                - signavio
+                                - sap-ecc
+                                - msteams
+                                - human-in-the-loop
+                                - email-attachments-reader
+                                - document-processor
+                                - google-docs
+                                - google-sheets
+                                - google-drive
+                                - outbound-call
+                                - case-queue-producer
+                                - case-queue-consumer
+                                - handover
+                                - shopify
+                                - hubspot
+                                - zendesk
+                                - intercom
+                                - powerbi
+                                - salesforce
+                                - pipedrive
+                                - tableau
+                                - image-generation
+                                - forecasting
+                                - supabase
+                                - attio
+                                - amplitude
+                                - websets
+                                - firecrawl-platform
+                                - duvo-computer-use
+                                - duvo-computer-use-rdp
+                                - eu-commodity-prices
+                                - asana
+                                - ssh
+                                - scheduling
+                                - github
+                                - linear-native
+                                - notion-native
+                                - granola
+                                - apify
+                                - bamboohr
+                              toIntegrationId:
+                                type: string
+                                format: uuid
+                            required:
+                            - fromSlug
+                            - toSlug
+                            - toIntegrationId
+                            additionalProperties: false
+                        required:
+                        - id
+                        - agent_id
+                        - status
+                        - generated_by
+                        - title
+                        - description
+                        - dedup_key
+                        - resolved_at
+                        - resolved_by_user_id
+                        - superseded_reason
+                        - superseded_by_suggestion_id
+                        - created_at
+                        - updated_at
+                        - sources
+                        - type
+                        - payload
+                        additionalProperties: false
+                      - type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          agent_id:
+                            type: string
+                            format: uuid
+                          status:
+                            type: string
+                            enum:
+                            - pending
+                            - consumed
+                            - rejected
+                            - superseded
+                          generated_by:
+                            type: string
+                            enum:
+                            - connection_llm
+                            - eval
+                            - dreaming
+                          title:
+                            type: string
+                          description:
+                            type: string
+                          dedup_key:
+                            type: string
+                          resolved_at:
+                            nullable: true
+                            type: string
+                          resolved_by_user_id:
+                            nullable: true
+                            type: string
+                            format: uuid
+                          superseded_reason:
+                            nullable: true
+                            type: string
+                          superseded_by_suggestion_id:
+                            nullable: true
+                            type: string
+                            format: uuid
+                          created_at:
+                            type: string
+                          updated_at:
+                            type: string
+                          sources:
+                            minItems: 1
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                agent_run_id:
+                                  type: string
+                                  format: uuid
+                                run_number:
+                                  type: integer
+                                  exclusiveMinimum: true
+                                  maximum: 9007199254740991
+                                created_at:
+                                  type: string
+                              required:
+                              - agent_run_id
+                              - run_number
+                              - created_at
+                              additionalProperties: false
+                          type:
+                            type: string
+                            enum:
+                            - connection_remove
+                          payload:
+                            type: object
+                            properties:
+                              slug:
+                                type: string
+                                enum:
+                                - googlecalendar
+                                - google-calendar
+                                - gmail
+                                - slack
+                                - googledocs
+                                - googlesheets
+                                - googledrive
+                                - firecrawl
+                                - exa
+                                - exa-search
+                                - exa-company-search
+                                - exa-people-search
+                                - deep-research
+                                - system
+                                - browser-agent
+                                - browser-agent-devtools
+                                - notion
+                                - linear
+                                - confluence
+                                - custom_mcp
+                                - user_mcp
+                                - snowflake
+                                - sharepoint
+                                - teams
+                                - onedrive
+                                - bigquery
+                                - databricks
+                                - netsuite
+                                - outlook
+                                - microsoft-calendar
+                                - excel
+                                - word
+                                - saps4hana
+                                - md365
+                                - businesscentral
+                                - oraclefusion
+                                - workday
+                                - coupa
+                                - signavio
+                                - sap-ecc
+                                - msteams
+                                - human-in-the-loop
+                                - email-attachments-reader
+                                - document-processor
+                                - google-docs
+                                - google-sheets
+                                - google-drive
+                                - outbound-call
+                                - case-queue-producer
+                                - case-queue-consumer
+                                - handover
+                                - shopify
+                                - hubspot
+                                - zendesk
+                                - intercom
+                                - powerbi
+                                - salesforce
+                                - pipedrive
+                                - tableau
+                                - image-generation
+                                - forecasting
+                                - supabase
+                                - attio
+                                - amplitude
+                                - websets
+                                - firecrawl-platform
+                                - duvo-computer-use
+                                - duvo-computer-use-rdp
+                                - eu-commodity-prices
+                                - asana
+                                - ssh
+                                - scheduling
+                                - github
+                                - linear-native
+                                - notion-native
+                                - granola
+                                - apify
+                                - bamboohr
+                            required:
+                            - slug
+                            additionalProperties: false
+                        required:
+                        - id
+                        - agent_id
+                        - status
+                        - generated_by
+                        - title
+                        - description
+                        - dedup_key
+                        - resolved_at
+                        - resolved_by_user_id
+                        - superseded_reason
+                        - superseded_by_suggestion_id
+                        - created_at
+                        - updated_at
+                        - sources
+                        - type
+                        - payload
+                        additionalProperties: false
+                  pending_count:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - data
+                - pending_count
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Agent Suggestions
+  /v2/agents/suggestions/{id}/consume:
+    post:
+      operationId: consumeAgentSuggestion
+      tags:
+      - Suggestions
+      description: 'Apply a suggestion: stage its change into the Agent''s draft revision, then auto-clear any pending suggestions it makes moot.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              default: {}
+              type: object
+              properties:
+                revision_id:
+                  type: string
+                  format: uuid
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The suggestion's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    oneOf:
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          nullable: true
+                          type: string
+                        resolved_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        superseded_reason:
+                          nullable: true
+                          type: string
+                        superseded_by_suggestion_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                exclusiveMinimum: true
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - aop
+                        payload:
+                          type: object
+                          properties:
+                            oldSop:
+                              type: string
+                            newSop:
+                              type: string
+                          required:
+                          - oldSop
+                          - newSop
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          nullable: true
+                          type: string
+                        resolved_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        superseded_reason:
+                          nullable: true
+                          type: string
+                        superseded_by_suggestion_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                exclusiveMinimum: true
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_add
+                        payload:
+                          type: object
+                          properties:
+                            toSlug:
+                              type: string
+                              enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - system
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - email-attachments-reader
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                            toIntegrationId:
+                              type: string
+                              format: uuid
+                          required:
+                          - toSlug
+                          - toIntegrationId
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          nullable: true
+                          type: string
+                        resolved_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        superseded_reason:
+                          nullable: true
+                          type: string
+                        superseded_by_suggestion_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                exclusiveMinimum: true
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_replace
+                        payload:
+                          type: object
+                          properties:
+                            fromSlug:
+                              type: string
+                              enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - system
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - email-attachments-reader
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                            toSlug:
+                              type: string
+                              enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - system
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - email-attachments-reader
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                            toIntegrationId:
+                              type: string
+                              format: uuid
+                          required:
+                          - fromSlug
+                          - toSlug
+                          - toIntegrationId
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          nullable: true
+                          type: string
+                        resolved_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        superseded_reason:
+                          nullable: true
+                          type: string
+                        superseded_by_suggestion_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                exclusiveMinimum: true
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_remove
+                        payload:
+                          type: object
+                          properties:
+                            slug:
+                              type: string
+                              enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - system
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - email-attachments-reader
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                          required:
+                          - slug
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                  applied_revision_id:
+                    type: string
+                    format: uuid
+                required:
+                - data
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Consume Agent Suggestion
+  /v2/agents/suggestions/{id}/reject:
+    post:
+      operationId: rejectAgentSuggestion
+      tags:
+      - Suggestions
+      description: Dismiss a pending suggestion.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The suggestion's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    oneOf:
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          nullable: true
+                          type: string
+                        resolved_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        superseded_reason:
+                          nullable: true
+                          type: string
+                        superseded_by_suggestion_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                exclusiveMinimum: true
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - aop
+                        payload:
+                          type: object
+                          properties:
+                            oldSop:
+                              type: string
+                            newSop:
+                              type: string
+                          required:
+                          - oldSop
+                          - newSop
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          nullable: true
+                          type: string
+                        resolved_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        superseded_reason:
+                          nullable: true
+                          type: string
+                        superseded_by_suggestion_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                exclusiveMinimum: true
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_add
+                        payload:
+                          type: object
+                          properties:
+                            toSlug:
+                              type: string
+                              enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - system
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - email-attachments-reader
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                            toIntegrationId:
+                              type: string
+                              format: uuid
+                          required:
+                          - toSlug
+                          - toIntegrationId
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          nullable: true
+                          type: string
+                        resolved_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        superseded_reason:
+                          nullable: true
+                          type: string
+                        superseded_by_suggestion_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                exclusiveMinimum: true
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_replace
+                        payload:
+                          type: object
+                          properties:
+                            fromSlug:
+                              type: string
+                              enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - system
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - email-attachments-reader
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                            toSlug:
+                              type: string
+                              enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - system
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - email-attachments-reader
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                            toIntegrationId:
+                              type: string
+                              format: uuid
+                          required:
+                          - fromSlug
+                          - toSlug
+                          - toIntegrationId
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          nullable: true
+                          type: string
+                        resolved_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        superseded_reason:
+                          nullable: true
+                          type: string
+                        superseded_by_suggestion_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                exclusiveMinimum: true
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_remove
+                        payload:
+                          type: object
+                          properties:
+                            slug:
+                              type: string
+                              enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - system
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - email-attachments-reader
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                          required:
+                          - slug
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                  applied_revision_id:
+                    type: string
+                    format: uuid
+                required:
+                - data
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Reject Agent Suggestion
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

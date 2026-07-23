@@ -1,0 +1,918 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Case Triggers API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Case Triggers
+  description: Configure case triggers that automatically dispatch agent runs (Runs in the Duvo UI) for cases added to a queue
+paths:
+  /v2/agents/{agent_id}/case-triggers:
+    get:
+      operationId: listAgentCaseTriggers
+      tags:
+      - Case Triggers
+      description: List the case triggers configured for an agent. Each trigger automatically dispatches the agent to run cases added to a queue.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  case_triggers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        agent_id:
+                          type: string
+                        case_queue_id:
+                          type: string
+                        case_queue_name:
+                          type: string
+                        user_id:
+                          type: string
+                        enabled:
+                          type: boolean
+                        concurrency:
+                          nullable: true
+                          type: integer
+                          exclusiveMinimum: true
+                          maximum: 9007199254740991
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        creator_display_name:
+                          nullable: true
+                          type: string
+                        can_disable:
+                          type: boolean
+                        has_conflict:
+                          type: boolean
+                        conflicting_agents:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - id
+                            - name
+                            additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - case_queue_id
+                      - case_queue_name
+                      - user_id
+                      - enabled
+                      - concurrency
+                      - created_at
+                      - updated_at
+                      - creator_display_name
+                      - can_disable
+                      - has_conflict
+                      - conflicting_agents
+                      additionalProperties: false
+                required:
+                - case_triggers
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Agent Case Triggers
+    post:
+      operationId: createAgentCaseTrigger
+      tags:
+      - Case Triggers
+      description: Create a case trigger for an agent. An agent may have at most one case trigger; this returns 409 if one already exists.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_queue_id:
+                  type: string
+                  format: uuid
+                  description: Queue whose new cases should trigger this agent
+                enabled:
+                  type: boolean
+                  description: Whether the trigger is active. Disabled triggers do not dispatch runs.
+                concurrency:
+                  description: Per-trigger concurrency override. Only 1 (run cases one at a time) or null/omitted (use the platform default) can be set here; higher caps are configured directly in the database.
+                  nullable: true
+                  type: number
+                  enum:
+                  - 1
+              required:
+              - case_queue_id
+              - enabled
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  case_trigger:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      agent_id:
+                        type: string
+                      case_queue_id:
+                        type: string
+                      case_queue_name:
+                        type: string
+                      user_id:
+                        type: string
+                      enabled:
+                        type: boolean
+                      concurrency:
+                        nullable: true
+                        type: integer
+                        exclusiveMinimum: true
+                        maximum: 9007199254740991
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                      creator_display_name:
+                        nullable: true
+                        type: string
+                      can_disable:
+                        type: boolean
+                      has_conflict:
+                        type: boolean
+                      conflicting_agents:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          additionalProperties: false
+                    required:
+                    - id
+                    - agent_id
+                    - case_queue_id
+                    - case_queue_name
+                    - user_id
+                    - enabled
+                    - concurrency
+                    - created_at
+                    - updated_at
+                    - creator_display_name
+                    - can_disable
+                    - has_conflict
+                    - conflicting_agents
+                    additionalProperties: false
+                required:
+                - case_trigger
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Agent Case Trigger
+  /v2/agents/{agent_id}/case-triggers/conflict-preview:
+    get:
+      operationId: previewAgentCaseTriggerConflicts
+      tags:
+      - Case Triggers
+      description: Preview which other agents would conflict with this agent's case trigger if it pointed at the given queue. Does not modify the trigger.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: case_queue_id
+        required: true
+        description: The queue to check for conflicts against
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  has_conflict:
+                    type: boolean
+                  conflicting_agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - id
+                      - name
+                      additionalProperties: false
+                required:
+                - has_conflict
+                - conflicting_agents
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Preview Agent Case Trigger Conflicts
+  /v2/agents/{agent_id}/case-triggers/{trigger_id}:
+    get:
+      operationId: getAgentCaseTrigger
+      tags:
+      - Case Triggers
+      description: Retrieve a single case trigger by id.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: trigger_id
+        required: true
+        description: The case trigger's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  case_trigger:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      agent_id:
+                        type: string
+                      case_queue_id:
+                        type: string
+                      case_queue_name:
+                        type: string
+                      user_id:
+                        type: string
+                      enabled:
+                        type: boolean
+                      concurrency:
+                        nullable: true
+                        type: integer
+                        exclusiveMinimum: true
+                        maximum: 9007199254740991
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                      creator_display_name:
+                        nullable: true
+                        type: string
+                      can_disable:
+                        type: boolean
+                      has_conflict:
+                        type: boolean
+                      conflicting_agents:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          additionalProperties: false
+                    required:
+                    - id
+                    - agent_id
+                    - case_queue_id
+                    - case_queue_name
+                    - user_id
+                    - enabled
+                    - concurrency
+                    - created_at
+                    - updated_at
+                    - creator_display_name
+                    - can_disable
+                    - has_conflict
+                    - conflicting_agents
+                    additionalProperties: false
+                required:
+                - case_trigger
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Agent Case Trigger
+    patch:
+      operationId: updateAgentCaseTrigger
+      tags:
+      - Case Triggers
+      description: Update fields on a case trigger. Only the trigger creator or a builder/admin can disable an enabled trigger or change its queue.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_queue_id:
+                  description: Queue whose new cases should trigger this agent
+                  type: string
+                  format: uuid
+                enabled:
+                  description: Whether the trigger is active. Disabled triggers do not dispatch runs.
+                  type: boolean
+                concurrency:
+                  description: Per-trigger concurrency override. Only 1 (run cases one at a time) or null (use the platform default) can be set here; higher caps are configured directly in the database. Omit to leave the current value unchanged.
+                  nullable: true
+                  type: number
+                  enum:
+                  - 1
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: trigger_id
+        required: true
+        description: The case trigger's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  case_trigger:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      agent_id:
+                        type: string
+                      case_queue_id:
+                        type: string
+                      case_queue_name:
+                        type: string
+                      user_id:
+                        type: string
+                      enabled:
+                        type: boolean
+                      concurrency:
+                        nullable: true
+                        type: integer
+                        exclusiveMinimum: true
+                        maximum: 9007199254740991
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                      creator_display_name:
+                        nullable: true
+                        type: string
+                      can_disable:
+                        type: boolean
+                      has_conflict:
+                        type: boolean
+                      conflicting_agents:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          additionalProperties: false
+                    required:
+                    - id
+                    - agent_id
+                    - case_queue_id
+                    - case_queue_name
+                    - user_id
+                    - enabled
+                    - concurrency
+                    - created_at
+                    - updated_at
+                    - creator_display_name
+                    - can_disable
+                    - has_conflict
+                    - conflicting_agents
+                    additionalProperties: false
+                required:
+                - case_trigger
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Agent Case Trigger
+    delete:
+      operationId: deleteAgentCaseTrigger
+      tags:
+      - Case Triggers
+      description: Delete a case trigger. Only the trigger creator or a builder/admin can delete it.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: trigger_id
+        required: true
+        description: The case trigger's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - success
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Agent Case Trigger
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

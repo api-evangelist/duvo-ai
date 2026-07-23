@@ -1,0 +1,3589 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Agents API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Agents
+  description: Create and manage agents for automation workloads
+paths:
+  /v2/agent/{agentId}/eval-scores:
+    get:
+      operationId: getEvalScores
+      tags:
+      - Agents
+      description: Aggregate evaluation counts and flag distribution for an Assignment's Jobs since the given timestamp.
+      parameters:
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: since
+        required: true
+        description: ISO 8601 timestamp; only Jobs evaluated after this are counted
+      - schema:
+          type: string
+          enum:
+          - all
+          - custom
+        in: query
+        name: scope
+        required: false
+        description: When 'custom', only counts Jobs scored against the target revision's custom rubrics, and only `custom__*` rubric flags. Defaults to 'all' (platform + custom rubrics).
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: revision_id
+        required: false
+        description: Target a specific Assignment revision instead of the live revision. Only honoured when scope='custom' — non-custom scopes aggregate across all revisions. Defaults to the live revision when omitted.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agentId
+        required: true
+        description: The agent's unique identifier (Assignment ID)
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_evaluated:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  with_issues:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  flag_distribution:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        flag:
+                          type: string
+                        count:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                        label:
+                          nullable: true
+                          type: string
+                      required:
+                      - flag
+                      - count
+                      additionalProperties: false
+                required:
+                - total_evaluated
+                - with_issues
+                - flag_distribution
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Eval Scores
+  /v2/agents/{agentId}/eval-rubrics:
+    get:
+      operationId: getEvalRubrics
+      tags:
+      - Agents
+      description: 'List the evaluation rubrics a Run is scored against: the platform default rubrics plus the Agent-specific rubrics for a build. Defaults to the Agent''s live build; pass build_id to target the revision a specific Run ran against.'
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: build_id
+        required: false
+        description: Return rubrics for this specific build (the revision a Run ran against). Defaults to the agent's live build when omitted.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agentId
+        required: true
+        description: The agent's unique identifier (Assignment ID)
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rubrics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        slug:
+                          type: string
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        sort_order:
+                          type: number
+                        deleted_at:
+                          nullable: true
+                          type: string
+                      required:
+                      - id
+                      - slug
+                      - title
+                      - description
+                      - sort_order
+                      - deleted_at
+                      additionalProperties: false
+                  platform_rubrics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        label:
+                          type: string
+                        description:
+                          type: string
+                        cause:
+                          type: string
+                      required:
+                      - key
+                      - label
+                      - description
+                      - cause
+                      additionalProperties: false
+                required:
+                - rubrics
+                - platform_rubrics
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Eval Rubrics
+    post:
+      operationId: createEvalRubric
+      tags:
+      - Agents
+      description: Add one Agent-specific evaluation rubric to a build. A build may hold at most 5 custom rubrics; this fails with 409 once that ceiling is reached. Defaults to the Agent's live build; pass build_id to target a specific revision.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 80
+                  description: Short, human-readable Pass/Fail rubric title.
+                description:
+                  type: string
+                  minLength: 20
+                  maxLength: 400
+                  description: A 1-2 sentence Pass condition phrased as a question.
+                build_id:
+                  description: Add the rubric to this build (revision). Defaults to the agent's live build when omitted.
+                  type: string
+                  format: uuid
+              required:
+              - title
+              - description
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agentId
+        required: true
+        description: The agent's unique identifier (Assignment ID)
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rubric:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      slug:
+                        type: string
+                      title:
+                        type: string
+                      description:
+                        type: string
+                      sort_order:
+                        type: number
+                      deleted_at:
+                        nullable: true
+                        type: string
+                    required:
+                    - id
+                    - slug
+                    - title
+                    - description
+                    - sort_order
+                    - deleted_at
+                    additionalProperties: false
+                required:
+                - rubric
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Eval Rubric
+    put:
+      operationId: replaceEvalRubrics
+      tags:
+      - Agents
+      description: Replace a build's entire Agent-specific evaluation rubric set in one call (at most 5 rubrics). Existing custom rubrics are removed and the supplied list becomes the new set; pass an empty array to clear them. Defaults to the Agent's live build; pass build_id to target a specific revision.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rubrics:
+                  maxItems: 5
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        minLength: 3
+                        maxLength: 80
+                        description: Short, human-readable Pass/Fail rubric title.
+                      description:
+                        type: string
+                        minLength: 20
+                        maxLength: 400
+                        description: A 1-2 sentence Pass condition phrased as a question.
+                    required:
+                    - title
+                    - description
+                    additionalProperties: false
+                  description: The complete custom rubric set for the build. Replaces every existing custom rubric; pass an empty array to clear them.
+                build_id:
+                  description: Replace the custom rubrics on this build (revision). Defaults to the agent's live build when omitted.
+                  type: string
+                  format: uuid
+              required:
+              - rubrics
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agentId
+        required: true
+        description: The agent's unique identifier (Assignment ID)
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rubrics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        slug:
+                          type: string
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        sort_order:
+                          type: number
+                        deleted_at:
+                          nullable: true
+                          type: string
+                      required:
+                      - id
+                      - slug
+                      - title
+                      - description
+                      - sort_order
+                      - deleted_at
+                      additionalProperties: false
+                  platform_rubrics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        label:
+                          type: string
+                        description:
+                          type: string
+                        cause:
+                          type: string
+                      required:
+                      - key
+                      - label
+                      - description
+                      - cause
+                      additionalProperties: false
+                required:
+                - rubrics
+                - platform_rubrics
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Replace Eval Rubrics
+  /v2/agents/{agentId}/eval-rubrics/{rubricId}:
+    patch:
+      operationId: updateEvalRubric
+      tags:
+      - Agents
+      description: Edit a single Agent-specific evaluation rubric's title and/or description. The edit produces a NEW rubric (with a new id and slug) so previously scored Runs stay attributed to the original criterion; the response contains the new rubric.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 80
+                  description: Short, human-readable Pass/Fail rubric title.
+                description:
+                  type: string
+                  minLength: 20
+                  maxLength: 400
+                  description: A 1-2 sentence Pass condition phrased as a question.
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agentId
+        required: true
+        description: The agent's unique identifier (Assignment ID)
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: rubricId
+        required: true
+        description: The custom rubric's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rubric:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      slug:
+                        type: string
+                      title:
+                        type: string
+                      description:
+                        type: string
+                      sort_order:
+                        type: number
+                      deleted_at:
+                        nullable: true
+                        type: string
+                    required:
+                    - id
+                    - slug
+                    - title
+                    - description
+                    - sort_order
+                    - deleted_at
+                    additionalProperties: false
+                required:
+                - rubric
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Eval Rubric
+    delete:
+      operationId: deleteEvalRubric
+      tags:
+      - Agents
+      description: Remove a single Agent-specific evaluation rubric. Future Runs on the build are no longer scored against it.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agentId
+        required: true
+        description: The agent's unique identifier (Assignment ID)
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: rubricId
+        required: true
+        description: The custom rubric's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Eval Rubric
+  /v2/agents/{agent_id}:
+    get:
+      operationId: getAgent
+      tags:
+      - Agents
+      description: Get an agent by ID.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agent:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      slack_enabled:
+                        nullable: true
+                        type: boolean
+                      microsoft_teams_enabled:
+                        nullable: true
+                        type: boolean
+                      agentic_memory_enabled:
+                        nullable: true
+                        type: boolean
+                      team_id:
+                        nullable: true
+                        type: string
+                      thread_id:
+                        nullable: true
+                        type: string
+                      folder_id:
+                        nullable: true
+                        type: string
+                      automation_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      created_at:
+                        nullable: true
+                        type: string
+                      updated_at:
+                        nullable: true
+                        type: string
+                      created_by:
+                        nullable: true
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            nullable: true
+                            type: string
+                          email:
+                            type: string
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
+                      updated_by:
+                        nullable: true
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            nullable: true
+                            type: string
+                          email:
+                            type: string
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
+                    required:
+                    - id
+                    - name
+                    - slack_enabled
+                    - microsoft_teams_enabled
+                    - agentic_memory_enabled
+                    - team_id
+                    - thread_id
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                  user_context:
+                    type: object
+                    properties:
+                      pinned_at:
+                        nullable: true
+                        type: string
+                    required:
+                    - pinned_at
+                    additionalProperties: false
+                required:
+                - agent
+                - user_context
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Agent
+    patch:
+      operationId: updateAgent
+      tags:
+      - Agents
+      description: Update an agent's display name or delivery settings.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New agent display name.
+                slack_enabled:
+                  type: boolean
+                  description: Whether the agent is reachable via Slack.
+                microsoft_teams_enabled:
+                  type: boolean
+                  description: Whether the agent is reachable via Microsoft Teams.
+                agentic_memory_enabled:
+                  type: boolean
+                  description: Toggle agentic memory for the agent.
+                thread_id:
+                  nullable: true
+                  description: Thread id to associate with the agent, or null to clear.
+                  type: string
+                  format: uuid
+                pinned:
+                  type: boolean
+                  description: Pin the agent to the top of your agents list (true) or unpin it (false). Per-user — each viewer has their own pin.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agent:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      slack_enabled:
+                        nullable: true
+                        type: boolean
+                      microsoft_teams_enabled:
+                        nullable: true
+                        type: boolean
+                      agentic_memory_enabled:
+                        nullable: true
+                        type: boolean
+                      team_id:
+                        nullable: true
+                        type: string
+                      thread_id:
+                        nullable: true
+                        type: string
+                      folder_id:
+                        nullable: true
+                        type: string
+                      automation_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      created_at:
+                        nullable: true
+                        type: string
+                      updated_at:
+                        nullable: true
+                        type: string
+                      created_by:
+                        nullable: true
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            nullable: true
+                            type: string
+                          email:
+                            type: string
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
+                      updated_by:
+                        nullable: true
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            nullable: true
+                            type: string
+                          email:
+                            type: string
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
+                    required:
+                    - id
+                    - name
+                    - slack_enabled
+                    - microsoft_teams_enabled
+                    - agentic_memory_enabled
+                    - team_id
+                    - thread_id
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                  user_context:
+                    type: object
+                    properties:
+                      pinned_at:
+                        nullable: true
+                        type: string
+                    required:
+                    - pinned_at
+                    additionalProperties: false
+                required:
+                - agent
+                - user_context
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Agent
+    delete:
+      operationId: deleteAgent
+      tags:
+      - Agents
+      description: Delete an agent and cascade-clean its schedules, case triggers, builder runs, and handover targets. Any active jobs are interrupted and their sandboxes paused.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - success
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Agent
+  /v2/agents/{agent_id}/move:
+    post:
+      operationId: moveAgent
+      tags:
+      - Agents
+      description: Move an agent (and its connected workspace) to a different team. Pass dry_run=true to preview the closure without applying changes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target_team_id:
+                  type: string
+                  format: uuid
+                  description: The ID of the team to move the agent into.
+                move_learnings:
+                  default: true
+                  description: Whether to carry the agent's accumulated learnings across. Defaults to true.
+                  type: boolean
+                bypass_standalone_gate:
+                  default: false
+                  description: When true, move the agent together with every connected queue, trigger, and handover peer instead of rejecting a non-standalone agent. Defaults to false.
+                  type: boolean
+              required:
+              - target_team_id
+      parameters:
+      - schema:
+          anyOf:
+          - type: boolean
+          - type: string
+            enum:
+            - 'true'
+          - type: string
+            enum:
+            - 'false'
+        in: query
+        name: dry_run
+        required: false
+        description: When true, preview the closure and warnings without applying any changes.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The ID of the agent to move.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  source_team_id:
+                    type: string
+                  target_team_id:
+                    type: string
+                  root_agent_id:
+                    type: string
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - id
+                      - name
+                      additionalProperties: false
+                  queues:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        item_count:
+                          type: number
+                      required:
+                      - id
+                      - name
+                      - item_count
+                      additionalProperties: false
+                  total_case_items:
+                    type: number
+                  total_runs:
+                    type: number
+                  skills_to_clone:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - id
+                      - name
+                      additionalProperties: false
+                  files_to_copy:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path:
+                          type: string
+                      required:
+                      - path
+                      additionalProperties: false
+                  warnings:
+                    type: object
+                    properties:
+                      outcome:
+                        type: object
+                        properties:
+                          instances_reconnected:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                agent_id:
+                                  type: string
+                                agent_name:
+                                  type: string
+                                integration_type:
+                                  type: string
+                                integration_name:
+                                  type: string
+                                instance_name:
+                                  type: string
+                                decision:
+                                  type: string
+                                  enum:
+                                  - reuse
+                                  - needs_reconnect
+                                  - unmatched_integration
+                                  - custom_to_rebuild
+                              required:
+                              - agent_id
+                              - agent_name
+                              - integration_type
+                              - integration_name
+                              - instance_name
+                              - decision
+                              additionalProperties: false
+                          instances_disconnected:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                agent_id:
+                                  type: string
+                                agent_name:
+                                  type: string
+                                integration_type:
+                                  type: string
+                                integration_name:
+                                  type: string
+                                instance_name:
+                                  type: string
+                                decision:
+                                  type: string
+                                  enum:
+                                  - reuse
+                                  - needs_reconnect
+                                  - unmatched_integration
+                                  - custom_to_rebuild
+                              required:
+                              - agent_id
+                              - agent_name
+                              - integration_type
+                              - integration_name
+                              - instance_name
+                              - decision
+                              additionalProperties: false
+                          custom_integrations_to_rebuild:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                agent_id:
+                                  type: string
+                                agent_name:
+                                  type: string
+                                custom_integration_name:
+                                  type: string
+                              required:
+                              - agent_id
+                              - agent_name
+                              - custom_integration_name
+                              additionalProperties: false
+                          catalog_rows_created_on_target:
+                            type: number
+                        required:
+                        - instances_reconnected
+                        - instances_disconnected
+                        - custom_integrations_to_rebuild
+                        - catalog_rows_created_on_target
+                        additionalProperties: false
+                      dropped_folders:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          additionalProperties: false
+                      dropped_memory_count:
+                        type: number
+                      files_copied_count:
+                        type: number
+                      files_skipped_conflict:
+                        type: array
+                        items:
+                          type: string
+                    required:
+                    - outcome
+                    - dropped_folders
+                    - dropped_memory_count
+                    - files_copied_count
+                    - files_skipped_conflict
+                    additionalProperties: false
+                  options:
+                    type: object
+                    properties:
+                      move_learnings:
+                        type: boolean
+                    required:
+                    - move_learnings
+                    additionalProperties: false
+                  applied:
+                    type: boolean
+                required:
+                - source_team_id
+                - target_team_id
+                - root_agent_id
+                - agents
+                - queues
+                - total_case_items
+                - total_runs
+                - skills_to_clone
+                - files_to_copy
+                - warnings
+                - options
+                - applied
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - type: object
+                  properties:
+                    error:
+                      type: string
+                    code:
+                      type: string
+                      enum:
+                      - ASSIGNMENT_NOT_STANDALONE
+                    blockers:
+                      type: object
+                      properties:
+                        queues:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - id
+                            - name
+                            additionalProperties: false
+                        triggers:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - id
+                            - name
+                            additionalProperties: false
+                        handovers_outgoing:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - id
+                            - name
+                            additionalProperties: false
+                        handovers_incoming:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - id
+                            - name
+                            additionalProperties: false
+                      required:
+                      - queues
+                      - triggers
+                      - handovers_outgoing
+                      - handovers_incoming
+                      additionalProperties: false
+                  required:
+                  - error
+                  - code
+                  - blockers
+                  additionalProperties: false
+                - type: object
+                  properties:
+                    error:
+                      type: string
+                    message:
+                      type: string
+                  required:
+                  - error
+                  additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Move Agent
+  /v2/teams/{teamId}/agents:
+    get:
+      operationId: listAgents
+      tags:
+      - Agents
+      description: List agents for your team.
+      parameters:
+      - schema:
+          default: 'false'
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: include_schedules
+        required: false
+        description: Include the authenticated user's schedules for each agent in the response. Schedules are per-user, so this only returns schedules the current user owns.
+      - schema:
+          default: 20
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of agents per page (1-100, default 20)
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of agents to skip
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: automation_id
+        required: false
+        description: Only return agents belonging to this automation.
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        slack_enabled:
+                          nullable: true
+                          type: boolean
+                        microsoft_teams_enabled:
+                          nullable: true
+                          type: boolean
+                        agentic_memory_enabled:
+                          nullable: true
+                          type: boolean
+                        team_id:
+                          nullable: true
+                          type: string
+                        thread_id:
+                          nullable: true
+                          type: string
+                        folder_id:
+                          nullable: true
+                          type: string
+                        automation_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_at:
+                          nullable: true
+                          type: string
+                        updated_at:
+                          nullable: true
+                          type: string
+                        created_by:
+                          nullable: true
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              nullable: true
+                              type: string
+                            email:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          - email
+                          additionalProperties: false
+                        updated_by:
+                          nullable: true
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              nullable: true
+                              type: string
+                            email:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          - email
+                          additionalProperties: false
+                        pinned_at:
+                          nullable: true
+                          type: string
+                        last_run_at:
+                          nullable: true
+                          type: string
+                        latest_build:
+                          nullable: true
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            copilot_id:
+                              type: string
+                              format: uuid
+                            agent_id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                            revision_name:
+                              nullable: true
+                              type: string
+                            revision_description:
+                              nullable: true
+                              type: string
+                            config:
+                              nullable: true
+                              anyOf:
+                              - type: object
+                                properties:
+                                  version:
+                                    type: string
+                                    enum:
+                                    - v1
+                                  data:
+                                    type: object
+                                    properties:
+                                      model:
+                                        type: string
+                                      temperature:
+                                        nullable: true
+                                        type: number
+                                        minimum: 0
+                                        maximum: 2
+                                      max_output_tokens:
+                                        nullable: true
+                                        type: number
+                                        minimum: 0
+                                        exclusiveMinimum: true
+                                      top_p:
+                                        nullable: true
+                                        type: number
+                                        minimum: 0
+                                        maximum: 1
+                                      store:
+                                        nullable: true
+                                        type: boolean
+                                      tools: {}
+                                      input:
+                                        anyOf:
+                                        - type: string
+                                        - type: array
+                                          items:
+                                            type: object
+                                            properties:
+                                              role:
+                                                type: string
+                                                enum:
+                                                - system
+                                                - user
+                                                - assistant
+                                              content:
+                                                anyOf:
+                                                - type: string
+                                                - type: array
+                                                  items:
+                                                    anyOf:
+                                                    - type: object
+                                                      properties:
+                                                        type:
+                                                          type: string
+                                                          enum:
+                                                          - input_text
+                                                        text:
+                                                          type: string
+                                                      required:
+                                                      - type
+                                                      - text
+                                                      additionalProperties: false
+                                                    - type: object
+                                                      properties:
+                                                        type:
+                                                          type: string
+                                                          enum:
+                                                          - input_image
+                                                        detail:
+                                                          nullable: true
+                                                          type: string
+                                                          enum:
+                                                          - low
+                                                          - high
+                                                          - auto
+                                                        file_id:
+                                                          nullable: true
+                                                          type: string
+                                                        url:
+                                                          nullable: true
+                                                          type: string
+                                                      required:
+                                                      - type
+                                                      additionalProperties: false
+                                                    - type: object
+                                                      properties:
+                                                        type:
+                                                          type: string
+                                                          enum:
+                                                          - input_file
+                                                        file_id:
+                                                          type: string
+                                                      required:
+                                                      - type
+                                                      - file_id
+                                                      additionalProperties: false
+                                              type:
+                                                nullable: true
+                                                type: string
+                                                enum:
+                                                - message
+                                            required:
+                                            - role
+                                            - content
+                                            additionalProperties: false
+                                      text:
+                                        nullable: true
+                                        type: object
+                                        properties:
+                                          format:
+                                            nullable: true
+                                            anyOf:
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  enum:
+                                                  - text
+                                              required:
+                                              - type
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  enum:
+                                                  - json_object
+                                              required:
+                                              - type
+                                              additionalProperties: false
+                                        additionalProperties: false
+                                      files:
+                                        default: []
+                                        nullable: true
+                                        type: array
+                                        items:
+                                          type: string
+                                      skills:
+                                        default: []
+                                        nullable: true
+                                        type: array
+                                        items:
+                                          type: string
+                                    required:
+                                    - model
+                                    - tools
+                                    - input
+                                    - files
+                                    - skills
+                                    additionalProperties: false
+                                required:
+                                - version
+                                - data
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  version:
+                                    type: string
+                                    enum:
+                                    - v2
+                                    description: Schema version discriminator — must be "v2" for the current schema
+                                  data:
+                                    type: object
+                                    properties:
+                                      models:
+                                        type: object
+                                        properties:
+                                          agent:
+                                            type: object
+                                            properties:
+                                              model:
+                                                type: string
+                                                enum:
+                                                - claude-sonnet-5
+                                                - claude-sonnet-5[1m]
+                                                - claude-opus-4-8
+                                                - claude-opus-4-8[1m]
+                                                - d1-max
+                                                - duvo-1-max
+                                                - duvo-1-max-sonnet-1m
+                                                - duvo-1-max-sonnet-4.5
+                                                - duvo-1-max-sonnet-4.5-1m
+                                                - duvo-1-max-opus
+                                                - duvo-1-max-opus-4.5
+                                                - gpt-4.1
+                                                - gpt-4o
+                                                - gpt-4o-mini
+                                                - gpt-5
+                                                - gpt-5.1
+                                                - claude-sonnet-4-20250514
+                                                - claude-sonnet-4-20250514[1m]
+                                                - claude-sonnet-4-5-20250929
+                                                - claude-sonnet-4-5-20250929[1m]
+                                                - claude-sonnet-4-6
+                                                - claude-sonnet-4-6[1m]
+                                                - claude-opus-4-1-20250805
+                                                - claude-opus-4-5-20251101
+                                                - claude-opus-4-6
+                                                - claude-opus-4-6[1m]
+                                                - claude-opus-4-7
+                                                - claude-opus-4-7[1m]
+                                                description: Claude model identifier used for the primary agent loop
+                                            required:
+                                            - model
+                                            additionalProperties: false
+                                            description: Primary Claude agent model configuration
+                                          browsing:
+                                            type: object
+                                            properties:
+                                              provider:
+                                                type: string
+                                                enum:
+                                                - google
+                                                - anthropic
+                                                description: Provider backing the browsing/computer-use model
+                                              model:
+                                                type: string
+                                                enum:
+                                                - gemini-2.5-pro
+                                                - gemini-2.5-flash
+                                                - gemini-3-pro-preview
+                                                - claude-haiku-4-5
+                                                - claude-sonnet-4-5
+                                                - claude-opus-4-1
+                                                description: Model identifier for the browsing provider
+                                            required:
+                                            - provider
+                                            - model
+                                            additionalProperties: false
+                                            description: Browsing/computer-use model configuration
+                                        required:
+                                        - agent
+                                        - browsing
+                                        additionalProperties: false
+                                        description: Model configuration for each capability the agent uses
+                                      input:
+                                        anyOf:
+                                        - type: string
+                                        - type: array
+                                          items:
+                                            type: object
+                                            properties:
+                                              role:
+                                                type: string
+                                                enum:
+                                                - system
+                                                - user
+                                                - assistant
+                                              content:
+                                                anyOf:
+                                                - type: string
+                                                - type: array
+                                                  items:
+                                                    anyOf:
+                                                    - type: object
+                                                      properties:
+                                                        type:
+                                                          type: string
+                                                          enum:
+                                                          - input_text
+                                                        text:
+                                                          type: string
+                                                      required:
+                                                      - type
+                                                      - text
+                                                      additionalProperties: false
+                                                    - type: object
+                                                      properties:
+                                                        type:
+                                                          type: string
+                                                          enum:
+                                                          - input_image
+                                                        detail:
+                                                          nullable: true
+                                                          type: string
+                                                          enum:
+                                                          - low
+                                                          - high
+                                                          - auto
+                                                        file_id:
+                                                          nullable: true
+                                                          type: string
+                                                        url:
+                                                          nullable: true
+                                                          type: string
+                                                      required:
+                                                      - type
+                                                      additionalProperties: false
+                                                    - type: object
+                                                      properties:
+                                                        type:
+                                                          type: string
+                                                          enum:
+                                                          - input_file
+                                                        file_id:
+                                                          type: string
+                                                      required:
+                                                      - type
+                                                      - file_id
+                                                      additionalProperties: false
+                                              type:
+                                                nullable: true
+                                                type: string
+                                                enum:
+                                                - message
+                                            required:
+                                            - role
+                                            - content
+                                            additionalProperties: false
+                                        description: Initial agent instructions — either a single system prompt string or a list of structured messages
+                                      files:
+                                        default: []
+                                        description: IDs of team files that should be available to the agent
+                                        nullable: true
+                                        type: array
+                                        items:
+                                          type: string
+                                      skills:
+                                        default: []
+                                        description: IDs of skills (team or system) that should be available to the agent
+                                        nullable: true
+                                        type: array
+                                        items:
+                                          type: string
+                                      plugins:
+                                        default: []
+                                        description: Plugins to load — either a built-in plugin name (e.g. "code-review") or a GitHub URL (e.g. "https://github.com/owner/repo")
+                                        nullable: true
+                                        type: array
+                                        items:
+                                          type: string
+                                      subAgents:
+                                        default: []
+                                        description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
+                                        nullable: true
+                                        type: array
+                                        items:
+                                          type: string
+                                          format: uuid
+                                      options:
+                                        description: Optional runtime options controlling how the agent executes
+                                        type: object
+                                        properties:
+                                          browserProvider:
+                                            description: Browser infrastructure provider
+                                            type: string
+                                            enum:
+                                            - browserbase
+                                            - browser-use
+                                          evaluationSchemaId:
+                                            description: ID of the evaluation schema to apply to runs of this agent
+                                            type: string
+                                          benchmarkExpectedOutcomes:
+                                            description: Expected outcomes used when running benchmark scenarios
+                                            type: array
+                                            items:
+                                              type: object
+                                              properties:
+                                                description:
+                                                  type: string
+                                                  description: Human-readable description of the expected outcome
+                                                criteria:
+                                                  type: string
+                                                  description: Pass/fail criteria used to evaluate the outcome
+                                              required:
+                                              - description
+                                              - criteria
+                                              additionalProperties: false
+                                        additionalProperties: {}
+                                    required:
+                                    - models
+                                    - input
+                                    - files
+                                    - skills
+                                    - plugins
+                                    - subAgents
+                                    additionalProperties: false
+                                    description: Agent configuration payload
+                                required:
+                                - version
+                                - data
+                                additionalProperties: false
+                            status:
+                              nullable: true
+                              type: string
+                            revision_number:
+                              nullable: true
+                              type: number
+                            parent_build_id:
+                              nullable: true
+                              type: string
+                            created_by:
+                              nullable: true
+                              type: string
+                            created_by_name:
+                              nullable: true
+                              type: string
+                            created_at:
+                              nullable: true
+                              type: string
+                            updated_at:
+                              nullable: true
+                              type: string
+                            schedules:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                  build_id:
+                                    type: string
+                                  agent_id:
+                                    type: string
+                                  user_id:
+                                    type: string
+                                  enabled:
+                                    type: boolean
+                                  frequency:
+                                    type: string
+                                    enum:
+                                    - every_5_minutes
+                                    - every_15_minutes
+                                    - hourly
+                                    - daily
+                                    - workday
+                                    - weekly
+                                    - monthly
+                                    - custom
+                                  time:
+                                    nullable: true
+                                    type: string
+                                  timezone:
+                                    type: string
+                                  day:
+                                    nullable: true
+                                    type: string
+                                  day_of_month:
+                                    nullable: true
+                                    type: number
+                                  cron:
+                                    nullable: true
+                                    type: string
+                                  source:
+                                    nullable: true
+                                    type: string
+                                  task:
+                                    nullable: true
+                                    type: string
+                                  recurring:
+                                    nullable: true
+                                    type: boolean
+                                  auto_disabled_at:
+                                    nullable: true
+                                    type: string
+                                  auto_disabled_reason:
+                                    nullable: true
+                                    type: string
+                                  consecutive_missing_connection_failures:
+                                    type: integer
+                                    minimum: 0
+                                    maximum: 9007199254740991
+                                  first_missing_connection_failure_at:
+                                    nullable: true
+                                    type: string
+                                  last_missing_connection_failure_at:
+                                    nullable: true
+                                    type: string
+                                  created_at:
+                                    type: string
+                                  updated_at:
+                                    type: string
+                                  user_name:
+                                    nullable: true
+                                    type: string
+                                  user_email:
+                                    nullable: true
+                                    type: string
+                                required:
+                                - id
+                                - build_id
+                                - agent_id
+                                - user_id
+                                - enabled
+                                - frequency
+                                - time
+                                - timezone
+                                - day
+                                - day_of_month
+                                - cron
+                                - source
+                                - task
+                                - recurring
+                                - auto_disabled_at
+                                - auto_disabled_reason
+                                - consecutive_missing_connection_failures
+                                - first_missing_connection_failure_at
+                                - last_missing_connection_failure_at
+                                - created_at
+                                - updated_at
+                                additionalProperties: false
+                          required:
+                          - id
+                          - copilot_id
+                          - agent_id
+                          - name
+                          - config
+                          - status
+                          - revision_number
+                          - parent_build_id
+                          - created_by
+                          - created_at
+                          - updated_at
+                          additionalProperties: false
+                        integration_configs:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              integration_id:
+                                type: string
+                              integration_type:
+                                type: string
+                              integration_name:
+                                type: string
+                              created_at:
+                                type: string
+                              icon_url:
+                                nullable: true
+                                type: string
+                              is_connected:
+                                type: boolean
+                              linked_queue_names:
+                                nullable: true
+                                type: array
+                                items:
+                                  type: string
+                            required:
+                            - id
+                            - integration_id
+                            - integration_type
+                            - integration_name
+                            - created_at
+                            additionalProperties: false
+                        user_triggers:
+                          type: object
+                          properties:
+                            slack_mention:
+                              type: boolean
+                            slack_channel:
+                              type: boolean
+                            teams_mention:
+                              type: boolean
+                          required:
+                          - slack_mention
+                          - slack_channel
+                          - teams_mention
+                          additionalProperties: false
+                        case_trigger_enabled:
+                          type: boolean
+                        case_trigger_has_conflict:
+                          type: boolean
+                        case_trigger_conflicting_agents:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - id
+                            - name
+                            additionalProperties: false
+                        case_queue_name:
+                          nullable: true
+                          type: string
+                      required:
+                      - id
+                      - name
+                      - slack_enabled
+                      - microsoft_teams_enabled
+                      - agentic_memory_enabled
+                      - team_id
+                      - thread_id
+                      - created_at
+                      - updated_at
+                      - pinned_at
+                      - last_run_at
+                      - latest_build
+                      - integration_configs
+                      - user_triggers
+                      - case_trigger_enabled
+                      - case_trigger_has_conflict
+                      - case_trigger_conflicting_agents
+                      - case_queue_name
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  limit:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                - agents
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Agents
+    post:
+      operationId: createAgent
+      tags:
+      - Agents
+      description: Create a new agent. Optionally include a build configuration to create the first build in the same request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  description: Human-readable agent name
+                thread_id:
+                  nullable: true
+                  description: Existing thread ID to associate with the agent
+                  type: string
+                  format: uuid
+                source_build_id:
+                  nullable: true
+                  description: Build ID whose case-queue-consumer setup should be copied to the new agent
+                  type: string
+                  format: uuid
+                automation_id:
+                  nullable: true
+                  description: Automation this agent belongs to. If omitted on a team using the automations model, a new automation named after the agent is created automatically.
+                  type: string
+                  format: uuid
+                build:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      minLength: 1
+                      description: Build name
+                    config:
+                      type: object
+                      properties:
+                        version:
+                          type: string
+                          enum:
+                          - v2
+                          description: Schema version discriminator — must be "v2" for the current schema
+                        data:
+                          type: object
+                          properties:
+                            models:
+                              type: object
+                              properties:
+                                agent:
+                                  type: object
+                                  properties:
+                                    model:
+                                      type: string
+                                      enum:
+                                      - claude-sonnet-5
+                                      - claude-sonnet-5[1m]
+                                      - claude-opus-4-8
+                                      - claude-opus-4-8[1m]
+                                      - d1-max
+                                      - duvo-1-max
+                                      - duvo-1-max-sonnet-1m
+                                      - duvo-1-max-sonnet-4.5
+                                      - duvo-1-max-sonnet-4.5-1m
+                                      - duvo-1-max-opus
+                                      - duvo-1-max-opus-4.5
+                                      - gpt-4.1
+                                      - gpt-4o
+                                      - gpt-4o-mini
+                                      - gpt-5
+                                      - gpt-5.1
+                                      - claude-sonnet-4-20250514
+                                      - claude-sonnet-4-20250514[1m]
+                                      - claude-sonnet-4-5-20250929
+                                      - claude-sonnet-4-5-20250929[1m]
+                                      - claude-sonnet-4-6
+                                      - claude-sonnet-4-6[1m]
+                                      - claude-opus-4-1-20250805
+                                      - claude-opus-4-5-20251101
+                                      - claude-opus-4-6
+                                      - claude-opus-4-6[1m]
+                                      - claude-opus-4-7
+                                      - claude-opus-4-7[1m]
+                                      description: Claude model identifier used for the primary agent loop
+                                  required:
+                                  - model
+                                  description: Primary Claude agent model configuration
+                                browsing:
+                                  type: object
+                                  properties:
+                                    provider:
+                                      type: string
+                                      enum:
+                                      - google
+                                      - anthropic
+                                      description: Provider backing the browsing/computer-use model
+                                    model:
+                                      type: string
+                                      enum:
+                                      - gemini-2.5-pro
+                                      - gemini-2.5-flash
+                                      - gemini-3-pro-preview
+                                      - claude-haiku-4-5
+                                      - claude-sonnet-4-5
+                                      - claude-opus-4-1
+                                      description: Model identifier for the browsing provider
+                                  required:
+                                  - provider
+                                  - model
+                                  description: Browsing/computer-use model configuration
+                              required:
+                              - agent
+                              - browsing
+                              description: Model configuration for each capability the agent uses
+                            input:
+                              anyOf:
+                              - type: string
+                              - type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    role:
+                                      type: string
+                                      enum:
+                                      - system
+                                      - user
+                                      - assistant
+                                    content:
+                                      anyOf:
+                                      - type: string
+                                      - type: array
+                                        items:
+                                          anyOf:
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                enum:
+                                                - input_text
+                                              text:
+                                                type: string
+                                            required:
+                                            - type
+                                            - text
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                enum:
+                                                - input_image
+                                              detail:
+                                                nullable: true
+                                                type: string
+                                                enum:
+                                                - low
+                                                - high
+                                                - auto
+                                              file_id:
+                                                nullable: true
+                                                type: string
+                                              url:
+                                                nullable: true
+                                                type: string
+                                            required:
+                                            - type
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                enum:
+                                                - input_file
+                                              file_id:
+                                                type: string
+                                            required:
+                                            - type
+                                            - file_id
+                                    type:
+                                      nullable: true
+                                      type: string
+                                      enum:
+                                      - message
+                                  required:
+                                  - role
+                                  - content
+                              description: Initial agent instructions — either a single system prompt string or a list of structured messages
+                            files:
+                              default: []
+                              description: IDs of team files that should be available to the agent
+                              nullable: true
+                              type: array
+                              items:
+                                type: string
+                            skills:
+                              default: []
+                              description: IDs of skills (team or system) that should be available to the agent
+                              nullable: true
+                              type: array
+                              items:
+                                type: string
+                            plugins:
+                              default: []
+                              description: Plugins to load — either a built-in plugin name (e.g. "code-review") or a GitHub URL (e.g. "https://github.com/owner/repo")
+                              nullable: true
+                              type: array
+                              items:
+                                type: string
+                            subAgents:
+                              default: []
+                              description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
+                              nullable: true
+                              type: array
+                              items:
+                                type: string
+                                format: uuid
+                            options:
+                              description: Optional runtime options controlling how the agent executes
+                              type: object
+                              properties:
+                                browserProvider:
+                                  description: Browser infrastructure provider
+                                  type: string
+                                  enum:
+                                  - browserbase
+                                  - browser-use
+                                evaluationSchemaId:
+                                  description: ID of the evaluation schema to apply to runs of this agent
+                                  type: string
+                                benchmarkExpectedOutcomes:
+                                  description: Expected outcomes used when running benchmark scenarios
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      description:
+                                        type: string
+                                        description: Human-readable description of the expected outcome
+                                      criteria:
+                                        type: string
+                                        description: Pass/fail criteria used to evaluate the outcome
+                                    required:
+                                    - description
+                                    - criteria
+                              additionalProperties: {}
+                          required:
+                          - models
+                          - input
+                          description: Agent configuration payload
+                      required:
+                      - version
+                      - data
+                      description: Build configuration (latest schema version only; legacy v1 configs are not accepted)
+                  required:
+                  - name
+                  - config
+                  description: Optional inline build. When present, a first build is created alongside the agent.
+              required:
+              - name
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agent:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      slack_enabled:
+                        nullable: true
+                        type: boolean
+                      microsoft_teams_enabled:
+                        nullable: true
+                        type: boolean
+                      agentic_memory_enabled:
+                        nullable: true
+                        type: boolean
+                      team_id:
+                        nullable: true
+                        type: string
+                      thread_id:
+                        nullable: true
+                        type: string
+                      folder_id:
+                        nullable: true
+                        type: string
+                      automation_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      created_at:
+                        nullable: true
+                        type: string
+                      updated_at:
+                        nullable: true
+                        type: string
+                      created_by:
+                        nullable: true
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            nullable: true
+                            type: string
+                          email:
+                            type: string
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
+                      updated_by:
+                        nullable: true
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            nullable: true
+                            type: string
+                          email:
+                            type: string
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
+                    required:
+                    - id
+                    - name
+                    - slack_enabled
+                    - microsoft_teams_enabled
+                    - agentic_memory_enabled
+                    - team_id
+                    - thread_id
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                  build:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      copilot_id:
+                        type: string
+                        format: uuid
+                      agent_id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      revision_name:
+                        nullable: true
+                        type: string
+                      revision_description:
+                        nullable: true
+                        type: string
+                      config:
+                        nullable: true
+                        anyOf:
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                              - v1
+                            data:
+                              type: object
+                              properties:
+                                model:
+                                  type: string
+                                temperature:
+                                  nullable: true
+                                  type: number
+                                  minimum: 0
+                                  maximum: 2
+                                max_output_tokens:
+                                  nullable: true
+                                  type: number
+                                  minimum: 0
+                                  exclusiveMinimum: true
+                                top_p:
+                                  nullable: true
+                                  type: number
+                                  minimum: 0
+                                  maximum: 1
+                                store:
+                                  nullable: true
+                                  type: boolean
+                                tools: {}
+                                input:
+                                  anyOf:
+                                  - type: string
+                                  - type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        role:
+                                          type: string
+                                          enum:
+                                          - system
+                                          - user
+                                          - assistant
+                                        content:
+                                          anyOf:
+                                          - type: string
+                                          - type: array
+                                            items:
+                                              anyOf:
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_text
+                                                  text:
+                                                    type: string
+                                                required:
+                                                - type
+                                                - text
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_image
+                                                  detail:
+                                                    nullable: true
+                                                    type: string
+                                                    enum:
+                                                    - low
+                                                    - high
+                                                    - auto
+                                                  file_id:
+                                                    nullable: true
+                                                    type: string
+                                                  url:
+                                                    nullable: true
+                                                    type: string
+                                                required:
+                                                - type
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_file
+                                                  file_id:
+                                                    type: string
+                                                required:
+                                                - type
+                                                - file_id
+                                                additionalProperties: false
+                                        type:
+                                          nullable: true
+                                          type: string
+                                          enum:
+                                          - message
+                                      required:
+                                      - role
+                                      - content
+                                      additionalProperties: false
+                                text:
+                                  nullable: true
+                                  type: object
+                                  properties:
+                                    format:
+                                      nullable: true
+                                      anyOf:
+                                      - type: object
+                                        properties:
+                                          type:
+                                            type: string
+                                            enum:
+                                            - text
+                                        required:
+                                        - type
+                                        additionalProperties: false
+                                      - type: object
+                                        properties:
+                                          type:
+                                            type: string
+                                            enum:
+                                            - json_object
+                                        required:
+                                        - type
+                                        additionalProperties: false
+                                  additionalProperties: false
+                                files:
+                                  default: []
+                                  nullable: true
+                                  type: array
+                                  items:
+                                    type: string
+                                skills:
+                                  default: []
+                                  nullable: true
+                                  type: array
+                                  items:
+                                    type: string
+                              required:
+                              - model
+                              - tools
+                              - input
+                              - files
+                              - skills
+                              additionalProperties: false
+                          required:
+                          - version
+                          - data
+                          additionalProperties: false
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                              - v2
+                              description: Schema version discriminator — must be "v2" for the current schema
+                            data:
+                              type: object
+                              properties:
+                                models:
+                                  type: object
+                                  properties:
+                                    agent:
+                                      type: object
+                                      properties:
+                                        model:
+                                          type: string
+                                          enum:
+                                          - claude-sonnet-5
+                                          - claude-sonnet-5[1m]
+                                          - claude-opus-4-8
+                                          - claude-opus-4-8[1m]
+                                          - d1-max
+                                          - duvo-1-max
+                                          - duvo-1-max-sonnet-1m
+                                          - duvo-1-max-sonnet-4.5
+                                          - duvo-1-max-sonnet-4.5-1m
+                                          - duvo-1-max-opus
+                                          - duvo-1-max-opus-4.5
+                                          - gpt-4.1
+                                          - gpt-4o
+                                          - gpt-4o-mini
+                                          - gpt-5
+                                          - gpt-5.1
+                                          - claude-sonnet-4-20250514
+                                          - claude-sonnet-4-20250514[1m]
+                                          - claude-sonnet-4-5-20250929
+                                          - claude-sonnet-4-5-20250929[1m]
+                                          - claude-sonnet-4-6
+                                          - claude-sonnet-4-6[1m]
+                                          - claude-opus-4-1-20250805
+                                          - claude-opus-4-5-20251101
+                                          - claude-opus-4-6
+                                          - claude-opus-4-6[1m]
+                                          - claude-opus-4-7
+                                          - claude-opus-4-7[1m]
+                                          description: Claude model identifier used for the primary agent loop
+                                      required:
+                                      - model
+                                      additionalProperties: false
+                                      description: Primary Claude agent model configuration
+                                    browsing:
+                                      type: object
+                                      properties:
+                                        provider:
+                                          type: string
+                                          enum:
+                                          - google
+                                          - anthropic
+                                          description: Provider backing the browsing/computer-use model
+                                        model:
+                                          type: string
+                                          enum:
+                                          - gemini-2.5-pro
+                                          - gemini-2.5-flash
+                                          - gemini-3-pro-preview
+                                          - claude-haiku-4-5
+                                          - claude-sonnet-4-5
+                                          - claude-opus-4-1
+                                          description: Model identifier for the browsing provider
+                                      required:
+                                      - provider
+                                      - model
+                                      additionalProperties: false
+                                      description: Browsing/computer-use model configuration
+                                  required:
+                                  - agent
+                                  - browsing
+                                  additionalProperties: false
+                                  description: Model configuration for each capability the agent uses
+                                input:
+                                  anyOf:
+                                  - type: string
+                                  - type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        role:
+                                          type: string
+                                          enum:
+                                          - system
+                                          - user
+                                          - assistant
+                                        content:
+                                          anyOf:
+                                          - type: string
+                                          - type: array
+                                            items:
+                                              anyOf:
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_text
+                                                  text:
+                                                    type: string
+                                                required:
+                                                - type
+                                                - text
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_image
+                                                  detail:
+                                                    nullable: true
+                                                    type: string
+                                                    enum:
+                                                    - low
+                                                    - high
+                                                    - auto
+                                                  file_id:
+                                                    nullable: true
+                                                    type: string
+                                                  url:
+                                                    nullable: true
+                                                    type: string
+                                                required:
+                                                - type
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_file
+                                                  file_id:
+                                                    type: string
+                                                required:
+                                                - type
+                                                - file_id
+                                                additionalProperties: false
+                                        type:
+                                          nullable: true
+                                          type: string
+                                          enum:
+                                          - message
+                                      required:
+                                      - role
+                                      - content
+                                      additionalProperties: false
+                                  description: Initial agent instructions — either a single system prompt string or a list of structured messages
+                                files:
+                                  default: []
+                                  description: IDs of team files that should be available to the agent
+                                  nullable: true
+                                  type: array
+                                  items:
+                                    type: string
+                                skills:
+                                  default: []
+                                  description: IDs of skills (team or system) that should be available to the agent
+                                  nullable: true
+                                  type: array
+                                  items:
+                                    type: string
+                                plugins:
+                                  default: []
+                                  description: Plugins to load — either a built-in plugin name (e.g. "code-review") or a GitHub URL (e.g. "https://github.com/owner/repo")
+                                  nullable: true
+                                  type: array
+                                  items:
+                                    type: string
+                                subAgents:
+                                  default: []
+                                  description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
+                                  nullable: true
+                                  type: array
+                                  items:
+                                    type: string
+                                    format: uuid
+                                options:
+                                  description: Optional runtime options controlling how the agent executes
+                                  type: object
+                                  properties:
+                                    browserProvider:
+                                      description: Browser infrastructure provider
+                                      type: string
+                                      enum:
+                                      - browserbase
+                                      - browser-use
+                                    evaluationSchemaId:
+                                      description: ID of the evaluation schema to apply to runs of this agent
+                                      type: string
+                                    benchmarkExpectedOutcomes:
+                                      description: Expected outcomes used when running benchmark scenarios
+                                      type: array
+                                      items:
+                                        type: object
+                                        properties:
+                                          description:
+                                            type: string
+                                            description: Human-readable description of the expected outcome
+                                          criteria:
+                                            type: string
+                                            description: Pass/fail criteria used to evaluate the outcome
+                                        required:
+                                        - description
+                                        - criteria
+                                        additionalProperties: false
+                                  additionalProperties: {}
+                              required:
+                              - models
+                              - input
+                              - files
+                              - skills
+                              - plugins
+                              - subAgents
+                              additionalProperties: false
+                              description: Agent configuration payload
+                          required:
+                          - version
+                          - data
+                          additionalProperties: false
+                      status:
+                        nullable: true
+                        type: string
+                      revision_number:
+                        nullable: true
+                        type: number
+                      parent_build_id:
+                        nullable: true
+                        type: string
+                      created_by:
+                        nullable: true
+                        type: string
+                      created_by_name:
+                        nullable: true
+                        type: string
+                      created_at:
+                        nullable: true
+                        type: string
+                      updated_at:
+                        nullable: true
+                        type: string
+                      schedules:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            build_id:
+                              type: string
+                            agent_id:
+                              type: string
+                            user_id:
+                              type: string
+                            enabled:
+                              type: boolean
+                            frequency:
+                              type: string
+                              enum:
+                              - every_5_minutes
+                              - every_15_minutes
+                              - hourly
+                              - daily
+                              - workday
+                              - weekly
+                              - monthly
+                              - custom
+                            time:
+                              nullable: true
+                              type: string
+                            timezone:
+                              type: string
+                            day:
+                              nullable: true
+                              type: string
+                            day_of_month:
+                              nullable: true
+                              type: number
+                            cron:
+                              nullable: true
+                              type: string
+                            source:
+                              nullable: true
+                              type: string
+                            task:
+                              nullable: true
+                              type: string
+                            recurring:
+                              nullable: true
+                              type: boolean
+                            auto_disabled_at:
+                              nullable: true
+                              type: string
+                            auto_disabled_reason:
+                              nullable: true
+                              type: string
+                            consecutive_missing_connection_failures:
+                              type: integer
+                              minimum: 0
+                              maximum: 9007199254740991
+                            first_missing_connection_failure_at:
+                              nullable: true
+                              type: string
+                            last_missing_connection_failure_at:
+                              nullable: true
+                              type: string
+                            created_at:
+                              type: string
+                            updated_at:
+                              type: string
+                            user_name:
+                              nullable: true
+                              type: string
+                            user_email:
+                              nullable: true
+                              type: string
+                          required:
+                          - id
+                          - build_id
+                          - agent_id
+                          - user_id
+                          - enabled
+                          - frequency
+                          - time
+                          - timezone
+                          - day
+                          - day_of_month
+                          - cron
+                          - source
+                          - task
+                          - recurring
+                          - auto_disabled_at
+                          - auto_disabled_reason
+                          - consecutive_missing_connection_failures
+                          - first_missing_connection_failure_at
+                          - last_missing_connection_failure_at
+                          - created_at
+                          - updated_at
+                          additionalProperties: false
+                    required:
+                    - id
+                    - copilot_id
+                    - agent_id
+                    - name
+                    - config
+                    - status
+                    - revision_number
+                    - parent_build_id
+                    - created_by
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                required:
+                - agent
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Agent
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

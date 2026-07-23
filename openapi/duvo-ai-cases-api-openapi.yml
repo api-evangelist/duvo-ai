@@ -1,0 +1,4210 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Cases API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Cases
+  description: Create, list, and manage cases and their labels within queues
+paths:
+  /v2/queues/{queue_id}/cases:
+    delete:
+      operationId: clearQueueCases
+      tags:
+      - Cases
+      description: Delete every case in a queue. Interrupts any associated active runs first. Destructive — not exposed via MCP.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  deletedCount:
+                    type: number
+                  interruptedRunIds:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                required:
+                - success
+                - deletedCount
+                - interruptedRunIds
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Clear Queue Cases
+    get:
+      operationId: listCases
+      tags:
+      - Cases
+      description: List cases in a queue. Supports status, date-range, and free-text filters via query params. For label filters, use POST /v2/teams/:team_id/queues/:queue_id/cases/search.
+      parameters:
+      - schema:
+          default: 20
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of cases per page (1-100, default 20).
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Zero-based offset for pagination.
+      - schema:
+          type: string
+        in: query
+        name: status
+        required: false
+        description: 'Filter by one or more case statuses (comma-separated). Values: pending, claimed, completed, failed, needs_input, postponed.'
+      - schema:
+          type: string
+        in: query
+        name: priority
+        required: false
+        description: 'Filter by one or more priority levels (comma-separated). Values: none, medium, high.'
+      - schema:
+          type: string
+        in: query
+        name: search
+        required: false
+        description: Full-text search across case title and data.
+      - schema:
+          type: string
+        in: query
+        name: created_at_from
+        required: false
+        description: Return only cases created on or after this ISO-8601 timestamp.
+      - schema:
+          type: string
+        in: query
+        name: updated_at_from
+        required: false
+        description: Return only cases updated on or after this ISO-8601 timestamp.
+      - schema:
+          default: created_at
+          type: string
+          enum:
+          - created_at
+          - updated_at
+          - postponed_to
+        in: query
+        name: sort_by
+        required: false
+        description: 'Field to sort by. Default: created_at.'
+      - schema:
+          default: desc
+          type: string
+          enum:
+          - asc
+          - desc
+        in: query
+        name: sort_order
+        required: false
+        description: 'Sort direction. Default: desc.'
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cases:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        queue_id:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        data:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - completed
+                          - failed
+                        priority:
+                          type: string
+                          enum:
+                          - none
+                          - medium
+                          - high
+                        display_status:
+                          type: string
+                          enum:
+                          - pending
+                          - in_progress
+                          - needs_input
+                          - postponed
+                          - completed
+                          - failed
+                        claimed_at:
+                          nullable: true
+                          type: string
+                        claimed_by_run_id:
+                          nullable: true
+                          type: string
+                        completed_at:
+                          nullable: true
+                          type: string
+                        postponed_to:
+                          nullable: true
+                          type: string
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        created_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_by_user_name:
+                          nullable: true
+                          type: string
+                        created_by_user_email:
+                          nullable: true
+                          type: string
+                        agent_run_status:
+                          nullable: true
+                          type: string
+                        agent_run_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        pending_human_request_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        pending_approval_batch_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        pending_approval_assignee_user_ids:
+                          type: array
+                          items:
+                            type: string
+                            format: uuid
+                        approval_approved_count:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        approval_rejected_count:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        eval_summary:
+                          nullable: true
+                          type: object
+                          properties:
+                            passed:
+                              type: number
+                            total:
+                              type: number
+                            final_comment:
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                              - ready
+                              - unavailable
+                              - in_progress
+                            severityCounts:
+                              type: object
+                              properties:
+                                critical:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                medium:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                low:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                              required:
+                              - critical
+                              - medium
+                              - low
+                              additionalProperties: false
+                          required:
+                          - passed
+                          - total
+                          - status
+                          additionalProperties: false
+                        search_match_data_snippet:
+                          type: object
+                          properties:
+                            before:
+                              type: string
+                            match:
+                              type: string
+                            after:
+                              type: string
+                          required:
+                          - before
+                          - match
+                          - after
+                          additionalProperties: false
+                        labels:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              key:
+                                type: string
+                              value:
+                                type: string
+                                minLength: 1
+                              color_hue:
+                                type: integer
+                                minimum: 0
+                                maximum: 360
+                            required:
+                            - id
+                            - key
+                            - value
+                            - color_hue
+                            additionalProperties: false
+                      required:
+                      - id
+                      - queue_id
+                      - title
+                      - data
+                      - status
+                      - priority
+                      - display_status
+                      - claimed_at
+                      - claimed_by_run_id
+                      - completed_at
+                      - postponed_to
+                      - created_at
+                      - updated_at
+                      - created_by_user_id
+                      - created_by_user_name
+                      - created_by_user_email
+                      - agent_run_status
+                      - agent_run_user_id
+                      - pending_human_request_id
+                      - pending_approval_batch_id
+                      - pending_approval_assignee_user_ids
+                      - approval_approved_count
+                      - approval_rejected_count
+                      - labels
+                      additionalProperties: false
+                  total:
+                    type: number
+                  limit:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                - cases
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Cases
+    post:
+      operationId: createCases
+      tags:
+      - Cases
+      description: 'Create one or more cases in a queue. Provide either a single `case` object or a `cases` array (1-100); providing both returns 400. Each case accepts a title (max 500 chars), optional free-form `data`, optional labels that will be assigned to the case on creation (missing labels are created on the queue), and an optional priority (`none`, `medium`, or `high`; `medium`/`high` raise it above the default in the queue, `none` is the default). Priority only affects the order pending cases are picked up in: due postponed cases are handled first, then higher priority.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                      minLength: 1
+                      maxLength: 500
+                      description: Short title for the case (max 500 characters). Put long context in `data`.
+                    data:
+                      description: Additional data for the case. Free-form text or JSON; Agents receive this on claim.
+                      type: string
+                    labels:
+                      description: Optional labels to assign to the case at creation. Labels are created on the queue if they don't already exist.
+                      maxItems: 50
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            default: ''
+                            description: Label key (omit for a simple tag).
+                            type: string
+                          value:
+                            type: string
+                            minLength: 1
+                            description: Label value (required).
+                        required:
+                        - value
+                    priority:
+                      description: Case priority. `medium` or `high` raise the case above the default in the queue; omit (or `none`) for normal priority. Only set this when the AOP or the user explicitly instructs prioritization — do not infer it on your own.
+                      type: string
+                      enum:
+                      - none
+                      - medium
+                      - high
+                  required:
+                  - title
+                cases:
+                  minItems: 1
+                  maxItems: 100
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        minLength: 1
+                        maxLength: 500
+                        description: Short title for the case (max 500 characters). Put long context in `data`.
+                      data:
+                        description: Additional data for the case. Free-form text or JSON; Agents receive this on claim.
+                        type: string
+                      labels:
+                        description: Optional labels to assign to the case at creation. Labels are created on the queue if they don't already exist.
+                        maxItems: 50
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              default: ''
+                              description: Label key (omit for a simple tag).
+                              type: string
+                            value:
+                              type: string
+                              minLength: 1
+                              description: Label value (required).
+                          required:
+                          - value
+                      priority:
+                        description: Case priority. `medium` or `high` raise the case above the default in the queue; omit (or `none`) for normal priority. Only set this when the AOP or the user explicitly instructs prioritization — do not infer it on your own.
+                        type: string
+                        enum:
+                        - none
+                        - medium
+                        - high
+                    required:
+                    - title
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  added_cases:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        queue_id:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        data:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - completed
+                          - failed
+                        priority:
+                          type: string
+                          enum:
+                          - none
+                          - medium
+                          - high
+                        display_status:
+                          type: string
+                          enum:
+                          - pending
+                          - in_progress
+                          - needs_input
+                          - postponed
+                          - completed
+                          - failed
+                        claimed_at:
+                          nullable: true
+                          type: string
+                        claimed_by_run_id:
+                          nullable: true
+                          type: string
+                        completed_at:
+                          nullable: true
+                          type: string
+                        postponed_to:
+                          nullable: true
+                          type: string
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        created_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_by_user_name:
+                          nullable: true
+                          type: string
+                        created_by_user_email:
+                          nullable: true
+                          type: string
+                        agent_run_status:
+                          nullable: true
+                          type: string
+                        agent_run_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        pending_human_request_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        pending_approval_batch_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        pending_approval_assignee_user_ids:
+                          type: array
+                          items:
+                            type: string
+                            format: uuid
+                        approval_approved_count:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        approval_rejected_count:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        eval_summary:
+                          nullable: true
+                          type: object
+                          properties:
+                            passed:
+                              type: number
+                            total:
+                              type: number
+                            final_comment:
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                              - ready
+                              - unavailable
+                              - in_progress
+                            severityCounts:
+                              type: object
+                              properties:
+                                critical:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                medium:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                low:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                              required:
+                              - critical
+                              - medium
+                              - low
+                              additionalProperties: false
+                          required:
+                          - passed
+                          - total
+                          - status
+                          additionalProperties: false
+                        search_match_data_snippet:
+                          type: object
+                          properties:
+                            before:
+                              type: string
+                            match:
+                              type: string
+                            after:
+                              type: string
+                          required:
+                          - before
+                          - match
+                          - after
+                          additionalProperties: false
+                        labels:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              key:
+                                type: string
+                              value:
+                                type: string
+                                minLength: 1
+                              color_hue:
+                                type: integer
+                                minimum: 0
+                                maximum: 360
+                            required:
+                            - id
+                            - key
+                            - value
+                            - color_hue
+                            additionalProperties: false
+                      required:
+                      - id
+                      - queue_id
+                      - title
+                      - data
+                      - status
+                      - priority
+                      - display_status
+                      - claimed_at
+                      - claimed_by_run_id
+                      - completed_at
+                      - postponed_to
+                      - created_at
+                      - updated_at
+                      - created_by_user_id
+                      - created_by_user_name
+                      - created_by_user_email
+                      - agent_run_status
+                      - agent_run_user_id
+                      - pending_human_request_id
+                      - pending_approval_batch_id
+                      - pending_approval_assignee_user_ids
+                      - approval_approved_count
+                      - approval_rejected_count
+                      - labels
+                      additionalProperties: false
+                required:
+                - added_cases
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Cases
+  /v2/cases/{case_id}:
+    get:
+      operationId: getCase
+      tags:
+      - Cases
+      description: Get a case by ID. Returns the case, its event history, and every case-approval batch ever created on the case (newest first).
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: case_id
+        required: true
+        description: The case's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  case:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      queue_id:
+                        type: string
+                        format: uuid
+                      title:
+                        type: string
+                      data:
+                        type: string
+                      status:
+                        type: string
+                        enum:
+                        - pending
+                        - completed
+                        - failed
+                      priority:
+                        type: string
+                        enum:
+                        - none
+                        - medium
+                        - high
+                      display_status:
+                        type: string
+                        enum:
+                        - pending
+                        - in_progress
+                        - needs_input
+                        - postponed
+                        - completed
+                        - failed
+                      claimed_at:
+                        nullable: true
+                        type: string
+                      claimed_by_run_id:
+                        nullable: true
+                        type: string
+                      completed_at:
+                        nullable: true
+                        type: string
+                      postponed_to:
+                        nullable: true
+                        type: string
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                      created_by_user_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      created_by_user_name:
+                        nullable: true
+                        type: string
+                      created_by_user_email:
+                        nullable: true
+                        type: string
+                      agent_run_status:
+                        nullable: true
+                        type: string
+                      agent_run_user_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      pending_human_request_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      pending_approval_batch_id:
+                        nullable: true
+                        type: string
+                        format: uuid
+                      pending_approval_assignee_user_ids:
+                        type: array
+                        items:
+                          type: string
+                          format: uuid
+                      approval_approved_count:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      approval_rejected_count:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      eval_summary:
+                        nullable: true
+                        type: object
+                        properties:
+                          passed:
+                            type: number
+                          total:
+                            type: number
+                          final_comment:
+                            type: string
+                          status:
+                            type: string
+                            enum:
+                            - ready
+                            - unavailable
+                            - in_progress
+                          severityCounts:
+                            type: object
+                            properties:
+                              critical:
+                                type: integer
+                                minimum: 0
+                                maximum: 9007199254740991
+                              medium:
+                                type: integer
+                                minimum: 0
+                                maximum: 9007199254740991
+                              low:
+                                type: integer
+                                minimum: 0
+                                maximum: 9007199254740991
+                            required:
+                            - critical
+                            - medium
+                            - low
+                            additionalProperties: false
+                        required:
+                        - passed
+                        - total
+                        - status
+                        additionalProperties: false
+                      search_match_data_snippet:
+                        type: object
+                        properties:
+                          before:
+                            type: string
+                          match:
+                            type: string
+                          after:
+                            type: string
+                        required:
+                        - before
+                        - match
+                        - after
+                        additionalProperties: false
+                      labels:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            key:
+                              type: string
+                            value:
+                              type: string
+                              minLength: 1
+                            color_hue:
+                              type: integer
+                              minimum: 0
+                              maximum: 360
+                          required:
+                          - id
+                          - key
+                          - value
+                          - color_hue
+                          additionalProperties: false
+                    required:
+                    - id
+                    - queue_id
+                    - title
+                    - data
+                    - status
+                    - priority
+                    - display_status
+                    - claimed_at
+                    - claimed_by_run_id
+                    - completed_at
+                    - postponed_to
+                    - created_at
+                    - updated_at
+                    - created_by_user_id
+                    - created_by_user_name
+                    - created_by_user_email
+                    - agent_run_status
+                    - agent_run_user_id
+                    - pending_human_request_id
+                    - pending_approval_batch_id
+                    - pending_approval_assignee_user_ids
+                    - approval_approved_count
+                    - approval_rejected_count
+                    - labels
+                    additionalProperties: false
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        case_queue_item_id:
+                          type: string
+                          format: uuid
+                        agent_run_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        human_request_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        type:
+                          type: string
+                        reason:
+                          nullable: true
+                          type: string
+                        created_at:
+                          type: string
+                        agent_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        agent_name:
+                          nullable: true
+                          type: string
+                        user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        user_name:
+                          nullable: true
+                          type: string
+                        user_email:
+                          nullable: true
+                          type: string
+                        human_request_title:
+                          nullable: true
+                          type: string
+                      required:
+                      - id
+                      - case_queue_item_id
+                      - agent_run_id
+                      - human_request_id
+                      - type
+                      - reason
+                      - created_at
+                      - agent_id
+                      - agent_name
+                      - user_id
+                      - user_name
+                      - user_email
+                      - human_request_title
+                      additionalProperties: false
+                  approvalBatches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        case_queue_item_id:
+                          type: string
+                          format: uuid
+                        agent_run_id:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        created_at:
+                          type: string
+                        resolved_at:
+                          nullable: true
+                          type: string
+                        cancelled_at:
+                          nullable: true
+                          type: string
+                        cancellation_reason:
+                          nullable: true
+                          type: string
+                        rows:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              assignee_user_id:
+                                type: string
+                                format: uuid
+                              assignee_name:
+                                nullable: true
+                                type: string
+                              assignee_email:
+                                nullable: true
+                                type: string
+                              prompt:
+                                type: string
+                              decision:
+                                nullable: true
+                                type: string
+                                enum:
+                                - approved
+                                - rejected
+                              responded_at:
+                                nullable: true
+                                type: string
+                              responded_by_user_id:
+                                nullable: true
+                                type: string
+                                format: uuid
+                              responded_by_name:
+                                nullable: true
+                                type: string
+                              responded_by_email:
+                                nullable: true
+                                type: string
+                              cancelled_at:
+                                nullable: true
+                                type: string
+                              cancellation_reason:
+                                nullable: true
+                                type: string
+                            required:
+                            - id
+                            - assignee_user_id
+                            - assignee_name
+                            - assignee_email
+                            - prompt
+                            - decision
+                            - responded_at
+                            - responded_by_user_id
+                            - responded_by_name
+                            - responded_by_email
+                            - cancelled_at
+                            - cancellation_reason
+                            additionalProperties: false
+                      required:
+                      - id
+                      - case_queue_item_id
+                      - agent_run_id
+                      - title
+                      - created_at
+                      - resolved_at
+                      - cancelled_at
+                      - cancellation_reason
+                      - rows
+                      additionalProperties: false
+                required:
+                - case
+                - events
+                - approvalBatches
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Case
+    delete:
+      operationId: deleteCase
+      tags:
+      - Cases
+      description: Delete a case. Interrupts any associated active runs first.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: case_id
+        required: true
+        description: The case's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  interruptedRunIds:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                required:
+                - success
+                - interruptedRunIds
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Case
+  /v2/cases/{case_id}/runs:
+    get:
+      operationId: listCaseRuns
+      tags:
+      - Cases
+      description: List Runs (agent runs) that have claimed or received handover of a case, newest first. Capped at 50 ownership events.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: case_id
+        required: true
+        description: The case's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        case_queue_item_id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        agent_name:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                          - not_started
+                          - pending
+                          - starting
+                          - running
+                          - waiting
+                          - completed
+                          - failed
+                          - interrupted
+                        source:
+                          nullable: true
+                          type: string
+                        created_at:
+                          type: string
+                        started_at:
+                          nullable: true
+                          type: string
+                        completed_at:
+                          nullable: true
+                          type: string
+                        claimed_at:
+                          type: string
+                        has_pending_human_request:
+                          type: boolean
+                        pending_human_request_title:
+                          nullable: true
+                          type: string
+                        evaluation:
+                          type: object
+                          properties:
+                            passed:
+                              type: number
+                            total:
+                              type: number
+                            final_comment:
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                              - ready
+                              - unavailable
+                              - in_progress
+                            severityCounts:
+                              type: object
+                              properties:
+                                critical:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                medium:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                low:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                              required:
+                              - critical
+                              - medium
+                              - low
+                              additionalProperties: false
+                          required:
+                          - passed
+                          - total
+                          - status
+                          additionalProperties: false
+                        user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        user_name:
+                          nullable: true
+                          type: string
+                        user_email:
+                          nullable: true
+                          type: string
+                      required:
+                      - id
+                      - case_queue_item_id
+                      - agent_id
+                      - agent_name
+                      - status
+                      - source
+                      - created_at
+                      - started_at
+                      - completed_at
+                      - claimed_at
+                      - has_pending_human_request
+                      - pending_human_request_title
+                      - evaluation
+                      - user_id
+                      - user_name
+                      - user_email
+                      additionalProperties: false
+                required:
+                - runs
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Case Runs
+  /v2/cases/{case_id}/runs/{run_id}/recent-messages:
+    get:
+      operationId: listCaseRunRecentMessages
+      tags:
+      - Cases
+      description: Return the latest qualifying messages (assistant text + tool calls) for a Run on a case, newest last. Used to populate the live body of an active Run card in the case Activity timeline.
+      parameters:
+      - schema:
+          type: integer
+          minimum: 1
+          maximum: 10
+        in: query
+        name: limit
+        required: false
+        description: Maximum number of qualifying messages to return. Defaults to 3, must be between 1 and 10.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: case_id
+        required: true
+        description: The case's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: run_id
+        required: true
+        description: The agent run's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      allOf:
+                      - anyOf:
+                        - allOf:
+                          - type: object
+                            properties:
+                              id:
+                                type: string
+                              type:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - text
+                                - type: string
+                                  enum:
+                                  - tool_call
+                                - type: string
+                                  enum:
+                                  - tool_result
+                                - type: string
+                                  enum:
+                                  - system
+                                - type: string
+                                  enum:
+                                  - thinking
+                              runtime:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - responses
+                                - type: string
+                                  enum:
+                                  - terminal-agent
+                              timestamp:
+                                type: string
+                              raw_message:
+                                anyOf:
+                                - type: object
+                                  properties:
+                                    session_id:
+                                      type: string
+                                    uuid:
+                                      type: string
+                                  required:
+                                  - session_id
+                                  - uuid
+                                  additionalProperties: {}
+                              role:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - user
+                                - type: string
+                                  enum:
+                                  - assistant
+                                - type: string
+                                  enum:
+                                  - system
+                            required:
+                            - id
+                            - type
+                            - runtime
+                            - timestamp
+                            - raw_message
+                            - role
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              type:
+                                type: string
+                                enum:
+                                - text
+                              role:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - assistant
+                                - type: string
+                                  enum:
+                                  - user
+                              text_content:
+                                type: string
+                              metadata:
+                                type: object
+                                properties:
+                                  isAgentInstruction:
+                                    type: boolean
+                                additionalProperties: {}
+                            required:
+                            - type
+                            - role
+                            - text_content
+                            additionalProperties: false
+                        - allOf:
+                          - type: object
+                            properties:
+                              id:
+                                type: string
+                              type:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - text
+                                - type: string
+                                  enum:
+                                  - tool_call
+                                - type: string
+                                  enum:
+                                  - tool_result
+                                - type: string
+                                  enum:
+                                  - system
+                                - type: string
+                                  enum:
+                                  - thinking
+                              runtime:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - responses
+                                - type: string
+                                  enum:
+                                  - terminal-agent
+                              timestamp:
+                                type: string
+                              raw_message:
+                                anyOf:
+                                - type: object
+                                  properties:
+                                    session_id:
+                                      type: string
+                                    uuid:
+                                      type: string
+                                  required:
+                                  - session_id
+                                  - uuid
+                                  additionalProperties: {}
+                              role:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - user
+                                - type: string
+                                  enum:
+                                  - assistant
+                                - type: string
+                                  enum:
+                                  - system
+                            required:
+                            - id
+                            - type
+                            - runtime
+                            - timestamp
+                            - raw_message
+                            - role
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              type:
+                                type: string
+                                enum:
+                                - thinking
+                              role:
+                                type: string
+                                enum:
+                                - assistant
+                              text_content:
+                                type: string
+                            required:
+                            - type
+                            - role
+                            - text_content
+                            additionalProperties: false
+                        - allOf:
+                          - type: object
+                            properties:
+                              id:
+                                type: string
+                              type:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - text
+                                - type: string
+                                  enum:
+                                  - tool_call
+                                - type: string
+                                  enum:
+                                  - tool_result
+                                - type: string
+                                  enum:
+                                  - system
+                                - type: string
+                                  enum:
+                                  - thinking
+                              runtime:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - responses
+                                - type: string
+                                  enum:
+                                  - terminal-agent
+                              timestamp:
+                                type: string
+                              raw_message:
+                                anyOf:
+                                - type: object
+                                  properties:
+                                    session_id:
+                                      type: string
+                                    uuid:
+                                      type: string
+                                  required:
+                                  - session_id
+                                  - uuid
+                                  additionalProperties: {}
+                              role:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - user
+                                - type: string
+                                  enum:
+                                  - assistant
+                                - type: string
+                                  enum:
+                                  - system
+                            required:
+                            - id
+                            - type
+                            - runtime
+                            - timestamp
+                            - raw_message
+                            - role
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              type:
+                                type: string
+                                enum:
+                                - tool_call
+                              role:
+                                type: string
+                                enum:
+                                - assistant
+                              mcp_server_label:
+                                type: string
+                              tool_call:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                  name:
+                                    type: string
+                                  arguments:
+                                    type: object
+                                    additionalProperties: {}
+                                required:
+                                - id
+                                - name
+                                additionalProperties: false
+                            required:
+                            - type
+                            - role
+                            - tool_call
+                            additionalProperties: false
+                        - allOf:
+                          - type: object
+                            properties:
+                              id:
+                                type: string
+                              type:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - text
+                                - type: string
+                                  enum:
+                                  - tool_call
+                                - type: string
+                                  enum:
+                                  - tool_result
+                                - type: string
+                                  enum:
+                                  - system
+                                - type: string
+                                  enum:
+                                  - thinking
+                              runtime:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - responses
+                                - type: string
+                                  enum:
+                                  - terminal-agent
+                              timestamp:
+                                type: string
+                              raw_message:
+                                anyOf:
+                                - type: object
+                                  properties:
+                                    session_id:
+                                      type: string
+                                    uuid:
+                                      type: string
+                                  required:
+                                  - session_id
+                                  - uuid
+                                  additionalProperties: {}
+                              role:
+                                anyOf:
+                                - type: string
+                                  enum:
+                                  - user
+                                - type: string
+                                  enum:
+                                  - assistant
+                                - type: string
+                                  enum:
+                                  - system
+                            required:
+                            - id
+                            - type
+                            - runtime
+                            - timestamp
+                            - raw_message
+                            - role
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              type:
+                                type: string
+                                enum:
+                                - tool_result
+                              role:
+                                type: string
+                                enum:
+                                - assistant
+                              mcp_server_label:
+                                type: string
+                              tool_result:
+                                type: object
+                                properties:
+                                  tool_call_id:
+                                    type: string
+                                  result: {}
+                                  error:
+                                    type: string
+                                required:
+                                - tool_call_id
+                                additionalProperties: false
+                            required:
+                            - type
+                            - role
+                            - tool_result
+                            additionalProperties: false
+                        - anyOf:
+                          - allOf:
+                            - type: object
+                              properties:
+                                id:
+                                  type: string
+                                runtime:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - responses
+                                  - type: string
+                                    enum:
+                                    - terminal-agent
+                                timestamp:
+                                  type: string
+                                role:
+                                  type: string
+                                  enum:
+                                  - duvo
+                                type:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - agent_run_created
+                                  - type: string
+                                    enum:
+                                    - session_started
+                                  - type: string
+                                    enum:
+                                    - session_completed
+                                  - type: string
+                                    enum:
+                                    - session_interrupted
+                                  - type: string
+                                    enum:
+                                    - session_error
+                                  - type: string
+                                    enum:
+                                    - browser_session_created
+                              required:
+                              - id
+                              - runtime
+                              - timestamp
+                              - role
+                              - type
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                  - session_started
+                              required:
+                              - type
+                              additionalProperties: false
+                          - allOf:
+                            - type: object
+                              properties:
+                                id:
+                                  type: string
+                                runtime:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - responses
+                                  - type: string
+                                    enum:
+                                    - terminal-agent
+                                timestamp:
+                                  type: string
+                                role:
+                                  type: string
+                                  enum:
+                                  - duvo
+                                type:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - agent_run_created
+                                  - type: string
+                                    enum:
+                                    - session_started
+                                  - type: string
+                                    enum:
+                                    - session_completed
+                                  - type: string
+                                    enum:
+                                    - session_interrupted
+                                  - type: string
+                                    enum:
+                                    - session_error
+                                  - type: string
+                                    enum:
+                                    - browser_session_created
+                              required:
+                              - id
+                              - runtime
+                              - timestamp
+                              - role
+                              - type
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                  - session_completed
+                                phases:
+                                  type: object
+                                  properties:
+                                    setupMs:
+                                      type: number
+                                    preflightMs:
+                                      type: number
+                                    warmupMs:
+                                      nullable: true
+                                      type: number
+                                    warmupOutcome:
+                                      type: string
+                                      enum:
+                                      - warmed
+                                      - skipped
+                                      - failed
+                                    modelTtftMs:
+                                      type: number
+                                    firstTokenMs:
+                                      type: number
+                                  additionalProperties: false
+                              required:
+                              - type
+                              additionalProperties: false
+                          - allOf:
+                            - type: object
+                              properties:
+                                id:
+                                  type: string
+                                runtime:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - responses
+                                  - type: string
+                                    enum:
+                                    - terminal-agent
+                                timestamp:
+                                  type: string
+                                role:
+                                  type: string
+                                  enum:
+                                  - duvo
+                                type:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - agent_run_created
+                                  - type: string
+                                    enum:
+                                    - session_started
+                                  - type: string
+                                    enum:
+                                    - session_completed
+                                  - type: string
+                                    enum:
+                                    - session_interrupted
+                                  - type: string
+                                    enum:
+                                    - session_error
+                                  - type: string
+                                    enum:
+                                    - browser_session_created
+                              required:
+                              - id
+                              - runtime
+                              - timestamp
+                              - role
+                              - type
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                  - session_interrupted
+                              required:
+                              - type
+                              additionalProperties: false
+                          - allOf:
+                            - type: object
+                              properties:
+                                id:
+                                  type: string
+                                runtime:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - responses
+                                  - type: string
+                                    enum:
+                                    - terminal-agent
+                                timestamp:
+                                  type: string
+                                role:
+                                  type: string
+                                  enum:
+                                  - duvo
+                                type:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - agent_run_created
+                                  - type: string
+                                    enum:
+                                    - session_started
+                                  - type: string
+                                    enum:
+                                    - session_completed
+                                  - type: string
+                                    enum:
+                                    - session_interrupted
+                                  - type: string
+                                    enum:
+                                    - session_error
+                                  - type: string
+                                    enum:
+                                    - browser_session_created
+                              required:
+                              - id
+                              - runtime
+                              - timestamp
+                              - role
+                              - type
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                  - agent_run_created
+                                agent_run_id:
+                                  type: string
+                              required:
+                              - type
+                              - agent_run_id
+                              additionalProperties: false
+                          - allOf:
+                            - type: object
+                              properties:
+                                id:
+                                  type: string
+                                runtime:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - responses
+                                  - type: string
+                                    enum:
+                                    - terminal-agent
+                                timestamp:
+                                  type: string
+                                role:
+                                  type: string
+                                  enum:
+                                  - duvo
+                                type:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - agent_run_created
+                                  - type: string
+                                    enum:
+                                    - session_started
+                                  - type: string
+                                    enum:
+                                    - session_completed
+                                  - type: string
+                                    enum:
+                                    - session_interrupted
+                                  - type: string
+                                    enum:
+                                    - session_error
+                                  - type: string
+                                    enum:
+                                    - browser_session_created
+                              required:
+                              - id
+                              - runtime
+                              - timestamp
+                              - role
+                              - type
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                  - browser_session_created
+                                browser_session_id:
+                                  type: string
+                              required:
+                              - type
+                              - browser_session_id
+                              additionalProperties: false
+                          - allOf:
+                            - type: object
+                              properties:
+                                id:
+                                  type: string
+                                runtime:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - responses
+                                  - type: string
+                                    enum:
+                                    - terminal-agent
+                                timestamp:
+                                  type: string
+                                role:
+                                  type: string
+                                  enum:
+                                  - duvo
+                                type:
+                                  anyOf:
+                                  - type: string
+                                    enum:
+                                    - agent_run_created
+                                  - type: string
+                                    enum:
+                                    - session_started
+                                  - type: string
+                                    enum:
+                                    - session_completed
+                                  - type: string
+                                    enum:
+                                    - session_interrupted
+                                  - type: string
+                                    enum:
+                                    - session_error
+                                  - type: string
+                                    enum:
+                                    - browser_session_created
+                              required:
+                              - id
+                              - runtime
+                              - timestamp
+                              - role
+                              - type
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                  - session_error
+                                error:
+                                  type: string
+                              required:
+                              - type
+                              - error
+                              additionalProperties: false
+                      - type: object
+                        properties:
+                          created_at:
+                            type: string
+                        additionalProperties: false
+                required:
+                - messages
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Case Run Recent Messages
+  /v2/queues/{queue_id}/cases/bulk-delete:
+    post:
+      operationId: bulkDeleteCases
+      tags:
+      - Cases
+      description: Delete multiple cases from a queue. Any active runs are interrupted first.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_ids:
+                  description: Explicit case IDs to act on (1-100). Provide this or set all_matching.
+                  minItems: 1
+                  maxItems: 100
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                all_matching:
+                  description: When true, act on every case matching the provided filters/search instead of an explicit id list.
+                  type: boolean
+                filters:
+                  description: Filters selecting the cases when all_matching is true.
+                  type: object
+                  properties:
+                    status:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - pending
+                        - claimed
+                        - completed
+                        - failed
+                        - needs_input
+                        - postponed
+                    priority:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - none
+                        - medium
+                        - high
+                    created_at_from:
+                      type: string
+                    updated_at_from:
+                      type: string
+                    labels:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: string
+                search:
+                  description: Free-text search selecting the cases when all_matching is true.
+                  type: string
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deletedCount:
+                    type: number
+                  interruptedRunIds:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                required:
+                - deletedCount
+                - interruptedRunIds
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Bulk Delete Cases
+  /v2/queues/{queue_id}/cases/bulk-reprocess:
+    post:
+      operationId: bulkReprocessCases
+      tags:
+      - Cases
+      description: Re-process multiple cases on a chosen agent. Any active runs on the selected cases are interrupted first; the cases are then reset to pending and assigned to the chosen agent for the next dispatcher tick. The chosen agent must already be connected to the queue as a case-queue-consumer (with the trigger enabled or disabled).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_ids:
+                  description: Explicit case IDs to act on (1-100). Provide this or set all_matching.
+                  minItems: 1
+                  maxItems: 100
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                all_matching:
+                  description: When true, act on every case matching the provided filters/search instead of an explicit id list.
+                  type: boolean
+                filters:
+                  description: Filters selecting the cases when all_matching is true.
+                  type: object
+                  properties:
+                    status:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - pending
+                        - claimed
+                        - completed
+                        - failed
+                        - needs_input
+                        - postponed
+                    priority:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - none
+                        - medium
+                        - high
+                    created_at_from:
+                      type: string
+                    updated_at_from:
+                      type: string
+                    labels:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: string
+                search:
+                  description: Free-text search selecting the cases when all_matching is true.
+                  type: string
+                agent_id:
+                  type: string
+                  format: uuid
+                  description: The agent that should run on the selected cases. Must be a consumer of this queue.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reprocessedCount:
+                    type: number
+                  skippedCount:
+                    type: number
+                  delegatedCount:
+                    type: number
+                    deprecated: true
+                    description: Deprecated alias of reprocessedCount, kept for clients redirected from bulk-delegate. Removed on 2026-06-10.
+                  retriedCount:
+                    type: number
+                    deprecated: true
+                    description: Deprecated alias of reprocessedCount, kept for clients redirected from bulk-retry. Removed on 2026-06-10.
+                required:
+                - reprocessedCount
+                - skippedCount
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Bulk Reprocess Cases
+  /v2/queues/{queue_id}/cases/bulk-delegate:
+    post:
+      operationId: bulkDelegateCases
+      tags:
+      - Cases
+      description: 'Deprecated: use POST /queues/{queue_id}/cases/bulk-reprocess instead. Permanently redirects (308) to bulk-reprocess. Scheduled for removal on 2026-06-10.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_ids:
+                  minItems: 1
+                  maxItems: 100
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Case IDs to delegate (1-100).
+                agent_id:
+                  type: string
+                  format: uuid
+                  description: The agent that should run on the selected cases.
+              required:
+              - case_ids
+              - agent_id
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      deprecated: true
+      security:
+      - bearerAuth: []
+      responses:
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Bulk Delegate Cases
+  /v2/queues/{queue_id}/cases/bulk-retry:
+    post:
+      operationId: bulkRetryCases
+      tags:
+      - Cases
+      description: 'Deprecated: use POST /queues/{queue_id}/cases/bulk-reprocess instead. Permanently redirects (308) to bulk-reprocess, which re-processes on the queue''s auto-triggered assignment. Scheduled for removal on 2026-06-10.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_ids:
+                  minItems: 1
+                  maxItems: 100
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Case IDs to retry (1-100).
+              required:
+              - case_ids
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      deprecated: true
+      security:
+      - bearerAuth: []
+      responses:
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Bulk Retry Cases
+  /v2/queues/{queue_id}/cases/bulk-update-status:
+    post:
+      operationId: bulkUpdateCaseStatus
+      tags:
+      - Cases
+      description: Update the status of multiple cases to pending, completed, or failed. Interrupts any active runs and releases their case ownership, but never cancels their human-in-the-loop state — pending requests and open approval batches stay answerable/resolvable from the run view. Resetting to pending re-dispatches cases to the queue's trigger consumer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_ids:
+                  description: Explicit case IDs to act on (1-100). Provide this or set all_matching.
+                  minItems: 1
+                  maxItems: 100
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                all_matching:
+                  description: When true, act on every case matching the provided filters/search instead of an explicit id list.
+                  type: boolean
+                filters:
+                  description: Filters selecting the cases when all_matching is true.
+                  type: object
+                  properties:
+                    status:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - pending
+                        - claimed
+                        - completed
+                        - failed
+                        - needs_input
+                        - postponed
+                    priority:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - none
+                        - medium
+                        - high
+                    created_at_from:
+                      type: string
+                    updated_at_from:
+                      type: string
+                    labels:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: string
+                search:
+                  description: Free-text search selecting the cases when all_matching is true.
+                  type: string
+                status:
+                  type: string
+                  enum:
+                  - pending
+                  - completed
+                  - failed
+                  description: Target status for each case. `completed` and `failed` are terminal; `pending` resets the case (the queue's trigger consumer, if any, will re-claim it).
+              required:
+              - status
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updatedCount:
+                    type: number
+                  skippedCount:
+                    type: number
+                  interruptedRunIds:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                required:
+                - updatedCount
+                - skippedCount
+                - interruptedRunIds
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Bulk Update Case Status
+  /v2/queues/{queue_id}/cases/bulk-update-priority:
+    post:
+      operationId: bulkUpdateCasePriority
+      tags:
+      - Cases
+      description: 'Set the priority of multiple cases. Priority only affects the order pending cases are picked up in: due postponed cases are handled first, then higher priority. It never interrupts runs or changes case status. Set `none` to clear priority back to the default.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                case_ids:
+                  description: Explicit case IDs to act on (1-100). Provide this or set all_matching.
+                  minItems: 1
+                  maxItems: 100
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                all_matching:
+                  description: When true, act on every case matching the provided filters/search instead of an explicit id list.
+                  type: boolean
+                filters:
+                  description: Filters selecting the cases when all_matching is true.
+                  type: object
+                  properties:
+                    status:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - pending
+                        - claimed
+                        - completed
+                        - failed
+                        - needs_input
+                        - postponed
+                    priority:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - none
+                        - medium
+                        - high
+                    created_at_from:
+                      type: string
+                    updated_at_from:
+                      type: string
+                    labels:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: string
+                search:
+                  description: Free-text search selecting the cases when all_matching is true.
+                  type: string
+                priority:
+                  type: string
+                  enum:
+                  - none
+                  - medium
+                  - high
+                  description: Target priority for each case. `medium`/`high` raise it above the default; `none` clears it.
+              required:
+              - priority
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updatedCount:
+                    type: number
+                  skippedCount:
+                    type: number
+                required:
+                - updatedCount
+                - skippedCount
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Bulk Update Case Priority
+  /v2/queues/{queue_id}/cases/{case_id}/labels:
+    post:
+      operationId: assignCaseLabels
+      tags:
+      - Cases
+      description: Assign one or more labels to a case. Creates the labels on the queue if they don't already exist.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                labels:
+                  minItems: 1
+                  maxItems: 50
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        default: ''
+                        type: string
+                      value:
+                        type: string
+                        minLength: 1
+                    required:
+                    - value
+              required:
+              - labels
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: case_id
+        required: true
+        description: The case's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        key:
+                          type: string
+                        value:
+                          type: string
+                          minLength: 1
+                        color_hue:
+                          type: integer
+                          minimum: 0
+                          maximum: 360
+                      required:
+                      - id
+                      - key
+                      - value
+                      - color_hue
+                      additionalProperties: false
+                required:
+                - labels
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Assign Case Labels
+    get:
+      operationId: listCaseLabels
+      tags:
+      - Cases
+      description: List all labels assigned to a case.
+      parameters:
+      - schema:
+          default: 1000
+          type: integer
+          minimum: 1
+          maximum: 1000
+        in: query
+        name: limit
+        required: false
+        description: Maximum number of labels to return.
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Zero-based offset for pagination.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: case_id
+        required: true
+        description: The case's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        key:
+                          type: string
+                        value:
+                          type: string
+                          minLength: 1
+                        color_hue:
+                          type: integer
+                          minimum: 0
+                          maximum: 360
+                      required:
+                      - id
+                      - key
+                      - value
+                      - color_hue
+                      additionalProperties: false
+                required:
+                - labels
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Case Labels
+  /v2/queues/{queue_id}/labels:
+    get:
+      operationId: listQueueLabels
+      tags:
+      - Cases
+      description: List every label defined on a queue along with the count of cases each label is assigned to.
+      parameters:
+      - schema:
+          default: 1000
+          type: integer
+          minimum: 1
+          maximum: 1000
+        in: query
+        name: limit
+        required: false
+        description: Maximum number of labels to return.
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Zero-based offset for pagination.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        key:
+                          type: string
+                        value:
+                          type: string
+                          minLength: 1
+                        color_hue:
+                          type: integer
+                          minimum: 0
+                          maximum: 360
+                        case_count:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                      required:
+                      - id
+                      - key
+                      - value
+                      - color_hue
+                      - case_count
+                      additionalProperties: false
+                required:
+                - labels
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Queue Labels
+    post:
+      operationId: createQueueLabel
+      tags:
+      - Cases
+      description: Create a label on a queue without assigning it to a case.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  default: ''
+                  type: string
+                value:
+                  type: string
+                  minLength: 1
+                color_hue:
+                  type: integer
+                  minimum: 0
+                  maximum: 360
+              required:
+              - value
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  label:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      key:
+                        type: string
+                      value:
+                        type: string
+                        minLength: 1
+                      color_hue:
+                        type: integer
+                        minimum: 0
+                        maximum: 360
+                      case_count:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                    required:
+                    - id
+                    - key
+                    - value
+                    - color_hue
+                    - case_count
+                    additionalProperties: false
+                required:
+                - label
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Queue Label
+  /v2/queues/{queue_id}/cases/{case_id}/labels/unlink:
+    post:
+      operationId: unlinkCaseLabels
+      tags:
+      - Cases
+      description: Remove the given labels from a case.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label_ids:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+              required:
+              - label_ids
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: case_id
+        required: true
+        description: The case's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                - success
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Unlink Case Labels
+  /v2/queues/{queue_id}/labels/{label_id}:
+    delete:
+      operationId: deleteQueueLabel
+      tags:
+      - Cases
+      description: Delete a label from a queue. Cascade-deletes all assignments of this label on existing cases.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: label_id
+        required: true
+        description: The label's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                - success
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Queue Label
+    patch:
+      operationId: updateQueueLabel
+      tags:
+      - Cases
+      description: Update a label's key, value, or color. Renaming key/value affects every case assigned to this label.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  type: string
+                value:
+                  type: string
+                  minLength: 1
+                color_hue:
+                  type: integer
+                  minimum: 0
+                  maximum: 360
+              required:
+              - value
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: label_id
+        required: true
+        description: The label's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  label:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      key:
+                        type: string
+                      value:
+                        type: string
+                        minLength: 1
+                      color_hue:
+                        type: integer
+                        minimum: 0
+                        maximum: 360
+                    required:
+                    - id
+                    - key
+                    - value
+                    - color_hue
+                    additionalProperties: false
+                required:
+                - label
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Queue Label
+  /v2/queues/{queue_id}/cases/search:
+    post:
+      operationId: searchCases
+      tags:
+      - Cases
+      description: Search cases in a queue with rich filters (multi-status, date ranges, label-based filters). Use this when the simple query-string filters on GET /v2/teams/:team_id/queues/:queue_id/cases aren't enough.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filters:
+                  default: {}
+                  type: object
+                  properties:
+                    status:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - pending
+                        - claimed
+                        - completed
+                        - failed
+                        - needs_input
+                        - postponed
+                    priority:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - none
+                        - medium
+                        - high
+                    created_at_from:
+                      type: string
+                    updated_at_from:
+                      type: string
+                    labels:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: string
+                limit:
+                  default: 25
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                offset:
+                  default: 0
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                sort_by:
+                  default: created_at
+                  type: string
+                  enum:
+                  - created_at
+                  - updated_at
+                  - postponed_to
+                sort_order:
+                  default: desc
+                  type: string
+                  enum:
+                  - asc
+                  - desc
+                search:
+                  type: string
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cases:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        queue_id:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        data:
+                          type: string
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - completed
+                          - failed
+                        priority:
+                          type: string
+                          enum:
+                          - none
+                          - medium
+                          - high
+                        display_status:
+                          type: string
+                          enum:
+                          - pending
+                          - in_progress
+                          - needs_input
+                          - postponed
+                          - completed
+                          - failed
+                        claimed_at:
+                          nullable: true
+                          type: string
+                        claimed_by_run_id:
+                          nullable: true
+                          type: string
+                        completed_at:
+                          nullable: true
+                          type: string
+                        postponed_to:
+                          nullable: true
+                          type: string
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        created_by_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        created_by_user_name:
+                          nullable: true
+                          type: string
+                        created_by_user_email:
+                          nullable: true
+                          type: string
+                        agent_run_status:
+                          nullable: true
+                          type: string
+                        agent_run_user_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        pending_human_request_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        pending_approval_batch_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        pending_approval_assignee_user_ids:
+                          type: array
+                          items:
+                            type: string
+                            format: uuid
+                        approval_approved_count:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        approval_rejected_count:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        eval_summary:
+                          nullable: true
+                          type: object
+                          properties:
+                            passed:
+                              type: number
+                            total:
+                              type: number
+                            final_comment:
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                              - ready
+                              - unavailable
+                              - in_progress
+                            severityCounts:
+                              type: object
+                              properties:
+                                critical:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                medium:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                                low:
+                                  type: integer
+                                  minimum: 0
+                                  maximum: 9007199254740991
+                              required:
+                              - critical
+                              - medium
+                              - low
+                              additionalProperties: false
+                          required:
+                          - passed
+                          - total
+                          - status
+                          additionalProperties: false
+                        search_match_data_snippet:
+                          type: object
+                          properties:
+                            before:
+                              type: string
+                            match:
+                              type: string
+                            after:
+                              type: string
+                          required:
+                          - before
+                          - match
+                          - after
+                          additionalProperties: false
+                        labels:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              key:
+                                type: string
+                              value:
+                                type: string
+                                minLength: 1
+                              color_hue:
+                                type: integer
+                                minimum: 0
+                                maximum: 360
+                            required:
+                            - id
+                            - key
+                            - value
+                            - color_hue
+                            additionalProperties: false
+                      required:
+                      - id
+                      - queue_id
+                      - title
+                      - data
+                      - status
+                      - priority
+                      - display_status
+                      - claimed_at
+                      - claimed_by_run_id
+                      - completed_at
+                      - postponed_to
+                      - created_at
+                      - updated_at
+                      - created_by_user_id
+                      - created_by_user_name
+                      - created_by_user_email
+                      - agent_run_status
+                      - agent_run_user_id
+                      - pending_human_request_id
+                      - pending_approval_batch_id
+                      - pending_approval_assignee_user_ids
+                      - approval_approved_count
+                      - approval_rejected_count
+                      - labels
+                      additionalProperties: false
+                  total:
+                    type: number
+                  limit:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                - cases
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Search Cases
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

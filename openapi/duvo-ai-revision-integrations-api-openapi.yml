@@ -1,0 +1,1169 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Revision Integrations API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Revision Integrations
+  description: Attach integrations to assignment revisions, pin specific connections, and link queues
+paths:
+  /v2/agents/{agent_id}/revisions/{build_id}/integrations:
+    get:
+      operationId: listRevisionIntegrations
+      tags:
+      - Revision Integrations
+      description: List integrations attached to an agent revision.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: Agent ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: Build ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  integrations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        integration_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        custom_integration_id:
+                          nullable: true
+                          type: string
+                          format: uuid
+                        integration_type:
+                          type: string
+                        integration_name:
+                          type: string
+                        created_at:
+                          type: string
+                      required:
+                      - id
+                      - integration_id
+                      - custom_integration_id
+                      - integration_type
+                      - integration_name
+                      - created_at
+                      additionalProperties: false
+                required:
+                - integrations
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Revision Integrations
+    post:
+      operationId: attachRevisionIntegrations
+      tags:
+      - Revision Integrations
+      description: 'Attach one or more integrations to an agent revision. To pin specific connections after attachment, use pinRevisionIntegrationConnection. IMPORTANT for the case-queue-producer and case-queue-consumer integrations: attaching the integration alone is NOT enough — the slot points at no queue and will fail at runtime until you link at least one queue with replaceRevisionIntegrationQueues. After wiring up, call getRevisionCaseQueueSetup to confirm every case-queue slot has linked_queue_count > 0 before starting work.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                integration_ids:
+                  minItems: 1
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Integration IDs (or custom integration IDs) to attach to the revision
+              required:
+              - integration_ids
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: Agent ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: Build ID
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if integrations were attached
+                  count:
+                    type: number
+                    description: Number of new integrations attached to the revision
+                required:
+                - success
+                - count
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Attach Revision Integrations
+  /v2/agents/{agent_id}/revisions/{build_id}/integrations/{integration_id}:
+    delete:
+      operationId: removeRevisionIntegration
+      tags:
+      - Revision Integrations
+      description: Remove an integration from an agent revision. Removes the slot for everyone on the revision, including all per-user connection pins. Requires edit permission on the agent.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: Agent ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: Build ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: integration_id
+        required: true
+        description: Integration ID (catalog integration ID or slot ID from the list response)
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if the integration was removed
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Remove Revision Integration
+  /v2/agents/{agent_id}/revisions/{build_id}/integrations/{integration_id}/connections:
+    get:
+      operationId: listRevisionIntegrationConnections
+      tags:
+      - Revision Integrations
+      description: 'List the connections you have pinned to this build''s integration slot. Multi-pin is supported: you can pin multiple connections to the same slot.'
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: Agent ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: Build ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: integration_id
+        required: true
+        description: Integration ID (catalog integration ID or slot ID from the list response)
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        connection_id:
+                          type: string
+                          format: uuid
+                          description: Connection (integration_instance) identifier
+                        created_at:
+                          type: string
+                          description: ISO 8601 timestamp when the pin was created
+                      required:
+                      - connection_id
+                      - created_at
+                      additionalProperties: false
+                    description: Connections pinned by the calling user to this slot
+                required:
+                - connections
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Revision Integration Connections
+    post:
+      operationId: pinRevisionIntegrationConnection
+      tags:
+      - Revision Integrations
+      description: 'Pin one of your connections (from GET /v2/teams/:team_id/connections) to this build''s integration slot. Multi-pin is supported: a single user can pin multiple connections to the same slot.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                connection_id:
+                  type: string
+                  format: uuid
+                  description: ID of one of your connections (from GET /v2/teams/:team_id/connections) to pin to this slot
+              required:
+              - connection_id
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: Agent ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: Build ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: integration_id
+        required: true
+        description: Integration ID (catalog integration ID or slot ID from the list response)
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if the connection was pinned
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Pin Revision Integration Connection
+  /v2/agents/{agent_id}/revisions/{build_id}/integrations/{integration_id}/connections/{connection_id}:
+    delete:
+      operationId: unpinRevisionIntegrationConnection
+      tags:
+      - Revision Integrations
+      description: Unpin one of your connections from this build's integration slot. The connection itself is not deleted; only the binding to this slot is removed.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: Agent ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: Build ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: integration_id
+        required: true
+        description: Integration ID (catalog integration ID or slot ID from the list response)
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: connection_id
+        required: true
+        description: Connection ID to unpin
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if the connection is no longer pinned to the slot
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Unpin Revision Integration Connection
+  /v2/agents/{agent_id}/revisions/{build_id}/case-queue-validation:
+    get:
+      operationId: getRevisionCaseQueueSetup
+      tags:
+      - Revision Integrations
+      description: Check that this build's case-queue integration slots are wired up correctly. Returns, per case-queue-producer/consumer slot, how many queues are linked, plus whether your team owns any case queues. A slot with linked_queue_count of 0 is attached but points at no queue and will fail at runtime — link a queue with replaceRevisionIntegrationQueues before starting work.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: Agent ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: Build ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  configs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        config_id:
+                          type: string
+                          format: uuid
+                          description: Integration slot (agent_integration_config) ID
+                        integration_type:
+                          type: string
+                          description: Slug of the integration type (e.g. case-queue-producer)
+                        linked_queue_count:
+                          type: number
+                          description: Number of queues currently linked to this slot
+                      required:
+                      - config_id
+                      - integration_type
+                      - linked_queue_count
+                      additionalProperties: false
+                    description: Per-slot queue link summary for the build
+                  has_available_queues:
+                    type: boolean
+                    description: True if the current team owns at least one queue
+                required:
+                - configs
+                - has_available_queues
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Revision Case Queue Setup
+  /v2/agents/{agent_id}/revisions/{build_id}/integrations/{integration_id}/queues:
+    get:
+      operationId: listRevisionIntegrationQueues
+      tags:
+      - Revision Integrations
+      description: List the queues linked to this build's case-queue integration slot. Only meaningful for case-queue-producer and case-queue-consumer integrations.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: Agent ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: Build ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: integration_id
+        required: true
+        description: Integration ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queues:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                      required:
+                      - id
+                      - name
+                      additionalProperties: false
+                required:
+                - queues
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Revision Integration Queues
+    put:
+      operationId: replaceRevisionIntegrationQueues
+      tags:
+      - Revision Integrations
+      description: Replace the set of queues linked to this build's case-queue integration slot. Send the full desired queue list — any queues not in the list will be unlinked. Requires edit permission on the agent. After linking, call getRevisionCaseQueueSetup to confirm the slot now reports linked_queue_count > 0.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                queue_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Full set of queue IDs to link to this slot. Replaces any existing links.
+              required:
+              - queue_ids
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: Agent ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: Build ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: integration_id
+        required: true
+        description: Integration ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queues:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                      required:
+                      - id
+                      - name
+                      additionalProperties: false
+                required:
+                - queues
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Replace Revision Integration Queues
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

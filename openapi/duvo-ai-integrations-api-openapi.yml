@@ -1,0 +1,490 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Integrations API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Integrations
+  description: Browse the team's catalog of available integration types
+paths:
+  /v2/integrations/custom/{custom_integration_id}:
+    delete:
+      operationId: deleteCustomIntegration
+      tags:
+      - Integrations
+      description: Delete a custom integration type (team-level catalog entry) and cascade-remove related connections. Requires manager-or-above role.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: custom_integration_id
+        required: true
+        description: Custom integration type ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                required:
+                - success
+                - message
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Custom Integration
+  /v2/teams/{teamId}/integrations:
+    get:
+      operationId: listIntegrations
+      tags:
+      - Integrations
+      description: 'List the team''s integration catalog: built-in integration types plus any custom connection types defined for the team. OAuth authorization flows are browser-based and cannot be performed via this API; use the Duvo dashboard to complete OAuth-based connections.'
+      parameters:
+      - schema:
+          type: string
+        in: query
+        name: type
+        required: false
+      - schema:
+          default: 100
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  integrations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        type:
+                          type: string
+                        provider:
+                          type: string
+                        user_id:
+                          nullable: true
+                          type: string
+                        team_id:
+                          type: string
+                        server_url:
+                          type: string
+                        transport_type:
+                          type: string
+                          enum:
+                          - stdio
+                          - sse
+                          - http
+                        auth_method:
+                          nullable: true
+                          type: string
+                        custom_integration_id:
+                          nullable: true
+                          type: string
+                        icon_url:
+                          nullable: true
+                          type: string
+                        oauth_provider:
+                          nullable: true
+                          type: string
+                        oauth_provider_key:
+                          nullable: true
+                          type: string
+                        oauth_scopes:
+                          nullable: true
+                          type: array
+                          items:
+                            type: string
+                        has_headers:
+                          type: boolean
+                        has_oauth_tokens:
+                          type: boolean
+                        integration_id:
+                          nullable: true
+                          type: string
+                        shared:
+                          type: boolean
+                        created_by:
+                          nullable: true
+                          type: string
+                        broken_at:
+                          nullable: true
+                          type: string
+                          format: date-time
+                        broken_reason:
+                          nullable: true
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                      - id
+                      - name
+                      - type
+                      - provider
+                      - user_id
+                      - team_id
+                      - created_at
+                      - updated_at
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  limit:
+                    type: integer
+                    minimum: 1
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - integrations
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Integrations
+  /v2/teams/{teamId}/integrations/custom:
+    post:
+      operationId: createCustomIntegration
+      tags:
+      - Integrations
+      description: Create a custom integration type (team-level catalog entry) that users can then connect as user-provided MCP connections. Requires manager-or-above role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                auth_method:
+                  type: string
+                  enum:
+                  - url
+                  - apikey
+                  - headers
+                  - oauth
+                server_url:
+                  type: string
+                  format: uri
+                oauth_client_id:
+                  type: string
+                  minLength: 1
+                oauth_client_secret:
+                  type: string
+                  minLength: 1
+              required:
+              - name
+              - auth_method
+              - server_url
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  type:
+                    type: string
+                  provider:
+                    type: string
+                  user_id:
+                    nullable: true
+                    type: string
+                  team_id:
+                    type: string
+                  server_url:
+                    type: string
+                  transport_type:
+                    type: string
+                    enum:
+                    - stdio
+                    - sse
+                    - http
+                  auth_method:
+                    nullable: true
+                    type: string
+                  custom_integration_id:
+                    nullable: true
+                    type: string
+                  icon_url:
+                    nullable: true
+                    type: string
+                  oauth_provider:
+                    nullable: true
+                    type: string
+                  oauth_provider_key:
+                    nullable: true
+                    type: string
+                  oauth_scopes:
+                    nullable: true
+                    type: array
+                    items:
+                      type: string
+                  has_headers:
+                    type: boolean
+                  has_oauth_tokens:
+                    type: boolean
+                  integration_id:
+                    nullable: true
+                    type: string
+                  shared:
+                    type: boolean
+                  created_by:
+                    nullable: true
+                    type: string
+                  broken_at:
+                    nullable: true
+                    type: string
+                    format: date-time
+                  broken_reason:
+                    nullable: true
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                - id
+                - name
+                - type
+                - provider
+                - user_id
+                - team_id
+                - created_at
+                - updated_at
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Custom Integration
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

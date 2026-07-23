@@ -1,0 +1,1447 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders Connections API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Connections
+  description: Manage your connected integrations
+paths:
+  /v2/teams/{teamId}/connections/oauth/native/{provider}/start:
+    post:
+      operationId: startNativeOAuth
+      tags:
+      - Connections
+      description: Start an OAuth-based connection with a native provider (Gmail, Google Sheets, Outlook, etc.). Returns an authorization URL that must be opened in a browser by a human end-user; once they grant consent, Duvo creates the matching connection and redirects the browser to the optional `return_url` (or the Duvo dashboard if none is provided). Poll `/v2/teams/:team_id/connections` to detect the new connection.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              default: {}
+              type: object
+              properties:
+                return_url:
+                  description: Where to send the user's browser after OAuth completes.
+                  type: string
+                reconnect_instance_id:
+                  description: When set, the OAuth flow will update the existing connection in place rather than creating a new one.
+                  type: string
+                  format: uuid
+              additionalProperties:
+                type: string
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: provider
+        required: true
+        description: OAuth provider slug (e.g. 'google', 'gmail', 'googlesheets', 'outlook'). Must match a configured native OAuth provider.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorization_url:
+                    type: string
+                    description: OAuth provider authorization URL to open in a browser
+                required:
+                - authorization_url
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Start Native OAuth
+  /v2/teams/{teamId}/connections/oauth/mcp/start:
+    post:
+      operationId: authorizeMcpOAuth
+      tags:
+      - Connections
+      description: Start an OAuth-based connection with a remote MCP server using Dynamic Client Registration. Returns an authorization URL the user must open in a browser; once they grant consent, Duvo creates the matching connection and redirects the browser to the optional `returnUrl`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mcp_server_url:
+                  type: string
+                  format: uri
+                  description: URL of the MCP server requiring OAuth.
+                name:
+                  type: string
+                  minLength: 1
+                  description: Human-readable name to display for the connection.
+                custom_integration_id:
+                  description: Optional ID of a custom integration this connection should be associated with.
+                  type: string
+                  format: uuid
+                return_url:
+                  description: Where to send the user's browser after consent completes. Accepts an absolute URL on a domain Duvo allows, or a path relative to the Duvo frontend (e.g. `/integrations/slack`).
+                  type: string
+                integration_type:
+                  description: Optional integration type label.
+                  type: string
+                reconnect_instance_id:
+                  description: When set, the OAuth flow will update the existing connection in place rather than creating a new one.
+                  type: string
+                  format: uuid
+              required:
+              - mcp_server_url
+              - name
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorization_url:
+                    type: string
+                    description: OAuth provider authorization URL to open in a browser
+                required:
+                - authorization_url
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Authorize MCP OAuth
+  /v2/connections/oauth/mcp/check:
+    post:
+      operationId: checkMcpOAuth
+      tags:
+      - Connections
+      description: Probe an MCP server URL to discover whether it supports OAuth Dynamic Client Registration. Returns the authorization endpoint and required scopes when supported. Useful as a precursor to `/v2/teams/:team_id/connections/oauth/mcp/start` or `/v2/teams/:team_id/connections`. Performs no writes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mcp_server_url:
+                  type: string
+                  format: uri
+                  description: URL of the MCP server to probe for OAuth support.
+              required:
+              - mcp_server_url
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  supports_dcr:
+                    type: boolean
+                    description: True if the MCP server advertises OAuth Dynamic Client Registration
+                  authorization_endpoint:
+                    description: OAuth authorization endpoint advertised by the MCP server, when discoverable
+                    type: string
+                  scopes:
+                    description: Scopes the MCP server requests during authorization
+                    type: array
+                    items:
+                      type: string
+                required:
+                - supports_dcr
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Check MCP OAuth
+  /v2/connections/{connection_id}:
+    get:
+      operationId: getConnection
+      tags:
+      - Connections
+      description: Get one of your connections by ID.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: connection_id
+        required: true
+        description: Connection ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  type:
+                    type: string
+                  provider:
+                    type: string
+                  user_id:
+                    nullable: true
+                    type: string
+                  team_id:
+                    type: string
+                  server_url:
+                    type: string
+                  transport_type:
+                    type: string
+                    enum:
+                    - stdio
+                    - sse
+                    - http
+                  auth_method:
+                    nullable: true
+                    type: string
+                  custom_integration_id:
+                    nullable: true
+                    type: string
+                  icon_url:
+                    nullable: true
+                    type: string
+                  oauth_provider:
+                    nullable: true
+                    type: string
+                  oauth_provider_key:
+                    nullable: true
+                    type: string
+                  oauth_scopes:
+                    nullable: true
+                    type: array
+                    items:
+                      type: string
+                  has_headers:
+                    type: boolean
+                  has_oauth_tokens:
+                    type: boolean
+                  integration_id:
+                    nullable: true
+                    type: string
+                  shared:
+                    type: boolean
+                  created_by:
+                    nullable: true
+                    type: string
+                  broken_at:
+                    nullable: true
+                    type: string
+                    format: date-time
+                  broken_reason:
+                    nullable: true
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                - id
+                - name
+                - type
+                - provider
+                - user_id
+                - team_id
+                - created_at
+                - updated_at
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Connection
+    patch:
+      operationId: updateConnection
+      tags:
+      - Connections
+      description: Update an existing connection. For sensitive header values, sending an empty string keeps the existing value; send a new value to overwrite. Toggling `shared` moves the connection between personal and team-shared.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                server_url:
+                  type: string
+                  format: uri
+                auth_method:
+                  type: string
+                  enum:
+                  - url
+                  - oauth
+                  - apikey
+                  - headers
+                headers:
+                  nullable: true
+                  type: object
+                  properties:
+                    plaintext:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    secret:
+                      type: object
+                      additionalProperties:
+                        type: string
+                shared:
+                  type: boolean
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: connection_id
+        required: true
+        description: Connection ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  type:
+                    type: string
+                  provider:
+                    type: string
+                  user_id:
+                    nullable: true
+                    type: string
+                  team_id:
+                    type: string
+                  server_url:
+                    type: string
+                  transport_type:
+                    type: string
+                    enum:
+                    - stdio
+                    - sse
+                    - http
+                  auth_method:
+                    nullable: true
+                    type: string
+                  custom_integration_id:
+                    nullable: true
+                    type: string
+                  icon_url:
+                    nullable: true
+                    type: string
+                  oauth_provider:
+                    nullable: true
+                    type: string
+                  oauth_provider_key:
+                    nullable: true
+                    type: string
+                  oauth_scopes:
+                    nullable: true
+                    type: array
+                    items:
+                      type: string
+                  has_headers:
+                    type: boolean
+                  has_oauth_tokens:
+                    type: boolean
+                  integration_id:
+                    nullable: true
+                    type: string
+                  shared:
+                    type: boolean
+                  created_by:
+                    nullable: true
+                    type: string
+                  broken_at:
+                    nullable: true
+                    type: string
+                    format: date-time
+                  broken_reason:
+                    nullable: true
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                - id
+                - name
+                - type
+                - provider
+                - user_id
+                - team_id
+                - created_at
+                - updated_at
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Connection
+    delete:
+      operationId: deleteConnection
+      tags:
+      - Connections
+      description: Delete a connection (disconnects the user's connection and removes any triggers bound to it).
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: connection_id
+        required: true
+        description: Connection ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                required:
+                - success
+                - message
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Connection
+  /v2/connections/{connection_id}/credentials:
+    get:
+      operationId: getConnectionCredentials
+      tags:
+      - Connections
+      description: Get the header keys configured for a connection. Sensitive values (api keys, tokens, passwords) are returned as empty strings — the response only reveals which credential fields are set, never their values.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: connection_id
+        required: true
+        description: Connection ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  headers:
+                    type: object
+                    additionalProperties:
+                      type: string
+                required:
+                - id
+                - headers
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Connection Credentials
+  /v2/teams/{teamId}/connections:
+    get:
+      operationId: listConnections
+      tags:
+      - Connections
+      description: List the authenticated user's connections (connected integration instances) for the current team. Includes team-shared instances visible to the caller when the org-level Connections sharing setting is on. Filter by integration type with the `type` query parameter.
+      parameters:
+      - schema:
+          type: string
+        in: query
+        name: type
+        required: false
+      - schema:
+          default: 100
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  integrations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        type:
+                          type: string
+                        provider:
+                          type: string
+                        user_id:
+                          nullable: true
+                          type: string
+                        team_id:
+                          type: string
+                        server_url:
+                          type: string
+                        transport_type:
+                          type: string
+                          enum:
+                          - stdio
+                          - sse
+                          - http
+                        auth_method:
+                          nullable: true
+                          type: string
+                        custom_integration_id:
+                          nullable: true
+                          type: string
+                        icon_url:
+                          nullable: true
+                          type: string
+                        oauth_provider:
+                          nullable: true
+                          type: string
+                        oauth_provider_key:
+                          nullable: true
+                          type: string
+                        oauth_scopes:
+                          nullable: true
+                          type: array
+                          items:
+                            type: string
+                        has_headers:
+                          type: boolean
+                        has_oauth_tokens:
+                          type: boolean
+                        integration_id:
+                          nullable: true
+                          type: string
+                        shared:
+                          type: boolean
+                        created_by:
+                          nullable: true
+                          type: string
+                        broken_at:
+                          nullable: true
+                          type: string
+                          format: date-time
+                        broken_reason:
+                          nullable: true
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                      required:
+                      - id
+                      - name
+                      - type
+                      - provider
+                      - user_id
+                      - team_id
+                      - created_at
+                      - updated_at
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  limit:
+                    type: integer
+                    minimum: 1
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - integrations
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Connections
+    post:
+      operationId: createConnection
+      tags:
+      - Connections
+      description: Create a new user-provided connection (custom MCP server) for the current team. OAuth-based integrations (native) require an interactive browser flow — start them with the dedicated OAuth endpoints (`/v2/teams/:team_id/connections/oauth/native/:provider/start` or `/v2/teams/:team_id/connections/oauth/mcp/start`) instead of calling this endpoint directly.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                server_url:
+                  type: string
+                  format: uri
+                type:
+                  default: custom_mcp
+                  type: string
+                provider:
+                  type: string
+                  enum:
+                  - user
+                auth_method:
+                  type: string
+                  enum:
+                  - url
+                  - apikey
+                  - headers
+                  - oauth
+                custom_integration_id:
+                  type: string
+                  format: uuid
+                headers:
+                  type: object
+                  properties:
+                    plaintext:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    secret:
+                      type: object
+                      additionalProperties:
+                        type: string
+              required:
+              - name
+              - provider
+              - auth_method
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  type:
+                    type: string
+                  provider:
+                    type: string
+                  user_id:
+                    nullable: true
+                    type: string
+                  team_id:
+                    type: string
+                  server_url:
+                    type: string
+                  transport_type:
+                    type: string
+                    enum:
+                    - stdio
+                    - sse
+                    - http
+                  auth_method:
+                    nullable: true
+                    type: string
+                  custom_integration_id:
+                    nullable: true
+                    type: string
+                  icon_url:
+                    nullable: true
+                    type: string
+                  oauth_provider:
+                    nullable: true
+                    type: string
+                  oauth_provider_key:
+                    nullable: true
+                    type: string
+                  oauth_scopes:
+                    nullable: true
+                    type: array
+                    items:
+                      type: string
+                  has_headers:
+                    type: boolean
+                  has_oauth_tokens:
+                    type: boolean
+                  integration_id:
+                    nullable: true
+                    type: string
+                  shared:
+                    type: boolean
+                  created_by:
+                    nullable: true
+                    type: string
+                  broken_at:
+                    nullable: true
+                    type: string
+                    format: date-time
+                  broken_reason:
+                    nullable: true
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                required:
+                - id
+                - name
+                - type
+                - provider
+                - user_id
+                - team_id
+                - created_at
+                - updated_at
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Connection
+  /v2/teams/{teamId}/connections/mcp/probe:
+    post:
+      operationId: probeMcpServer
+      summary: Probe an MCP server for available tools
+      tags:
+      - Connections
+      description: Probe an MCP server URL and list the tools it exposes. Useful as a dry-run before creating a connection — verifies the URL is reachable, that authentication headers (if any) are correct, and surfaces the tool catalog. Performs no writes; sits alongside `/v2/teams/:team_id/connections/oauth/mcp/check` (which probes the same URL for OAuth support).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                server_url:
+                  description: Raw MCP server URL to probe (for custom MCP servers)
+                  type: string
+                  format: uri
+                integration_slug:
+                  description: Catalog integration slug. The backend resolves the MCP server URL and dummy auth headers server-side — no server_url or headers needed.
+                  type: string
+                  enum:
+                  - googlecalendar
+                  - google-calendar
+                  - gmail
+                  - slack
+                  - googledocs
+                  - googlesheets
+                  - googledrive
+                  - firecrawl
+                  - exa
+                  - exa-search
+                  - exa-company-search
+                  - exa-people-search
+                  - deep-research
+                  - system
+                  - browser-agent
+                  - browser-agent-devtools
+                  - notion
+                  - linear
+                  - confluence
+                  - custom_mcp
+                  - user_mcp
+                  - snowflake
+                  - sharepoint
+                  - teams
+                  - onedrive
+                  - bigquery
+                  - databricks
+                  - netsuite
+                  - outlook
+                  - microsoft-calendar
+                  - excel
+                  - word
+                  - saps4hana
+                  - md365
+                  - businesscentral
+                  - oraclefusion
+                  - workday
+                  - coupa
+                  - signavio
+                  - sap-ecc
+                  - msteams
+                  - human-in-the-loop
+                  - email-attachments-reader
+                  - document-processor
+                  - google-docs
+                  - google-sheets
+                  - google-drive
+                  - outbound-call
+                  - case-queue-producer
+                  - case-queue-consumer
+                  - handover
+                  - shopify
+                  - hubspot
+                  - zendesk
+                  - intercom
+                  - powerbi
+                  - salesforce
+                  - pipedrive
+                  - tableau
+                  - image-generation
+                  - forecasting
+                  - supabase
+                  - attio
+                  - amplitude
+                  - websets
+                  - firecrawl-platform
+                  - duvo-computer-use
+                  - duvo-computer-use-rdp
+                  - eu-commodity-prices
+                  - asana
+                  - ssh
+                  - scheduling
+                  - github
+                  - linear-native
+                  - notion-native
+                  - granola
+                  - apify
+                  - bamboohr
+                headers:
+                  description: Optional HTTP headers for authentication (raw server_url mode only)
+                  type: object
+                  additionalProperties:
+                    type: string
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  tools:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        input_schema:
+                          type: object
+                          additionalProperties: {}
+                      required:
+                      - name
+                      additionalProperties: false
+                  error:
+                    type: string
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

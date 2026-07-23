@@ -1,0 +1,35 @@
+openapi: 3.0.3
+info:
+  title: Duvo Public Agent Folders MCP API
+  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: MCP
+  description: MCP JSON-RPC endpoint exposing public API routes as LLM-callable tools
+paths:
+  /v2/mcp:
+    post:
+      tags:
+      - MCP
+      description: MCP JSON-RPC endpoint (Streamable HTTP transport). Exposes every public API route as an LLM-callable tool.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+    get:
+      tags:
+      - MCP
+      description: 'MCP Streamable HTTP: GET is not supported (no server-initiated streaming). Use POST.'
+      responses:
+        '200':
+          description: Default Response
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.
