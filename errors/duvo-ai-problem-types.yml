@@ -1,0 +1,48 @@
+generated: '2026-07-18'
+method: derived
+source: openapi/duvo-ai-openapi-original.json
+docs: https://www.duvo.ai/auth.md
+format: json-error-envelope
+envelope:
+  shape: '{ "error": "<code>", "message": "<human-readable>" }'
+  required: [error]
+  note: Compact JSON error object (not RFC 9457 application/problem+json).
+problems:
+- status: 400
+  title: Bad Request
+  description: Malformed request payload or parameters.
+- status: 401
+  title: Unauthorized
+  description: Missing, expired, malformed, or revoked credentials (invalid_token).
+- status: 403
+  title: Forbidden
+  description: Insufficient scope, workspace policy denial, RBAC denial, or human approval requirement.
+- status: 404
+  title: Not Found
+  description: Resource does not exist or is not visible to the workspace.
+- status: 409
+  title: Conflict
+  description: State conflict (envelope carries {error} only).
+- status: 413
+  title: Payload Too Large
+  description: Request body exceeds the accepted size limit.
+- status: 422
+  title: Unprocessable Entity
+  description: Validation failed for an otherwise well-formed request.
+- status: 500
+  title: Internal Server Error
+  description: Unexpected server-side failure.
+- status: 502
+  title: Bad Gateway
+  description: Upstream/integration dependency failure.
+documented_error_ids:
+- id: invalid_token
+  remediation: Refresh, rotate, or request a newly issued credential.
+- id: insufficient_scope
+  remediation: Request the narrow missing scope through a workspace admin or Duvo contact.
+- id: workspace_policy_denied
+  remediation: The workspace policy or approval gate blocks the action.
+- id: approval_required
+  remediation: Pause the agent run and wait for an authorized human response.
+- id: rate_limited
+  remediation: Honor Retry-After and retry with the same Idempotency-Key when safe.

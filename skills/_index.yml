@@ -1,0 +1,26 @@
+generated: '2026-07-18'
+method: generated
+source: openapi/duvo-ai-openapi-original.json
+note: >-
+  Skills generated from real operationIds in the Duvo Public API OpenAPI, grounded
+  in the captured conventions/errors/scopes. Duvo also publishes a first-party
+  agent-skills repository at https://github.com/duvoai/skills (install via
+  `npx skills add duvoai/skills`; also listed at https://skills.sh/duvoai/skills)
+  covering a Duvo SOP writer, job debugger, and CLI driver.
+provider_skills:
+  repo: https://github.com/duvoai/skills
+  install: npx skills add duvoai/skills
+  listing: https://skills.sh/duvoai/skills
+skills:
+- file: duvo-ai-start-and-monitor-run.md
+  name: Start and monitor a Duvo run
+  api: openapi/duvo-ai-openapi-original.json
+  operations: [startRun, getRun, listRunMessages, respondToHumanRequest, stopRun]
+- file: duvo-ai-queue-cases.md
+  name: Create and work a Duvo queue of cases
+  api: openapi/duvo-ai-openapi-original.json
+  operations: [createQueue, createCases, listCases, searchCases, getCase, listCaseRuns]
+- file: duvo-ai-clarity-process.md
+  name: Explore and snapshot a Duvo Clarity process
+  api: openapi/duvo-ai-openapi-original.json
+  operations: [listClarityProcesses, getClarityProcess, listClarityProcessSnapshots, generateClarityProcessSnapshot, getClarityProcessSnapshot]

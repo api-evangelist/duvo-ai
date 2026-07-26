@@ -1,0 +1,49 @@
+generated: '2026-07-18'
+method: searched
+source: https://www.duvo.ai/cli.md
+docs: https://docs.duvo.ai/cli
+cli:
+  name: duvo
+  package: "@duvoai/cli"
+  registry: npm
+  binary: duvo
+  runtime: Node.js 22.22+
+  distribution: [npm, pnpm, yarn, bun, npx]
+install:
+- npm install -g @duvoai/cli
+- pnpm add -g @duvoai/cli
+- yarn global add @duvoai/cli
+- npx @duvoai/cli --help
+authentication:
+  interactive: duvo login
+  env:
+  - DUVO_API_KEY
+  - DUVO_PROFILE
+  - DUVO_API_BASE_URL
+  note: Stores a workspace API key in a named profile; DUVO_API_KEY for non-interactive agent use.
+command_groups:
+- group: runs
+  commands:
+  - duvo runs start --agent <agent-id> --json
+  - duvo runs get <run-id>
+  - duvo runs messages <run-id>
+  - duvo runs respond <run-id> --approve
+- group: cases
+  commands:
+  - duvo cases list --queue <queue-id>
+  - duvo cases create --queue <queue-id> --title "case title"
+  - duvo cases create --queue <queue-id> --from-file cases.json
+- group: sandboxes
+  commands:
+  - duvo sandboxes create
+- group: api
+  commands:
+  - duvo api GET /v2/runs/<run-id>
+- group: session
+  commands:
+  - duvo login
+  - duvo whoami
+constraints: >-
+  Calls the same workspace-scoped API documented in api-reference.md/openapi.json;
+  cannot bypass workspace RBAC, SSO, policy gates, or human approvals. Requires a
+  provisioned workspace and a workspace-issued bearer token.

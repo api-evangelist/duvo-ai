@@ -1,0 +1,45 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements for Duvo Public API
+  version: 1.0.0
+extends: openapi/duvo-ai-openapi-original.json
+actions:
+- target: $.info
+  update:
+    x-apievangelist-enriched: '2026-07-18'
+    x-apievangelist-provider: duvo-ai
+    x-agent-native: true
+- target: $.info
+  update:
+    x-auth-models:
+    - workspace bearer API token
+    - enterprise OAuth client credentials (login.duvo.ai)
+    x-auth-docs: https://www.duvo.ai/auth.md
+    x-idempotency-header: Idempotency-Key
+    x-error-envelope: '{ error, message }'
+    x-rate-limit-signal: Retry-After
+- target: $.info
+  update:
+    x-mcp-server: https://api.duvo.ai/v2/mcp
+    x-mcp-registry: io.github.duvoai/duvo
+    x-webhooks-docs: https://www.duvo.ai/webhooks.md
+    x-well-known-agent: https://www.duvo.ai/.well-known/agent.json
+- target: $.components.securitySchemes
+  update:
+    oauth2ClientCredentials:
+      type: oauth2
+      description: >-
+        Enterprise OAuth client credentials for tenants where Duvo has enabled
+        OAuth. Documented at https://www.duvo.ai/auth.md (not in the base spec).
+      flows:
+        clientCredentials:
+          tokenUrl: https://login.duvo.ai/oauth/token
+          scopes:
+            runs:read: Inspect run status, messages, tool calls, and audit events.
+            runs:write: Start, pause, resume, or replay runs.
+            queues:write: Create and update queue cases.
+            approvals:write: Respond to human approval requests.
+            files:read: Read files attached to authorized runs or cases.
+            sandboxes:write: Request governed browser, file, or desktop execution.
+            webhooks:manage: Manage webhook subscriptions for a workspace.
+            mcp:call: Call governed Duvo tools over the hosted MCP surface.

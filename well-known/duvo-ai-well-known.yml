@@ -1,0 +1,46 @@
+generated: '2026-07-18'
+method: searched
+host: https://www.duvo.ai
+notes: >-
+  Duvo publishes a rich agent-native discovery surface. security.txt is absent
+  (404). OAuth discovery lives on the api + login hosts (RFC 9728 / RFC 8414).
+documents:
+- path: /.well-known/agent.json
+  host: https://www.duvo.ai
+  status: 200
+  file: duvo-ai-agent.json
+  kind: agent-discovery-manifest
+- path: /.well-known/agent-card.json
+  host: https://www.duvo.ai
+  status: 200
+  file: duvo-ai-agent-card.json
+  kind: a2a-agent-card
+- path: /.well-known/mcp/server-card.json
+  host: https://www.duvo.ai
+  status: 200
+  file: duvo-ai-mcp-server-card.json
+  kind: mcp-server-card
+- path: /.well-known/ai-plugin.json
+  host: https://www.duvo.ai
+  status: 200
+  file: duvo-ai-ai-plugin.json
+  kind: ai-plugin
+- path: /.well-known/oauth-protected-resource
+  host: https://api.duvo.ai
+  status: 200
+  file: duvo-ai-oauth-protected-resource.json
+  kind: rfc9728-protected-resource-metadata
+- path: /.well-known/oauth-authorization-server
+  host: https://login.duvo.ai
+  status: 200
+  file: duvo-ai-oauth-authorization-server.json
+  kind: rfc8414-authorization-server-metadata
+- path: /.well-known/security.txt
+  host: https://www.duvo.ai
+  status: 404
+- path: /.well-known/openid-configuration
+  host: https://api.duvo.ai
+  status: 404
+- path: /.well-known/api-catalog
+  host: https://www.duvo.ai
+  status: 404

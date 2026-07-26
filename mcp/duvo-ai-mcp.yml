@@ -1,0 +1,43 @@
+generated: '2026-07-18'
+method: searched
+status: published
+source: https://www.duvo.ai/.well-known/mcp/server-card.json
+docs: https://www.duvo.ai/mcp.md
+server:
+  name: Duvo MCP
+  registry_name: io.github.duvoai/duvo
+  transport: streamable-http
+  url: https://api.duvo.ai/v2/mcp
+  version: '2026-05-23'
+  authentication: workspace bearer token or enterprise OAuth client credentials
+  publisher: Duvo (taskcrew Inc.)
+  category: enterprise-operations
+listings:
+- registry: MCP Registry
+  url: https://registry.modelcontextprotocol.io/v0/servers?search=io.github.duvoai%2Fduvo
+  name: io.github.duvoai/duvo
+- registry: Smithery
+  url: https://smithery.ai/servers/duvo/duvo
+  name: duvo/duvo
+tools:
+- name: start_run
+  description: Start an agent-backed Duvo run.
+  read_only: false
+  destructive: false
+- name: get_run
+  description: Inspect run status, messages, tool calls, files, and audit events.
+  read_only: true
+  destructive: false
+- name: create_case
+  description: Create a durable queue case for an agent or specialist worker.
+  read_only: false
+  destructive: false
+- name: respond_to_human_request
+  description: Approve, reject, or answer a human approval request.
+  read_only: false
+  destructive: false
+notes: >-
+  Hosted MCP surface for approved Duvo workspaces. Also exposed inside the API
+  itself: openapi/duvo-ai-openapi-original.json declares POST/GET /v2/mcp and a
+  probeMcpServer operation (POST /v2/teams/{teamId}/connections/mcp/probe) for
+  connecting custom MCP servers.

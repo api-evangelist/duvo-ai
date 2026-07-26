@@ -1,0 +1,130 @@
+generated: '2026-07-18'
+method: derived
+source: openapi/duvo-ai-openapi-original.json
+note: >-
+  Entity-relationship graph derived from OpenAPI path nesting and id path
+  parameters (155 paths / 213 operations). Duvo has few named components.schemas
+  (payloads are largely inline), so relationships are inferred from the resource
+  hierarchy in the paths.
+entities:
+- name: Organization
+  id_param: orgId
+  relationships:
+  - type: has_many
+    target: Team
+    via: /v2/organizations/{orgId}/teams
+  - type: has_many
+    target: ClarityProcess
+    via: /v2/organizations/{orgId}/clarity/hierarchy
+- name: Team
+  id_param: teamId
+  relationships:
+  - type: belongs_to
+    target: Organization
+  - type: has_many
+    target: Agent
+    via: /v2/teams/{teamId}/agents
+  - type: has_many
+    target: Queue
+    via: /v2/teams/{teamId}/queues
+  - type: has_many
+    target: Run
+    via: /v2/teams/{teamId}/runs
+  - type: has_many
+    target: Skill
+    via: /v2/teams/{teamId}/skills
+  - type: has_many
+    target: Connection
+    via: /v2/teams/{teamId}/connections
+  - type: has_many
+    target: Integration
+    via: /v2/teams/{teamId}/integrations
+  - type: has_many
+    target: Secret
+    via: /v2/teams/{teamId}/credentials
+- name: Agent
+  id_param: agent_id
+  relationships:
+  - type: belongs_to
+    target: Team
+  - type: has_many
+    target: Revision
+    via: /v2/agents/{agent_id}/revisions
+  - type: has_many
+    target: Schedule
+    via: /v2/agents/{agent_id}/schedules
+  - type: has_many
+    target: CaseTrigger
+    via: /v2/agents/{agent_id}/case-triggers
+- name: Revision
+  id_param: build_id
+  relationships:
+  - type: belongs_to
+    target: Agent
+  - type: has_many
+    target: Integration
+    via: /v2/agents/{agent_id}/revisions/{build_id}/integrations
+  - type: has_many
+    target: Secret
+    via: /v2/agents/{agentId}/revisions/{buildId}/credentials
+- name: Queue
+  id_param: queue_id
+  relationships:
+  - type: belongs_to
+    target: Team
+  - type: has_many
+    target: Case
+    via: /v2/queues/{queue_id}/cases
+  - type: has_many
+    target: QueueLabel
+    via: /v2/queues/{queue_id}/labels
+- name: Case
+  id_param: case_id
+  relationships:
+  - type: belongs_to
+    target: Queue
+  - type: has_many
+    target: Run
+    via: /v2/cases/{case_id}/runs
+- name: Run
+  id_param: run_id
+  relationships:
+  - type: belongs_to
+    target: Team
+  - type: has_many
+    target: RunMessage
+    via: /v2/runs/{run_id}/messages
+  - type: has_many
+    target: HumanRequest
+    via: /v2/runs/{run_id}/human-requests
+- name: Connection
+  id_param: connection_id
+  relationships:
+  - type: belongs_to
+    target: Team
+  - type: has_one
+    target: ConnectionCredentials
+    via: /v2/connections/{connection_id}/credentials
+- name: Artifact
+  id_param: artifactId
+  aka: PulseDashboard
+  relationships:
+  - type: belongs_to
+    target: Team
+  - type: has_many
+    target: PulseDashboardRevision
+    via: /v2/artifacts/{artifactId}/revisions
+- name: Sandbox
+  id_param: sandbox_id
+  relationships:
+  - type: has_many
+    target: SandboxFile
+    via: /v2/sandboxes/{sandbox_id}/files
+- name: ClarityProcess
+  id_param: process_id
+  relationships:
+  - type: belongs_to
+    target: Team
+  - type: has_many
+    target: ClaritySnapshot
+    via: /v2/clarity-v2/processes/{process_id}/snapshots

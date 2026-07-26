@@ -1,0 +1,33 @@
+generated: '2026-07-18'
+method: searched
+source: https://www.duvo.ai/auth.md
+docs: https://www.duvo.ai/auth.md
+notes: >-
+  The public OpenAPI declares only an http bearer scheme, so scopes are not
+  spec-derivable. Duvo documents OAuth client-credential scopes in its auth
+  guide (https://www.duvo.ai/auth.md) and advertises them in its agent
+  discovery manifest (well-known/duvo-ai-agent.json). Scopes apply to enterprise
+  workspaces where Duvo has enabled OAuth for the tenant.
+schemes:
+- name: oauth2ClientCredentials
+  flow: clientCredentials
+  token_url: https://login.duvo.ai/oauth/token
+  authorization_server_metadata: https://login.duvo.ai/.well-known/oauth-authorization-server
+  protected_resource_metadata: https://api.duvo.ai/.well-known/oauth-protected-resource
+scopes:
+- scope: runs:read
+  description: Inspect run status, messages, tool calls, and audit events.
+- scope: runs:write
+  description: Start, pause, resume, or replay runs.
+- scope: queues:write
+  description: Create and update queue cases.
+- scope: approvals:write
+  description: Respond to human approval requests.
+- scope: files:read
+  description: Read files attached to authorized runs or cases.
+- scope: sandboxes:write
+  description: Request governed browser, file, or desktop execution.
+- scope: webhooks:manage
+  description: Manage webhook subscriptions for a workspace.
+- scope: mcp:call
+  description: Call governed Duvo tools over the hosted MCP surface.

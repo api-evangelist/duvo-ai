@@ -1,0 +1,43 @@
+generated: '2026-07-18'
+method: searched
+source: https://www.duvo.ai/webhooks.md
+spec_type: Webhooks
+summary: >-
+  Duvo webhooks let approved workspaces subscribe to run, case, agent, approval,
+  and integration events. Subscriptions require workspace admin access. No
+  published AsyncAPI document; this is the documented webhook event catalog.
+delivery:
+  content_type: application/json
+  retries: Retry transient 5xx; retries can duplicate events (dedupe on event ID).
+  signature: HMAC over raw request body with the workspace webhook secret.
+  verification: Reject missing signatures, stale timestamps, or mismatched HMAC.
+  secret_rotation: Rotate webhook secrets when ownership or integration scope changes.
+event_categories:
+- name: run
+  events:
+  - run.started
+  - run.paused
+  - run.completed
+  - run.failed
+  - run.message.created
+  - run.tool_call.completed
+  - run.file.created
+- name: human_request
+  events:
+  - human_request.created
+  - human_request.responded
+- name: queue
+  events:
+  - queue.case.created
+  - queue.case.claimed
+  - queue.case.completed
+- name: assignment
+  events:
+  - assignment.build.published
+- name: connection
+  events:
+  - connection.updated
+  - connection.action_required
+management:
+  scope: webhooks:manage
+  note: Webhook subscriptions managed via workspace admin; see scopes/duvo-ai-scopes.yml.

@@ -1,0 +1,45 @@
+generated: '2026-07-18'
+method: derived
+source:
+- openapi/duvo-ai-openapi-original.json
+- https://www.duvo.ai/auth.md
+- well-known/duvo-ai-oauth-authorization-server.json
+standards:
+- id: oauth2
+  conforms: true
+  evidence: >-
+    Enterprise OAuth client-credentials documented (auth.md) with RFC 8414
+    authorization-server metadata at login.duvo.ai.
+- id: oidc
+  conforms: true
+  evidence: >-
+    login.duvo.ai authorization server exposes userinfo_endpoint, jwks_uri, and
+    OIDC discovery metadata (well-known/duvo-ai-oauth-authorization-server.json).
+- id: rfc9728-protected-resource-metadata
+  conforms: true
+  evidence: api.duvo.ai/.well-known/oauth-protected-resource present.
+- id: rfc8414-authorization-server-metadata
+  conforms: true
+  evidence: login.duvo.ai/.well-known/oauth-authorization-server present.
+- id: rfc9457-problem-details
+  conforms: false
+  evidence: Errors use a compact {error, message} envelope, not application/problem+json.
+- id: idempotency
+  conforms: true
+  evidence: Idempotency-Key documented for mutating requests (auth.md).
+- id: pagination
+  conforms: true
+  evidence: List operations use limit/offset/before query params.
+- id: mcp
+  conforms: true
+  evidence: >-
+    Hosted streamable-http MCP server (api.duvo.ai/v2/mcp) listed in the MCP
+    Registry (io.github.duvoai/duvo) and Smithery.
+- id: rfc9116-security-txt
+  conforms: false
+  evidence: No /.well-known/security.txt published (404).
+notes: >-
+  Standards derived from the spec, auth docs, and OAuth discovery metadata. No
+  published third-party compliance certifications (SOC 2 / ISO 27001 / PCI /
+  HIPAA / FedRAMP) were found — no /security or /trust page exists (both 404) —
+  so no `Compliance` pointer is emitted.

@@ -1,0 +1,23 @@
+generated: '2026-07-18'
+method: searched
+source: https://registry.npmjs.org/@duvoai/cli
+docs: https://www.duvo.ai/cli.md
+packages:
+- language: javascript
+  registry: npm
+  name: "@duvoai/cli"
+  url: https://www.npmjs.com/package/@duvoai/cli
+  install: npm install -g @duvoai/cli
+  version: 1.31.0
+  binary: duvo
+  description: >-
+    Official command-line interface for the Duvo public API. Scripts Duvo runs,
+    cases, approvals, files, and inspections against a workspace-scoped API key.
+    Published as an ES module; requires Node.js 22.22+.
+  official: true
+notes: >-
+  Registries probed for first-party client libraries: npm, PyPI, RubyGems,
+  Packagist, crates.io, NuGet, pkg.go.dev, Maven Central. Only the official CLI
+  (@duvoai/cli) is published as a first-party package. Duvo also publishes an
+  agent-skills repository at https://github.com/duvoai/skills (installed via
+  `npx skills add duvoai/skills`) — catalogued under skills/, not as an SDK.

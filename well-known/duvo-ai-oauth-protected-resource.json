@@ -1,0 +1,1 @@
+{"resource":"https://api.duvo.ai","resource_name":"Duvo MCP","authorization_servers":["https://login.duvo.ai/"],"bearer_methods_supported":["header"],"jwks_uri":"https://login.duvo.ai/.well-known/jwks.json"}

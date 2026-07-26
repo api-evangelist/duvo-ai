@@ -1,0 +1,25 @@
+generated: '2026-07-18'
+method: searched
+source:
+- openapi/duvo-ai-openapi-original.json
+- https://www.duvo.ai/developers.md
+versioning:
+  scheme: uri-path
+  current: v2
+  base_path: /v2
+deprecation:
+  policy_url: null
+  sunset_header: null
+  note: No published deprecation policy or Sunset/Deprecation header support found.
+sla:
+  url: null
+  note: No public SLA/uptime target published; access is provisioned per approved workspace.
+status_page: null
+status_note: >-
+  No public status page found (www.duvo.ai/status and status.duvo.ai both absent
+  as of 2026-07-18).
+deprecated_operations: []
+notes: >-
+  Derived from the OpenAPI (single active v2 surface, no deprecated: true
+  operations) and the developer platform docs. No StatusPage or Deprecation
+  pointer is emitted because neither surface is published.

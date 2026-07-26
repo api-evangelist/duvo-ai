@@ -1,0 +1,52 @@
+generated: '2026-07-18'
+method: searched
+source:
+- https://www.duvo.ai/auth.md
+- https://www.duvo.ai/webhooks.md
+- openapi/duvo-ai-openapi-original.json
+docs: https://www.duvo.ai/api-reference.md
+authentication:
+  style: bearer
+  header: 'Authorization: Bearer <token>'
+  models: [workspace API token, enterprise OAuth client credentials]
+  ref: authentication/duvo-ai-authentication.yml
+idempotency:
+  supported: true
+  header: Idempotency-Key
+  scope: mutating API requests
+  guidance: >-
+    Docs instruct clients to include Idempotency-Key on mutating API requests
+    when retry safety matters, and to retry rate-limited requests with the same
+    Idempotency-Key when safe. Not declared as an OpenAPI parameter; documented
+    in https://www.duvo.ai/auth.md and webhooks guidance.
+  source: https://www.duvo.ai/auth.md
+pagination:
+  style: offset
+  params: [limit, offset, before]
+  note: Derived from OpenAPI list-operation query parameters.
+  source: openapi/duvo-ai-openapi-original.json
+versioning:
+  scheme: uri-path
+  current: v2
+  base_path: /v2
+error_envelope:
+  format: json
+  shape: '{ "error": "<code>", "message": "<human-readable>" }'
+  note: >-
+    Not RFC 9457 problem+json. All 4xx/5xx responses use a compact
+    {error, message} object (409 uses {error}). See errors/duvo-ai-problem-types.yml.
+  ref: errors/duvo-ai-problem-types.yml
+rate_limiting:
+  signal: Retry-After
+  error_id: rate_limited
+  guidance: Honor Retry-After and retry with the same Idempotency-Key when safe.
+  source: https://www.duvo.ai/auth.md
+webhooks:
+  signature: HMAC over raw request body with workspace webhook secret
+  guidance: Verify signature, reject stale timestamps and mismatched HMAC; dedupe on event IDs.
+  ref: asyncapi/duvo-ai-webhooks.yml
+governance:
+  human_in_the_loop: >-
+    Sensitive write actions can be routed through human approval gates
+    (respondToHumanRequest / respond_to_human_request). Agents cannot bypass
+    workspace RBAC, SSO, policy gates, audit logging, or approvals.
