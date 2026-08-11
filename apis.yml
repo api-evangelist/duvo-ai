@@ -484,6 +484,8 @@ maintainers:
 - FN: APIs.json
   email: info@apis.io
 common:
+- type: Overlay
+  url: overlays/duvo-ai-openapi-overlay.yaml
 - type: AgenticAccess
   url: agentic-access/duvo-ai-agentic-access.yml
 - type: DomainSecurity
