@@ -1,0 +1,645 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Clarity API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Clarity",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get Legacy Clarity Process",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/clarity/processes/:id",
+            "params": [
+              {
+                "name": "id",
+                "value": "",
+                "type": "path"
+              }
+            ]
+          },
+          "docs": "Get a legacy v1 Clarity process with process metadata, generated analysis, transformation guidance, generation progress, and captures. Use this for rows from listClarityProcesses where version=1; v2 rows should use getClarityProcess and snapshot detail tools."
+        },
+        {
+          "info": {
+            "name": "Update Clarity Landscape Node",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/nodes/:nodeId",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              },
+              {
+                "name": "nodeId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Rename a process landscape node or update its owner label (team manager or above for team processes; organization admin for areas)"
+        },
+        {
+          "info": {
+            "name": "Delete Clarity Landscape Node",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/nodes/:nodeId",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              },
+              {
+                "name": "nodeId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Soft-delete a tree node and its descendants. Organization admins may delete any subtree; team managers may delete a childless process node owned by their team. The targeted node's linked clarity process and captures are deleted, while nested processes detach to the Unsorted bag."
+        },
+        {
+          "info": {
+            "name": "Set Clarity Landscape Node Placement",
+            "type": "http"
+          },
+          "http": {
+            "method": "PUT",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/nodes/:nodeId/placement",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              },
+              {
+                "name": "nodeId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Move a process landscape node (team manager or above for team processes; organization admin for areas)"
+        },
+        {
+          "info": {
+            "name": "Propose Clarity Landscape Process",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/proposed-processes",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a manual process in the organization's Process Landscape, either as an unassigned proposal or atomically assigned to an eligible team."
+        },
+        {
+          "info": {
+            "name": "Get Clarity Process Tree",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/tree",
+            "params": [
+              {
+                "name": "rootId",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Fetch the organization's process tree, or the subtree under rootId"
+        },
+        {
+          "info": {
+            "name": "Get Clarity Process Landscape",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/landscape",
+            "params": [
+              {
+                "name": "rootId",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Fetch the organization's process landscape: hierarchy nodes joined to lean process summaries and team assignments, with page-level stats"
+        },
+        {
+          "info": {
+            "name": "List Clarity Landscape Captures",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/captures",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of captures to return (1-200, default 100)"
+              },
+              {
+                "name": "includeTranscripts",
+                "value": "",
+                "type": "query",
+                "description": "Include full capture transcripts (large); off by default. Pass the literal string 'true' or 'false' (z.coerce.boolean treats any non-empty value, including 'false', as true)."
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the organization's eligible Process Landscape captures (completed interview/document transcripts not yet tied to a process) so they can seed new process proposals."
+        },
+        {
+          "info": {
+            "name": "Generate Clarity Process Landscape",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/landscape/generate",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Start a process-landscape generation run for the organization from its eligible Clarity captures (organization executives and owners)"
+        },
+        {
+          "info": {
+            "name": "Create Clarity Landscape Node",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/nodes",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create an area folder in the process tree (organization admin+)"
+        },
+        {
+          "info": {
+            "name": "List Clarity Process Links",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/process-links",
+            "params": [
+              {
+                "name": "node_id",
+                "value": "",
+                "type": "query",
+                "description": "Only return links that touch this hierarchy process node"
+              },
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of links per page (1-500, default 100)"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Number of links to skip (default 0)"
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List process-to-process links in the organization's Clarity landscape that are visible within the caller's team access scope. Use `node_id` to find links touching a specific process node."
+        },
+        {
+          "info": {
+            "name": "Create Clarity Process Link",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/process-links",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a process-to-process link in the organization's Clarity landscape when the caller can manage both endpoint teams. If the same live source, target, and type already exists, the existing link is returned."
+        },
+        {
+          "info": {
+            "name": "Update Clarity Process Link",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/process-links/:process_link_id",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              },
+              {
+                "name": "process_link_id",
+                "value": "",
+                "type": "path",
+                "description": "Unique process-link identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update a process-to-process link in the organization's Clarity landscape when the caller can manage both endpoint teams."
+        },
+        {
+          "info": {
+            "name": "Delete Clarity Process Link",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/process-links/:process_link_id",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              },
+              {
+                "name": "process_link_id",
+                "value": "",
+                "type": "path",
+                "description": "Unique process-link identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete a process-to-process link from the organization's Clarity landscape when the caller can manage both endpoint teams."
+        },
+        {
+          "info": {
+            "name": "List Clarity Process Labels",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/process-labels",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "search",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List process tags available in an organization."
+        },
+        {
+          "info": {
+            "name": "Create Clarity Process Label",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/process-labels",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create process tags for an organization."
+        },
+        {
+          "info": {
+            "name": "Update Clarity Process Label",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/process-labels/:labelId",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              },
+              {
+                "name": "labelId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update process tags for an organization."
+        },
+        {
+          "info": {
+            "name": "Delete Clarity Process Label",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/process-labels/:labelId",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              },
+              {
+                "name": "labelId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete process tags from an organization."
+        },
+        {
+          "info": {
+            "name": "List Clarity Process Assigned Labels",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/clarity/processes/:id/labels",
+            "params": [
+              {
+                "name": "id",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List process tags on a process."
+        },
+        {
+          "info": {
+            "name": "Assign Clarity Process Labels",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity/processes/:id/labels/assign",
+            "params": [
+              {
+                "name": "id",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Assign process tags to a process."
+        },
+        {
+          "info": {
+            "name": "Unlink Clarity Process Labels",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity/processes/:id/labels/unlink",
+            "params": [
+              {
+                "name": "id",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Remove process tags from a process."
+        },
+        {
+          "info": {
+            "name": "List Available Clarity Process Labels",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/clarity/processes/:id/available-labels",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "search",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "id",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List process tags available for a process."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

@@ -1,0 +1,333 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Revision Integrations API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Revision Integrations",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "List Revision Integrations",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id/integrations",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "Agent ID"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "Build ID"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List integrations attached to an agent revision."
+        },
+        {
+          "info": {
+            "name": "Attach Revision Integrations",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id/integrations",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "Agent ID"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "Build ID"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Attach one or more integrations to an agent revision. To pin specific connections after attachment, use pinRevisionIntegrationConnection. IMPORTANT for the case-queue-producer and case-queue-consumer integrations: attaching the integration alone is NOT enough — the slot points at no queue and will fail at runtime until you link at least one queue with replaceRevisionIntegrationQueues. After wiring up, call getRevisionCaseQueueSetup to confirm every case-queue slot has linked_queue_count > 0 befo"
+        },
+        {
+          "info": {
+            "name": "Remove Revision Integration",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id/integrations/:integration_id",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "Agent ID"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "Build ID"
+              },
+              {
+                "name": "integration_id",
+                "value": "",
+                "type": "path",
+                "description": "Integration ID (catalog integration ID or slot ID from the list response)"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Remove an integration from an agent revision. Removes the slot for everyone on the revision, including all per-user connection pins. Requires edit permission on the agent."
+        },
+        {
+          "info": {
+            "name": "List Revision Integration Connections",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id/integrations/:integration_id/connections",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "Agent ID"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "Build ID"
+              },
+              {
+                "name": "integration_id",
+                "value": "",
+                "type": "path",
+                "description": "Integration ID (catalog integration ID or slot ID from the list response)"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the connections you have pinned to this build's integration slot. Multi-pin is supported: you can pin multiple connections to the same slot."
+        },
+        {
+          "info": {
+            "name": "Pin Revision Integration Connection",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id/integrations/:integration_id/connections",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "Agent ID"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "Build ID"
+              },
+              {
+                "name": "integration_id",
+                "value": "",
+                "type": "path",
+                "description": "Integration ID (catalog integration ID or slot ID from the list response)"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Pin one of your connections (from GET /v2/teams/:team_id/connections) to this build's integration slot. Multi-pin is supported: a single user can pin multiple connections to the same slot."
+        },
+        {
+          "info": {
+            "name": "Unpin Revision Integration Connection",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id/integrations/:integration_id/connections/:connection_id",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "Agent ID"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "Build ID"
+              },
+              {
+                "name": "integration_id",
+                "value": "",
+                "type": "path",
+                "description": "Integration ID (catalog integration ID or slot ID from the list response)"
+              },
+              {
+                "name": "connection_id",
+                "value": "",
+                "type": "path",
+                "description": "Connection ID to unpin"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Unpin one of your connections from this build's integration slot. The connection itself is not deleted; only the binding to this slot is removed."
+        },
+        {
+          "info": {
+            "name": "Get Revision Case Queue Setup",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id/case-queue-validation",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "Agent ID"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "Build ID"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Check that this build's case-queue integration slots are wired up correctly. Returns, per case-queue-producer/consumer slot, how many queues are linked, plus whether your team owns any case queues. A slot with linked_queue_count of 0 is attached but points at no queue and will fail at runtime — link a queue with replaceRevisionIntegrationQueues before starting work."
+        },
+        {
+          "info": {
+            "name": "List Revision Integration Queues",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id/integrations/:integration_id/queues",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "Agent ID"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "Build ID"
+              },
+              {
+                "name": "integration_id",
+                "value": "",
+                "type": "path",
+                "description": "Integration ID"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the queues linked to this build's case-queue integration slot. Only meaningful for case-queue-producer and case-queue-consumer integrations."
+        },
+        {
+          "info": {
+            "name": "Replace Revision Integration Queues",
+            "type": "http"
+          },
+          "http": {
+            "method": "PUT",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id/integrations/:integration_id/queues",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "Agent ID"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "Build ID"
+              },
+              {
+                "name": "integration_id",
+                "value": "",
+                "type": "path",
+                "description": "Integration ID"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Replace the set of queues linked to this build's case-queue integration slot. Send the full desired queue list — any queues not in the list will be unlinked. Requires edit permission on the agent. After linking, call getRevisionCaseQueueSetup to confirm the slot now reports linked_queue_count > 0."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

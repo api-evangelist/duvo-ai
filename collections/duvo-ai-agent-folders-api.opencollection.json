@@ -1,0 +1,148 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Agent Folders",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Update Agent Folder",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/agent-folders/:folder_id",
+            "params": [
+              {
+                "name": "folder_id",
+                "value": "",
+                "type": "path",
+                "description": "The folder's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Rename an agent folder or move it to a new parent."
+        },
+        {
+          "info": {
+            "name": "Delete Agent Folder",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/agent-folders/:folder_id",
+            "params": [
+              {
+                "name": "force",
+                "value": "",
+                "type": "query",
+                "description": "Pass 'true' to delete a folder that still contains assignments or subfolders. Any contained assignments will be moved to the root level."
+              },
+              {
+                "name": "folder_id",
+                "value": "",
+                "type": "path",
+                "description": "The folder's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete an agent folder. If the folder contains assignments or subfolders, pass `force=true` to delete it and move the contained assignments to the root level."
+        },
+        {
+          "info": {
+            "name": "List Agent Folders",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/agent-folders",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List all agent folders for the authenticated team."
+        },
+        {
+          "info": {
+            "name": "Create Agent Folder",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/agent-folders",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a new agent folder."
+        },
+        {
+          "info": {
+            "name": "Move Agents To Folder",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/agent-folders/move-agents",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Move one or more agents (assignments) into a folder, or to the root level."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

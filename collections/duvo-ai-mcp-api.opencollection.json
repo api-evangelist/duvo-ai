@@ -1,0 +1,44 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders MCP API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "MCP",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "GET /v2/mcp",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/mcp"
+          },
+          "docs": "MCP Streamable HTTP: GET is not supported (no server-initiated streaming). Use POST."
+        },
+        {
+          "info": {
+            "name": "POST /v2/mcp",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/mcp",
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "MCP JSON-RPC endpoint (Streamable HTTP transport). Exposes every public API route as an LLM-callable tool."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

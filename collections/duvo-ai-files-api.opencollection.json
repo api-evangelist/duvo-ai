@@ -1,0 +1,188 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Files API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Files",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "List Files",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/files",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List files for the current team."
+        },
+        {
+          "info": {
+            "name": "Rename File",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/files",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Rename a file in team storage."
+        },
+        {
+          "info": {
+            "name": "Create File Upload URL",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/files/create-upload-url",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Generate a signed URL for uploading a file directly to GCS."
+        },
+        {
+          "info": {
+            "name": "Delete File",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/files/:*",
+            "params": [
+              {
+                "name": "*",
+                "value": "",
+                "type": "path",
+                "description": "Path of the file to delete relative to the team's storage root"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete a file from team storage."
+        },
+        {
+          "info": {
+            "name": "Get File Download URL",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/files/download-url/:*",
+            "params": [
+              {
+                "name": "*",
+                "value": "",
+                "type": "path",
+                "description": "Path of the file relative to the team's storage root"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Generate a signed download URL for a file."
+        },
+        {
+          "info": {
+            "name": "Get File Content",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/files/content/:*",
+            "params": [
+              {
+                "name": "*",
+                "value": "",
+                "type": "path",
+                "description": "Path of the file relative to the team's storage root"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get the content of a text file."
+        },
+        {
+          "info": {
+            "name": "Update File Content",
+            "type": "http"
+          },
+          "http": {
+            "method": "PUT",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/files/content/:*",
+            "params": [
+              {
+                "name": "*",
+                "value": "",
+                "type": "path",
+                "description": "Path of the file relative to the team's storage root"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update the content of a text file."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

@@ -1,0 +1,180 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Queues API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Queues",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get Queue",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get a queue by ID."
+        },
+        {
+          "info": {
+            "name": "Update Queue",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update a queue."
+        },
+        {
+          "info": {
+            "name": "Delete Queue",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete a queue. Interrupts all associated active runs first and returns the number of deleted cases plus the IDs of runs that were stopped."
+        },
+        {
+          "info": {
+            "name": "List Queue Agents",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/agents",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List agents bound to a queue as producers (agents that push cases into the queue) or consumers (agents triggered by cases in the queue)."
+        },
+        {
+          "info": {
+            "name": "List Queues",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/queues",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of queues per page (1-250, default 250)"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Number of queues to skip"
+              },
+              {
+                "name": "automation_id",
+                "value": "",
+                "type": "query",
+                "description": "Only return queues belonging to this automation."
+              },
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List queues for your team."
+        },
+        {
+          "info": {
+            "name": "Create Queue",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/queues",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a new queue."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

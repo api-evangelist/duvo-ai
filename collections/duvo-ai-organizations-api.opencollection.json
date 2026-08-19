@@ -1,0 +1,348 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Organizations API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Organizations",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Propose Clarity Landscape Process",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/proposed-processes",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a manual process in the organization's Process Landscape, either as an unassigned proposal or atomically assigned to an eligible team."
+        },
+        {
+          "info": {
+            "name": "Invite Org Member",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/members",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path",
+                "description": "Organization ID"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Invite a person to an organization you administer, optionally assigning them to a team in that organization. Requires an organization Admin, Executive, or Owner role. You cannot grant a role higher than your own."
+        },
+        {
+          "info": {
+            "name": "List Org Teams",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/teams",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of teams per page (1-100, default 50)"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Number of teams to skip"
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path",
+                "description": "Organization ID"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List teams belonging to an organization you are a member of, including your membership and role in each."
+        },
+        {
+          "info": {
+            "name": "Create Org Team",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/teams",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path",
+                "description": "Organization ID"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a new team under an organization you administer. Requires an organization Admin, Executive, or Owner role."
+        },
+        {
+          "info": {
+            "name": "Get Org Insights Headline",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/insights/headline",
+            "params": [
+              {
+                "name": "startDate",
+                "value": "",
+                "type": "query",
+                "description": "Start of the aggregation window (ISO 8601 datetime). Defaults to 30 days ago; clamped to at most 365 days ago."
+              },
+              {
+                "name": "endDate",
+                "value": "",
+                "type": "query",
+                "description": "End of the aggregation window (ISO 8601 datetime, exclusive). Defaults to now; clamped to now."
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path",
+                "description": "The organization's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get org-wide headline insight KPIs (run totals, success rate, distinct active agents and users) aggregated across every team in the organization. Requires an organization Admin, Executive, or Owner role."
+        },
+        {
+          "info": {
+            "name": "Get Org Insights Metrics",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/insights/metrics",
+            "params": [
+              {
+                "name": "startDate",
+                "value": "",
+                "type": "query",
+                "description": "Start of the aggregation window (ISO 8601 datetime). Defaults to 7 days ago; clamped to at most 365 days ago."
+              },
+              {
+                "name": "endDate",
+                "value": "",
+                "type": "query",
+                "description": "End of the aggregation window (ISO 8601 datetime). Defaults to now; clamped to now."
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path",
+                "description": "The organization's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get org-level insights metrics (runs, assignments, schedules) broken down per team across the organization. Requires an organization Admin, Executive, or Owner role."
+        },
+        {
+          "info": {
+            "name": "Get Org Insights Usage Chart",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/insights/usage-chart",
+            "params": [
+              {
+                "name": "startDate",
+                "value": "",
+                "type": "query",
+                "description": "Start of the chart window (ISO 8601 datetime). Clamped to at most 365 days ago."
+              },
+              {
+                "name": "endDate",
+                "value": "",
+                "type": "query",
+                "description": "End of the chart window (ISO 8601 datetime). Clamped to now."
+              },
+              {
+                "name": "granularity",
+                "value": "",
+                "type": "query",
+                "description": "Bucket size: day, week, or month"
+              },
+              {
+                "name": "timezone",
+                "value": "",
+                "type": "query",
+                "description": "IANA timezone for bucket boundaries (e.g. America/New_York). Defaults to UTC."
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path",
+                "description": "The organization's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get org-level run-volume buckets (scheduled vs on-demand) at day/week/month granularity across the organization. Requires an organization Admin, Executive, or Owner role."
+        },
+        {
+          "info": {
+            "name": "Get Clarity Process Landscape",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/landscape",
+            "params": [
+              {
+                "name": "rootId",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Fetch the organization's process landscape: hierarchy nodes joined to lean process summaries and team assignments, with page-level stats"
+        },
+        {
+          "info": {
+            "name": "List Clarity Landscape Captures",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/captures",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of captures to return (1-200, default 100)"
+              },
+              {
+                "name": "includeTranscripts",
+                "value": "",
+                "type": "query",
+                "description": "Include full capture transcripts (large); off by default. Pass the literal string 'true' or 'false' (z.coerce.boolean treats any non-empty value, including 'false', as true)."
+              },
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the organization's eligible Process Landscape captures (completed interview/document transcripts not yet tied to a process) so they can seed new process proposals."
+        },
+        {
+          "info": {
+            "name": "Generate Clarity Process Landscape",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/organizations/:orgId/clarity/hierarchy/landscape/generate",
+            "params": [
+              {
+                "name": "orgId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Start a process-landscape generation run for the organization from its eligible Clarity captures (organization executives and owners)"
+        },
+        {
+          "info": {
+            "name": "List My Organizations",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/organizations/mine",
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the organizations the current user belongs to, with their role (organization:member, organization:admin, organization:owner, or organization:executive) and member count in each. Use this to check whether the user has an admin-or-above role before calling organization-scoped endpoints, which reject lower roles with 403."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

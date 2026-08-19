@@ -1,0 +1,163 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Revisions API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Revisions",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "List Agent Revisions",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of revisions per page (1-100, default 20)"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Number of revisions to skip"
+              },
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List revisions for an agent."
+        },
+        {
+          "info": {
+            "name": "Create Revision",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a new revision for an existing agent."
+        },
+        {
+          "info": {
+            "name": "Get Revision",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/revisions/:build_id",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              },
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "The build's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get a revision by ID."
+        },
+        {
+          "info": {
+            "name": "Update Revision",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/revisions/:build_id",
+            "params": [
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "The build's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update a revision's configuration, name, description, or handover targets. Returns the updated revision."
+        },
+        {
+          "info": {
+            "name": "Promote Revision",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/revisions/:build_id/promote",
+            "params": [
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "path",
+                "description": "The build's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Promote a draft or historic revision to the live version. The live revision is the one used by triggers and new runs. Fails if the revision is already live, or if a draft revision still has an active builder run."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

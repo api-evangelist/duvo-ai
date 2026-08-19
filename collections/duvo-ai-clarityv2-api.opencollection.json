@@ -1,0 +1,704 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders ClarityV2 API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "ClarityV2",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get Clarity Process",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id",
+            "params": [
+              {
+                "name": "captures",
+                "value": "",
+                "type": "query",
+                "description": "Capture payload mode. `full` (default) embeds each capture's transcript content. `lite` omits `transcript`/`videoTranscript` (returned as null) and relies on the `hasTranscript`/`hasVideoTranscript` flags; fetch content on demand via `GET .../captures/:capture_id`."
+              },
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get the v2 read model for a clarity process: the process row (with operational fields like generation_error, generation_progress, custom_prompt), its captures, and the lightweight version arrays for both snapshot tabs. The full payload of any specific snapshot is fetched lazily via the unified per-snapshot detail endpoint (`GET .../snapshots/:kind/:id`); this read model deliberately doesn't carry it so the response stays small."
+        },
+        {
+          "info": {
+            "name": "Postprocess Clarity Snapshot",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/postprocess",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Re-run postprocessing agents on an existing v2 clarity snapshot. Targets either the current-process snapshot or the transformation-proposal snapshot, identified by id in the body. Flips the process status to `generating` and returns 202 immediately; agents run asynchronously and flip the status back to `review` once they settle."
+        },
+        {
+          "info": {
+            "name": "Build Clarity Automation",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/automation",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Hand the latest transformation proposal for a v2 clarity process off to the workflow-builder pipeline. Returns 202 with the new run id; the LLM run completes asynchronously."
+        },
+        {
+          "info": {
+            "name": "List Clarity Extra Capture Requests",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/transformation-proposals/:transformation_proposal_id/extra-capture-requests",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of results per page (1-100, default 20)"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Number of results to skip (default 0)"
+              },
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "transformation_proposal_id",
+                "value": "",
+                "type": "path",
+                "description": "The transformation proposal id"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List active extra-capture requests for a given transformation proposal of a Clarity v2 process. The caller is expected to know the proposal id from the V2 read model and skip the call when no proposal exists yet."
+        },
+        {
+          "info": {
+            "name": "Assign Clarity Extra Capture Request",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/transformation-proposals/:transformation_proposal_id/extra-capture-requests/:request_id/assign",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "transformation_proposal_id",
+                "value": "",
+                "type": "path",
+                "description": "The transformation proposal id"
+              },
+              {
+                "name": "request_id",
+                "value": "",
+                "type": "path",
+                "description": "The extra-capture-request id"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Assign (or unassign, with `user_id: null`) a team member to fulfil an extra-capture request. Restricted to admins and managers."
+        },
+        {
+          "info": {
+            "name": "Create Clarity Invite Link",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/invite-link",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create or regenerate a process-scoped Clarity interview invite link. Only the process creator or team managers can create invite links; creating a new link invalidates any prior active link for the process."
+        },
+        {
+          "info": {
+            "name": "Create Clarity Artifact Import Upload URL",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/artifact-imports/create-upload-url",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a signed upload URL for importing a Miro export into a Clarity v2 process. Supports SVG, XML, PNG, and JPEG exports. The caller must upload the file to the returned URL, then complete the import."
+        },
+        {
+          "info": {
+            "name": "Complete Clarity Artifact Import",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/artifact-imports/:capture_id/complete",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "capture_id",
+                "value": "",
+                "type": "path",
+                "description": "The pending capture id returned by the upload-url endpoint"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Complete a Miro artifact import after uploading to the signed URL. The uploaded bytes are validated before the import becomes a usable Clarity capture."
+        },
+        {
+          "info": {
+            "name": "List Clarity Artifact Chat Conversations",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/artifact-chat/conversations",
+            "params": [
+              {
+                "name": "snapshot_kind",
+                "value": "",
+                "type": "query",
+                "description": "Artifact kind to list conversations for"
+              },
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The Clarity process id"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the current user's recent non-deleted artifact-chat conversations for a Clarity v2 process and snapshot kind."
+        },
+        {
+          "info": {
+            "name": "Get Clarity Artifact Chat Messages",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/artifact-chat/conversations/:conversation_id/messages",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The Clarity process id"
+              },
+              {
+                "name": "conversation_id",
+                "value": "",
+                "type": "path",
+                "description": "The artifact-chat conversation id"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Load the latest artifact-chat messages for one active conversation, returned oldest-first."
+        },
+        {
+          "info": {
+            "name": "POST /v2/clarity-v2/processes/{process_id}/artifact-chat/messages",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/artifact-chat/messages",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            }
+          },
+          "docs": "Submit a persisted artifact-chat user message and start a text turn."
+        },
+        {
+          "info": {
+            "name": "PUT /v2/clarity-v2/processes/{process_id}/artifact-chat/messages/{message_id}",
+            "type": "http"
+          },
+          "http": {
+            "method": "PUT",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/artifact-chat/messages/:message_id",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path"
+              },
+              {
+                "name": "message_id",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            }
+          },
+          "docs": "Accept or decline a persisted artifact-chat patch proposal."
+        },
+        {
+          "info": {
+            "name": "List Clarity Process Snapshots",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/snapshots/:kind",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "kind",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot kind to list"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List lightweight Clarity v2 process snapshots for one kind."
+        },
+        {
+          "info": {
+            "name": "Get Clarity Process Snapshot",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/snapshots/:kind/:snapshot_id",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "kind",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot kind to list"
+              },
+              {
+                "name": "snapshot_id",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot id"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Fetch the full payload for a Clarity v2 process snapshot of either kind."
+        },
+        {
+          "info": {
+            "name": "Revert Clarity Process Snapshot",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/snapshots/:kind/:snapshot_id",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "kind",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot kind to list"
+              },
+              {
+                "name": "snapshot_id",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot id"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Archive a Clarity v2 snapshot of either kind. If the live row is archived, the repository auto-promotes the latest historic row of the same kind."
+        },
+        {
+          "info": {
+            "name": "Save Clarity Process Snapshot",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/snapshots/:kind/save",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "kind",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot kind to list"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Save user edits as the live Clarity v2 snapshot for the selected kind."
+        },
+        {
+          "info": {
+            "name": "Promote Clarity Process Snapshot",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/snapshots/:kind/:snapshot_id/promote",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "kind",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot kind to list"
+              },
+              {
+                "name": "snapshot_id",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot id"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Promote a draft or historic Clarity v2 snapshot to live for its kind."
+        },
+        {
+          "info": {
+            "name": "Generate Clarity Process Snapshot",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/snapshots/:kind/generate",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "kind",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot kind to list"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Trigger a snapshot generation pipeline for a v2 clarity process, selected by kind. `current_process` runs the generateCurrentProcess pipeline (body fields are proposal-only and rejected); `transformation_proposal` runs the generate or regenerate proposal pipeline. Returns 202 immediately and finalises asynchronously via the cc-server webhook stream."
+        },
+        {
+          "info": {
+            "name": "Stop Clarity Process Snapshot",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/clarity-v2/processes/:process_id/snapshots/:kind/stop",
+            "params": [
+              {
+                "name": "process_id",
+                "value": "",
+                "type": "path",
+                "description": "The clarity process id"
+              },
+              {
+                "name": "kind",
+                "value": "",
+                "type": "path",
+                "description": "Snapshot kind to list"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Stop an in-flight snapshot generation for the selected kind. Reads the sandbox id from the process row, kills the sandbox, flips the process back to `review`, and clears the sandbox marker so any late webhook from the killed run is dropped as stale."
+        },
+        {
+          "info": {
+            "name": "List Clarity Processes",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/clarity-v2/processes",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of processes per page (1-100, default 50)"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Number of processes to skip (default 0)"
+              },
+              {
+                "name": "search",
+                "value": "",
+                "type": "query",
+                "description": "Case-insensitive search across process names"
+              },
+              {
+                "name": "status",
+                "value": "",
+                "type": "query",
+                "description": "Filter by process lifecycle status"
+              },
+              {
+                "name": "version",
+                "value": "",
+                "type": "query",
+                "description": "Filter by Clarity process schema version: 1 legacy, 2 v2"
+              },
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List Clarity processes for the current team, most recently updated first. Returns lightweight metadata (capture counts, contributors, status) suitable for building a picker; the per-process read model is available via `GET /v2/teams/:team_id/clarity-v2/processes/:process_id` for v2 rows and `GET /v2/teams/:team_id/clarity/processes/:id` for legacy v1 rows. Both v1 (legacy) and v2 processes are returned by default; use `search`, `status`, and `version` to narrow discovery. Capped at 100 per page."
+        },
+        {
+          "info": {
+            "name": "List Clarity Process Summaries",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/clarity-v2/processes/summaries",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Processes per page (1-10, default 5). Keeps the response under the MCP output cap."
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Processes to skip (default 0)."
+              },
+              {
+                "name": "detail",
+                "value": "",
+                "type": "query",
+                "description": "skeleton = + per-step role/system/flow edges (default); summary = summary+SWOT+impact only (cheaper, for pure ranking)."
+              },
+              {
+                "name": "include_current_steps",
+                "value": "",
+                "type": "query",
+                "description": "Include the as-is (current) step skeleton too. Default false = proposed (to-be) steps only. Pass the literal string 'true' or 'false' (z.coerce.boolean treats any non-empty value, including 'false', as true)."
+              },
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Cross-process portfolio digest for every completed Clarity process on the team: per-process summary, SWOT, projected impact, and a step skeleton (role, system, and flow edges) — without step prose or source excerpts. Paginated (default 5, max 10). Use this to answer portfolio-wide questions in one pass; fetch a single process's full detail via getClarityProcessSnapshot only for the few that matter."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

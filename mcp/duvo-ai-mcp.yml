@@ -36,8 +36,13 @@ tools:
   description: Approve, reject, or answer a human approval request.
   read_only: false
   destructive: false
-notes: >-
-  Hosted MCP surface for approved Duvo workspaces. Also exposed inside the API
-  itself: openapi/duvo-ai-openapi-original.json declares POST/GET /v2/mcp and a
-  probeMcpServer operation (POST /v2/teams/{teamId}/connections/mcp/probe) for
-  connecting custom MCP servers.
+notes: 'Hosted MCP surface for approved Duvo workspaces. Also exposed inside the API itself: openapi/duvo-ai-openapi-original.json
+  declares POST/GET /v2/mcp and a probeMcpServer operation (POST /v2/teams/{teamId}/connections/mcp/probe)
+  for connecting custom MCP servers.'
+deployment:
+  mode: remote
+  endpoint: https://api.duvo.ai/v2/mcp
+  verified: probed
+  probe: gated
+  checked: '2026-08-12'
+  source: catalog MCP census

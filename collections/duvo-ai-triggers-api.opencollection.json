@@ -1,0 +1,91 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Triggers API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Triggers",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "List Agent Triggers",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/triggers/:agentId",
+            "params": [
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the trigger definitions the authenticated user owns on an agent (Agent in the Duvo UI). Triggers start a Run automatically when an external event fires (e.g. an email arrives or a Linear issue is created)."
+        },
+        {
+          "info": {
+            "name": "Upsert Agent Trigger",
+            "type": "http"
+          },
+          "http": {
+            "method": "PUT",
+            "url": "https://api.duvo.ai/v2/triggers/:agentId",
+            "params": [
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create or update the authenticated user's trigger for an integration on an agent. The integration must already be connected to the agent (its OAuth connection set up in the Duvo dashboard). Set `enabled: false` to pause a trigger without deleting it."
+        },
+        {
+          "info": {
+            "name": "List Agent Trigger Types",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/trigger-config/:agentId",
+            "params": [
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the trigger types available for an agent, grouped by integration. Use the returned `integration_slug` and `trigger_type` values when creating a trigger."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

@@ -1,0 +1,318 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Runs API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Runs",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get Run Evaluation",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agent/:agentId/runs/:runId/evaluation",
+            "params": [
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier (Agent ID)"
+              },
+              {
+                "name": "runId",
+                "value": "",
+                "type": "path",
+                "description": "The run's unique identifier (Run ID)"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get the latest evaluation analysis for a specific agent run (Run)."
+        },
+        {
+          "info": {
+            "name": "Get Run",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/runs/:run_id",
+            "params": [
+              {
+                "name": "run_id",
+                "value": "",
+                "type": "path",
+                "description": "The run's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get information about an agent run. Can be polled to check status."
+        },
+        {
+          "info": {
+            "name": "List Run Messages",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/runs/:run_id/messages",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of messages per page (1-50, default 20)"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Number of messages to skip"
+              },
+              {
+                "name": "run_id",
+                "value": "",
+                "type": "path",
+                "description": "The run's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get paginated messages for an agent run. Messages are returned in chronological order."
+        },
+        {
+          "info": {
+            "name": "Post Run Message",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/runs/:run_id/messages",
+            "params": [
+              {
+                "name": "run_id",
+                "value": "",
+                "type": "path",
+                "description": "The run's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Post a message to an agent run. This will persist the message and resume the agent execution if the run is in a resumable state (waiting, completed, or interrupted)."
+        },
+        {
+          "info": {
+            "name": "Respond To Human Request",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/runs/:run_id/human-requests/:request_id/respond",
+            "params": [
+              {
+                "name": "run_id",
+                "value": "",
+                "type": "path",
+                "description": "The run's unique identifier"
+              },
+              {
+                "name": "request_id",
+                "value": "",
+                "type": "path",
+                "description": "The human request's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Respond to a human-in-the-loop request. Use 'approved' (true/false) for approval-type requests, or 'answers' ({question: answer}) for question-type requests. Only works when the run is in 'waiting' status."
+        },
+        {
+          "info": {
+            "name": "Stop Run",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/runs/:run_id/stop",
+            "params": [
+              {
+                "name": "run_id",
+                "value": "",
+                "type": "path",
+                "description": "The run's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Stop an agent run. No-op if the run is not currently running."
+        },
+        {
+          "info": {
+            "name": "List Runs",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/runs",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of runs per page (1-100, default 20)"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Number of runs to skip"
+              },
+              {
+                "name": "sort_by",
+                "value": "",
+                "type": "query",
+                "description": "Field to sort by (default created_at)"
+              },
+              {
+                "name": "sort_order",
+                "value": "",
+                "type": "query",
+                "description": "Sort direction (default desc)"
+              },
+              {
+                "name": "status",
+                "value": "",
+                "type": "query",
+                "description": "Filter to runs with this status"
+              },
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "query",
+                "description": "Filter to runs for this agent"
+              },
+              {
+                "name": "user_id",
+                "value": "",
+                "type": "query",
+                "description": "Filter to runs owned by this user; non-superadmin callers are scoped to themselves regardless of this value"
+              },
+              {
+                "name": "case_queue_id",
+                "value": "",
+                "type": "query",
+                "description": "Filter to runs associated with this queue"
+              },
+              {
+                "name": "source",
+                "value": "",
+                "type": "query",
+                "description": "Filter to runs created from this source (e.g. api, schedule)"
+              },
+              {
+                "name": "search",
+                "value": "",
+                "type": "query",
+                "description": "Full-text search across run titles and case titles"
+              },
+              {
+                "name": "has_issues",
+                "value": "",
+                "type": "query",
+                "description": "If true, only return runs that have evaluation issues"
+              },
+              {
+                "name": "issue_severity",
+                "value": "",
+                "type": "query",
+                "description": "If set, only return runs whose latest successful evaluation has at least one failing rubric with this severity (critical | medium | low). Implies has_issues; legacy evaluations without severity companion fields do not match this filter."
+              },
+              {
+                "name": "since",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "digest_id",
+                "value": "",
+                "type": "query"
+              },
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List runs for the current team. Supports filtering by agent, user, queue, status, etc. Messages, evaluation data, and queue metadata are included where available."
+        },
+        {
+          "info": {
+            "name": "Start Run",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/runs",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Start a new agent run. Returns immediately with run info - does not wait for completion."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

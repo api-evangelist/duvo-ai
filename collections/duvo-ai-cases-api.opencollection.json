@@ -1,0 +1,669 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Cases API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Cases",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "List Cases",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of cases per page (1-100, default 20)."
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Zero-based offset for pagination."
+              },
+              {
+                "name": "status",
+                "value": "",
+                "type": "query",
+                "description": "Filter by one or more case statuses (comma-separated). Values: pending, claimed, completed, failed, needs_input, postponed."
+              },
+              {
+                "name": "priority",
+                "value": "",
+                "type": "query",
+                "description": "Filter by one or more priority levels (comma-separated). Values: none, medium, high."
+              },
+              {
+                "name": "search",
+                "value": "",
+                "type": "query",
+                "description": "Full-text search across case title and data."
+              },
+              {
+                "name": "created_at_from",
+                "value": "",
+                "type": "query",
+                "description": "Return only cases created on or after this ISO-8601 timestamp."
+              },
+              {
+                "name": "updated_at_from",
+                "value": "",
+                "type": "query",
+                "description": "Return only cases updated on or after this ISO-8601 timestamp."
+              },
+              {
+                "name": "sort_by",
+                "value": "",
+                "type": "query",
+                "description": "Field to sort by. Default: created_at."
+              },
+              {
+                "name": "sort_order",
+                "value": "",
+                "type": "query",
+                "description": "Sort direction. Default: desc."
+              },
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List cases in a queue. Supports status, date-range, and free-text filters via query params. For label filters, use POST /v2/teams/:team_id/queues/:queue_id/cases/search."
+        },
+        {
+          "info": {
+            "name": "Create Cases",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create one or more cases in a queue. Provide either a single `case` object or a `cases` array (1-100); providing both returns 400. Each case accepts a title (max 500 chars), optional free-form `data`, optional labels that will be assigned to the case on creation (missing labels are created on the queue), and an optional priority (`none`, `medium`, or `high`; `medium`/`high` raise it above the default in the queue, `none` is the default). Priority only affects the order pending cases are picked u"
+        },
+        {
+          "info": {
+            "name": "Clear Queue Cases",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete every case in a queue. Interrupts any associated active runs first. Destructive — not exposed via MCP."
+        },
+        {
+          "info": {
+            "name": "Get Case",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/cases/:case_id",
+            "params": [
+              {
+                "name": "case_id",
+                "value": "",
+                "type": "path",
+                "description": "The case's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get a case by ID. Returns the case, its event history, and every case-approval batch ever created on the case (newest first)."
+        },
+        {
+          "info": {
+            "name": "Delete Case",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/cases/:case_id",
+            "params": [
+              {
+                "name": "case_id",
+                "value": "",
+                "type": "path",
+                "description": "The case's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete a case. Interrupts any associated active runs first."
+        },
+        {
+          "info": {
+            "name": "List Case Runs",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/cases/:case_id/runs",
+            "params": [
+              {
+                "name": "case_id",
+                "value": "",
+                "type": "path",
+                "description": "The case's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List Runs (agent runs) that have claimed or received handover of a case, newest first. Capped at 50 ownership events."
+        },
+        {
+          "info": {
+            "name": "List Case Run Recent Messages",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/cases/:case_id/runs/:run_id/recent-messages",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Maximum number of qualifying messages to return. Defaults to 3, must be between 1 and 10."
+              },
+              {
+                "name": "case_id",
+                "value": "",
+                "type": "path",
+                "description": "The case's unique identifier"
+              },
+              {
+                "name": "run_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent run's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Return the latest qualifying messages (assistant text + tool calls) for a Run on a case, newest last. Used to populate the live body of an active Run card in the case Activity timeline."
+        },
+        {
+          "info": {
+            "name": "Bulk Delete Cases",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/bulk-delete",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete multiple cases from a queue. Any active runs are interrupted first."
+        },
+        {
+          "info": {
+            "name": "Bulk Reprocess Cases",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/bulk-reprocess",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Re-process multiple cases on a chosen agent. Any active runs on the selected cases are interrupted first; the cases are then reset to pending and assigned to the chosen agent for the next dispatcher tick. The chosen agent must already be connected to the queue as a case-queue-consumer (with the trigger enabled or disabled)."
+        },
+        {
+          "info": {
+            "name": "Bulk Delegate Cases",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/bulk-delegate",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Deprecated: use POST /queues/{queue_id}/cases/bulk-reprocess instead. Permanently redirects (308) to bulk-reprocess. Scheduled for removal on 2026-06-10."
+        },
+        {
+          "info": {
+            "name": "Bulk Retry Cases",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/bulk-retry",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Deprecated: use POST /queues/{queue_id}/cases/bulk-reprocess instead. Permanently redirects (308) to bulk-reprocess, which re-processes on the queue's auto-triggered assignment. Scheduled for removal on 2026-06-10."
+        },
+        {
+          "info": {
+            "name": "Bulk Update Case Status",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/bulk-update-status",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update the status of multiple cases to pending, completed, or failed. Interrupts any active runs and releases their case ownership, but never cancels their human-in-the-loop state — pending requests and open approval batches stay answerable/resolvable from the run view. Resetting to pending re-dispatches cases to the queue's trigger consumer."
+        },
+        {
+          "info": {
+            "name": "Bulk Update Case Priority",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/bulk-update-priority",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Set the priority of multiple cases. Priority only affects the order pending cases are picked up in: due postponed cases are handled first, then higher priority. It never interrupts runs or changes case status. Set `none` to clear priority back to the default."
+        },
+        {
+          "info": {
+            "name": "List Case Labels",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/:case_id/labels",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Maximum number of labels to return."
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Zero-based offset for pagination."
+              },
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              },
+              {
+                "name": "case_id",
+                "value": "",
+                "type": "path",
+                "description": "The case's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List all labels assigned to a case."
+        },
+        {
+          "info": {
+            "name": "Assign Case Labels",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/:case_id/labels",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              },
+              {
+                "name": "case_id",
+                "value": "",
+                "type": "path",
+                "description": "The case's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Assign one or more labels to a case. Creates the labels on the queue if they don't already exist."
+        },
+        {
+          "info": {
+            "name": "List Queue Labels",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/labels",
+            "params": [
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Maximum number of labels to return."
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Zero-based offset for pagination."
+              },
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List every label defined on a queue along with the count of cases each label is assigned to."
+        },
+        {
+          "info": {
+            "name": "Create Queue Label",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/labels",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a label on a queue without assigning it to a case."
+        },
+        {
+          "info": {
+            "name": "Unlink Case Labels",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/:case_id/labels/unlink",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              },
+              {
+                "name": "case_id",
+                "value": "",
+                "type": "path",
+                "description": "The case's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Remove the given labels from a case."
+        },
+        {
+          "info": {
+            "name": "Update Queue Label",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/labels/:label_id",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              },
+              {
+                "name": "label_id",
+                "value": "",
+                "type": "path",
+                "description": "The label's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update a label's key, value, or color. Renaming key/value affects every case assigned to this label."
+        },
+        {
+          "info": {
+            "name": "Delete Queue Label",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/labels/:label_id",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              },
+              {
+                "name": "label_id",
+                "value": "",
+                "type": "path",
+                "description": "The label's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete a label from a queue. Cascade-deletes all assignments of this label on existing cases."
+        },
+        {
+          "info": {
+            "name": "Search Cases",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/queues/:queue_id/cases/search",
+            "params": [
+              {
+                "name": "queue_id",
+                "value": "",
+                "type": "path",
+                "description": "The queue's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Search cases in a queue with rich filters (multi-status, date ranges, label-based filters). Use this when the simple query-string filters on GET /v2/teams/:team_id/queues/:queue_id/cases aren't enough."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

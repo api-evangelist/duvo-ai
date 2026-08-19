@@ -1,0 +1,257 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Skills API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Skills",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "List System Skills",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/skills/system",
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List all system skills (skills available to all teams)."
+        },
+        {
+          "info": {
+            "name": "Delete Skill",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/skills/:skill_id",
+            "params": [
+              {
+                "name": "skill_id",
+                "value": "",
+                "type": "path",
+                "description": "Skill ID."
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete a skill for the current team."
+        },
+        {
+          "info": {
+            "name": "Download Skill",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/skills/:skill_id/download",
+            "params": [
+              {
+                "name": "skill_id",
+                "value": "",
+                "type": "path",
+                "description": "Skill ID."
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Download a custom skill as a ZIP archive. Only custom (team-owned) skills can be downloaded."
+        },
+        {
+          "info": {
+            "name": "List Skill Files",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/skills/:skill_id/files",
+            "params": [
+              {
+                "name": "skill_id",
+                "value": "",
+                "type": "path",
+                "description": "Skill ID."
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List all files in a skill."
+        },
+        {
+          "info": {
+            "name": "Get Skill File Content",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/skills/:skill_id/files/:*",
+            "params": [
+              {
+                "name": "skill_id",
+                "value": "",
+                "type": "path",
+                "description": "Skill ID."
+              },
+              {
+                "name": "*",
+                "value": "",
+                "type": "path",
+                "description": "Relative path to the file inside the skill, e.g. SKILL.md."
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get the content of a file in a skill."
+        },
+        {
+          "info": {
+            "name": "Update Skill File",
+            "type": "http"
+          },
+          "http": {
+            "method": "PUT",
+            "url": "https://api.duvo.ai/v2/skills/:skill_id/files/:*",
+            "params": [
+              {
+                "name": "skill_id",
+                "value": "",
+                "type": "path",
+                "description": "Skill ID."
+              },
+              {
+                "name": "*",
+                "value": "",
+                "type": "path",
+                "description": "Relative path to the file inside the skill, e.g. SKILL.md."
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update the content of a file in a skill. Only team skills can be edited."
+        },
+        {
+          "info": {
+            "name": "List Skill Assignments",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/skills/:skill_id/assignments",
+            "params": [
+              {
+                "name": "skill_id",
+                "value": "",
+                "type": "path",
+                "description": "Skill ID."
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the agents in the current team whose live build references the given skill. Used to warn users that editing a skill will affect every agent that uses it."
+        },
+        {
+          "info": {
+            "name": "List Skills",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/skills",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List all skills for the current team, including system skills."
+        },
+        {
+          "info": {
+            "name": "Create Skill",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/skills",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create or update a skill from a JSON body. The server constructs SKILL.md from the provided fields and stores it. If a skill with the same name already exists in the team, it is updated."
+        },
+        {
+          "info": {
+            "name": "Upload Skill",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/skills/upload",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create or update a skill by uploading a SKILL.md file or a ZIP archive containing SKILL.md at the root. If a skill with the same name exists in the team, it will be updated."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

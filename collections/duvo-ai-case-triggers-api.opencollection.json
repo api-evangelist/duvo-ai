@@ -1,0 +1,188 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Case Triggers API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Case Triggers",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "List Agent Case Triggers",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/case-triggers",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the case triggers configured for an agent. Each trigger automatically dispatches the agent to run cases added to a queue."
+        },
+        {
+          "info": {
+            "name": "Create Agent Case Trigger",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/case-triggers",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a case trigger for an agent. An agent may have at most one case trigger; this returns 409 if one already exists."
+        },
+        {
+          "info": {
+            "name": "Preview Agent Case Trigger Conflicts",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/case-triggers/conflict-preview",
+            "params": [
+              {
+                "name": "case_queue_id",
+                "value": "",
+                "type": "query",
+                "description": "The queue to check for conflicts against"
+              },
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Preview which other agents would conflict with this agent's case trigger if it pointed at the given queue. Does not modify the trigger."
+        },
+        {
+          "info": {
+            "name": "Get Agent Case Trigger",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/case-triggers/:trigger_id",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              },
+              {
+                "name": "trigger_id",
+                "value": "",
+                "type": "path",
+                "description": "The case trigger's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Retrieve a single case trigger by id."
+        },
+        {
+          "info": {
+            "name": "Update Agent Case Trigger",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/case-triggers/:trigger_id",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              },
+              {
+                "name": "trigger_id",
+                "value": "",
+                "type": "path",
+                "description": "The case trigger's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update fields on a case trigger. Only the trigger creator or a builder/admin can disable an enabled trigger or change its queue."
+        },
+        {
+          "info": {
+            "name": "Delete Agent Case Trigger",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/case-triggers/:trigger_id",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              },
+              {
+                "name": "trigger_id",
+                "value": "",
+                "type": "path",
+                "description": "The case trigger's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete a case trigger. Only the trigger creator or a builder/admin can delete it."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

@@ -1,0 +1,112 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Sandboxes API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Sandboxes",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Create Sandbox",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/sandboxes",
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a new sandbox for file uploads. The returned sandbox_id can be passed to POST /v2/teams/:team_id/runs to stage data for a run."
+        },
+        {
+          "info": {
+            "name": "Create Sandbox Upload URL",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/sandboxes/:sandbox_id/upload-urls",
+            "params": [
+              {
+                "name": "sandbox_id",
+                "value": "",
+                "type": "path",
+                "description": "The sandbox's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get a presigned URL for uploading a file into a sandbox. Use for files larger than 10MB; smaller files can be uploaded directly via POST /v2/sandboxes/:sandbox_id/files."
+        },
+        {
+          "info": {
+            "name": "List Sandbox Files",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/sandboxes/:sandbox_id/files",
+            "params": [
+              {
+                "name": "path",
+                "value": "",
+                "type": "query",
+                "description": "Directory to list files from (defaults to /workspace)"
+              },
+              {
+                "name": "sandbox_id",
+                "value": "",
+                "type": "path",
+                "description": "The sandbox's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List files in a sandbox directory."
+        },
+        {
+          "info": {
+            "name": "Upload Sandbox File",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/sandboxes/:sandbox_id/files",
+            "params": [
+              {
+                "name": "sandbox_id",
+                "value": "",
+                "type": "path",
+                "description": "The sandbox's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Upload a file directly to the sandbox. Maximum file size is 10MB. For larger files, use POST /v2/sandboxes/:sandbox_id/upload-urls."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

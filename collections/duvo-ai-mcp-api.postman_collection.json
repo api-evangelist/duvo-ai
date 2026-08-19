@@ -1,0 +1,170 @@
+{
+  "item": [
+    {
+      "id": "fef468a7-2c89-444d-b5df-4eda4a9885ab",
+      "name": "MCP",
+      "description": {
+        "content": "MCP JSON-RPC endpoint exposing public API routes as LLM-callable tools",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "c19d1371-d197-4431-99e9-865d188f1992",
+          "name": "MCP JSON-RPC endpoint (Streamable HTTP transport). Exposes every public API route as an LLM-callable tool.",
+          "request": {
+            "name": "MCP JSON-RPC endpoint (Streamable HTTP transport). Exposes every public API route as an LLM-callable tool.",
+            "description": {
+              "content": "MCP JSON-RPC endpoint (Streamable HTTP transport). Exposes every public API route as an LLM-callable tool.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v2",
+                "mcp"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "cb1295b6-2ede-4498-9328-c40ad92f6d93",
+              "name": "Default Response",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v2",
+                    "mcp"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "POST",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "body": "",
+              "cookie": [],
+              "_postman_previewlanguage": "text"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "df2609b8-4286-410c-b3f8-ecfe9b35e752",
+          "name": "MCP Streamable HTTP: GET is not supported (no server-initiated streaming). Use POST.",
+          "request": {
+            "name": "MCP Streamable HTTP: GET is not supported (no server-initiated streaming). Use POST.",
+            "description": {
+              "content": "MCP Streamable HTTP: GET is not supported (no server-initiated streaming). Use POST.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "v2",
+                "mcp"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "88228a58-a2ca-4ee8-b83a-7f43ef1f5792",
+              "name": "Default Response",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "v2",
+                    "mcp"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "body": "",
+              "cookie": [],
+              "_postman_previewlanguage": "text"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "string",
+      "value": "https://api.duvo.ai",
+      "key": "baseUrl"
+    }
+  ],
+  "info": {
+    "_postman_id": "e16189d7-5747-4dd3-ae90-e1cda71c7d42",
+    "name": "Duvo Public Agent Folders MCP API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.",
+      "type": "text/plain"
+    }
+  }
+}

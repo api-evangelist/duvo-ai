@@ -1,0 +1,382 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Duvo Public Agent Folders Agents API",
+    "version": "1.0.0"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Agents",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get Eval Scores",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agent/:agentId/eval-scores",
+            "params": [
+              {
+                "name": "since",
+                "value": "",
+                "type": "query",
+                "description": "ISO 8601 timestamp; only Jobs evaluated after this are counted"
+              },
+              {
+                "name": "scope",
+                "value": "",
+                "type": "query",
+                "description": "When 'custom', only counts Jobs scored against the target revision's custom rubrics, and only `custom__*` rubric flags. Defaults to 'all' (platform + custom rubrics)."
+              },
+              {
+                "name": "revision_id",
+                "value": "",
+                "type": "query",
+                "description": "Target a specific Assignment revision instead of the live revision. Only honoured when scope='custom' — non-custom scopes aggregate across all revisions. Defaults to the live revision when omitted."
+              },
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier (Assignment ID)"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Aggregate evaluation counts and flag distribution for an Assignment's Jobs since the given timestamp."
+        },
+        {
+          "info": {
+            "name": "Get Eval Rubrics",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agentId/eval-rubrics",
+            "params": [
+              {
+                "name": "build_id",
+                "value": "",
+                "type": "query",
+                "description": "Return rubrics for this specific build (the revision a Run ran against). Defaults to the agent's live build when omitted."
+              },
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier (Assignment ID)"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List the evaluation rubrics a Run is scored against: the platform default rubrics plus the Agent-specific rubrics for a build. Defaults to the Agent's live build; pass build_id to target the revision a specific Run ran against."
+        },
+        {
+          "info": {
+            "name": "Create Eval Rubric",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/agents/:agentId/eval-rubrics",
+            "params": [
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier (Assignment ID)"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Add one Agent-specific evaluation rubric to a build. A build may hold at most 5 custom rubrics; this fails with 409 once that ceiling is reached. Defaults to the Agent's live build; pass build_id to target a specific revision."
+        },
+        {
+          "info": {
+            "name": "Replace Eval Rubrics",
+            "type": "http"
+          },
+          "http": {
+            "method": "PUT",
+            "url": "https://api.duvo.ai/v2/agents/:agentId/eval-rubrics",
+            "params": [
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier (Assignment ID)"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Replace a build's entire Agent-specific evaluation rubric set in one call (at most 5 rubrics). Existing custom rubrics are removed and the supplied list becomes the new set; pass an empty array to clear them. Defaults to the Agent's live build; pass build_id to target a specific revision."
+        },
+        {
+          "info": {
+            "name": "Update Eval Rubric",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/agents/:agentId/eval-rubrics/:rubricId",
+            "params": [
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier (Assignment ID)"
+              },
+              {
+                "name": "rubricId",
+                "value": "",
+                "type": "path",
+                "description": "The custom rubric's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Edit a single Agent-specific evaluation rubric's title and/or description. The edit produces a NEW rubric (with a new id and slug) so previously scored Runs stay attributed to the original criterion; the response contains the new rubric."
+        },
+        {
+          "info": {
+            "name": "Delete Eval Rubric",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/agents/:agentId/eval-rubrics/:rubricId",
+            "params": [
+              {
+                "name": "agentId",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier (Assignment ID)"
+              },
+              {
+                "name": "rubricId",
+                "value": "",
+                "type": "path",
+                "description": "The custom rubric's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Remove a single Agent-specific evaluation rubric. Future Runs on the build are no longer scored against it."
+        },
+        {
+          "info": {
+            "name": "Get Agent",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get an agent by ID."
+        },
+        {
+          "info": {
+            "name": "Update Agent",
+            "type": "http"
+          },
+          "http": {
+            "method": "PATCH",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Update an agent's display name or delivery settings."
+        },
+        {
+          "info": {
+            "name": "Delete Agent",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id",
+            "params": [
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The agent's unique identifier"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Delete an agent and cascade-clean its schedules, case triggers, builder runs, and handover targets. Any active jobs are interrupted and their sandboxes paused."
+        },
+        {
+          "info": {
+            "name": "Move Agent",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/agents/:agent_id/move",
+            "params": [
+              {
+                "name": "dry_run",
+                "value": "",
+                "type": "query",
+                "description": "When true, preview the closure and warnings without applying any changes."
+              },
+              {
+                "name": "agent_id",
+                "value": "",
+                "type": "path",
+                "description": "The ID of the agent to move."
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Move an agent (and its connected workspace) to a different team. Pass dry_run=true to preview the closure without applying changes."
+        },
+        {
+          "info": {
+            "name": "List Agents",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/agents",
+            "params": [
+              {
+                "name": "include_schedules",
+                "value": "",
+                "type": "query",
+                "description": "Include the authenticated user's schedules for each agent in the response. Schedules are per-user, so this only returns schedules the current user owns."
+              },
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of agents per page (1-100, default 20)"
+              },
+              {
+                "name": "offset",
+                "value": "",
+                "type": "query",
+                "description": "Number of agents to skip"
+              },
+              {
+                "name": "automation_id",
+                "value": "",
+                "type": "query",
+                "description": "Only return agents belonging to this automation."
+              },
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List agents for your team."
+        },
+        {
+          "info": {
+            "name": "Create Agent",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://api.duvo.ai/v2/teams/:teamId/agents",
+            "params": [
+              {
+                "name": "teamId",
+                "value": "",
+                "type": "path"
+              }
+            ],
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create a new agent. Optionally include a build configuration to create the first build in the same request."
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}
