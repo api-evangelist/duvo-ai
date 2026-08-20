@@ -37,6 +37,18 @@ created: '2026-07-17'
 modified: '2026-07-18'
 tags:
 - Company
+- Enterprise AI
+- Process Intelligence
+- Automation
+- Agents
+- SAP Migration
+- ERP
+- Transformation
+- Approvals
+- Audit
+- MCP
+tags_raw:
+- Company
 - Enterprise; Ai
 - Process Intelligence
 - Automation
@@ -223,6 +235,8 @@ apis:
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
+  - File
+  tags_raw:
   - Files
   properties:
   - type: OpenAPI
@@ -239,6 +253,8 @@ apis:
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
+  - Integration
+  tags_raw:
   - Integrations
   properties:
   - type: OpenAPI
@@ -271,6 +287,8 @@ apis:
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
+  - Organization
+  tags_raw:
   - Organizations
   properties:
   - type: OpenAPI
