@@ -514,6 +514,9 @@ maintainers:
 - FN: APIs.json
   email: info@apis.io
 common:
+- type: CapabilityMap
+  url: capabilities/duvo-ai-capability-edges.yml
+  name: Duvo Ai Business Capability Map
 - type: Overlay
   url: overlays/duvo-ai-openapi-overlay.yaml
 - type: AgenticAccess
