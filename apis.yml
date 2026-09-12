@@ -1,17 +1,6 @@
 aid: duvo-ai
 name: Duvo Ai
-description: >-
-  Duvo (taskcrew Inc.) is a process intelligence and automation platform that
-  captures how work really happens, reveals improvement and transformation
-  opportunities, and delivers reliable governed automation across existing
-  enterprise systems. It builds evidence-backed process catalogues, role-specific
-  training, improvement plans, transformation roadmaps, and SAP migration fact
-  bases, then runs cross-system operational workflows — purchase orders, invoice
-  matching, inventory exceptions, supplier onboarding, master data — through
-  agents, queues, human approvals, files, webhooks, and browser automation. Duvo
-  exposes a 213-operation workspace-scoped public API (api.duvo.ai), a hosted MCP
-  server, an official CLI, agent skills, and a full agent-native discovery
-  surface (.well-known agent + MCP cards, llms.txt). Backed by Northzone.
+description: Duvo (taskcrew Inc.) is a process intelligence and automation platform that captures how work really happens, reveals improvement and transformation opportunities, and delivers reliable governed automation across existing enterprise systems. It builds evidence-backed process catalogues, role-specific training, improvement plans, transformation roadmaps, and SAP migration fact bases, then runs cross-system operational workflows — purchase orders, invoice matching, inventory exceptions, supplier onboarding, master data — through agents, queues, human approvals, files, webhooks, and browser automation. Duvo exposes a 213-operation workspace-scoped public API (api.duvo.ai), a hosted MCP server, an official CLI, agent skills, and a full agent-native discovery surface (.well-known agent + MCP cards, llms.txt). Backed by Northzone.
 url: https://raw.githubusercontent.com/api-evangelist/duvo-ai/refs/heads/main/apis.yml
 deliveryModel:
   model: saas
@@ -123,9 +112,7 @@ apis:
     url: https://www.duvo.ai/getting-started.md
 - aid: duvo-ai:duvo-ai-case-triggers-api
   name: Duvo Ai Case Triggers API
-  description: >-
-    Configure case triggers that automatically dispatch agent runs (Runs in the Duvo UI) for cases added
-    to a queue
+  description: Configure case triggers that automatically dispatch agent runs (Runs in the Duvo UI) for cases added to a queue
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
@@ -173,9 +160,7 @@ apis:
     url: https://www.duvo.ai/getting-started.md
 - aid: duvo-ai:duvo-ai-clarityv2-api
   name: Duvo Ai ClarityV2 API
-  description: >-
-    Manage Clarity v2 process snapshots, transformation proposals, and the extra-capture-request follow-up
-    loop
+  description: Manage Clarity v2 process snapshots, transformation proposals, and the extra-capture-request follow-up loop
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
@@ -207,9 +192,7 @@ apis:
     url: https://www.duvo.ai/getting-started.md
 - aid: duvo-ai:duvo-ai-credentials-api
   name: Duvo Ai Credentials API
-  description: >-
-    Manage logins (domain + username + password + TOTP) used by agents to sign in to websites and desktop
-    applications, and attach them to assignment revisions
+  description: Manage logins (domain + username + password + TOTP) used by agents to sign in to websites and desktop applications, and attach them to assignment revisions
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
@@ -225,9 +208,7 @@ apis:
     url: https://www.duvo.ai/getting-started.md
 - aid: duvo-ai:duvo-ai-duvo-pulse-api
   name: Duvo Ai Duvo Pulse API
-  description: >-
-    Create, list, iterate on, and delete Duvo Pulse dashboards — live, agent-generated visualizations
-    of your Duvo data
+  description: Create, list, iterate on, and delete Duvo Pulse dashboards — live, agent-generated visualizations of your Duvo data
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
@@ -425,9 +406,7 @@ apis:
     url: https://www.duvo.ai/getting-started.md
 - aid: duvo-ai:duvo-ai-secrets-api
   name: Duvo Ai Secrets API
-  description: >-
-    Manage env-var secrets injected into runs, and attach them to assignment revisions. Only metadata
-    is exposed; values are never returned
+  description: Manage env-var secrets injected into runs, and attach them to assignment revisions. Only metadata is exposed; values are never returned
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
@@ -459,8 +438,7 @@ apis:
     url: https://www.duvo.ai/getting-started.md
 - aid: duvo-ai:duvo-ai-suggestions-api
   name: Duvo Ai Suggestions API
-  description: >-
-    List, apply, and dismiss an Agent's improvement suggestions (the suggestions inbox in the Duvo UI)
+  description: List, apply, and dismiss an Agent's improvement suggestions (the suggestions inbox in the Duvo UI)
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
@@ -492,9 +470,7 @@ apis:
     url: https://www.duvo.ai/getting-started.md
 - aid: duvo-ai:duvo-ai-triggers-api
   name: Duvo Ai Triggers API
-  description: >-
-    Configure event triggers that start a Run automatically when an external event fires (e.g. an email
-    arrives, a Linear issue is created, or a file changes in Google Drive)
+  description: Configure event triggers that start a Run automatically when an external event fires (e.g. an email arrives, a Linear issue is created, or a file changes in Google Drive)
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
@@ -508,6 +484,272 @@ apis:
     url: https://docs.duvo.ai
   - type: GettingStarted
     url: https://www.duvo.ai/getting-started.md
+- aid: duvo-ai:duvoai-agent-folders-api
+  name: duvo.ai Agent Folders API
+  description: Organize agents into folders
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Agent Folders
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-agent-folders-api-openapi.yml
+- aid: duvo-ai:duvoai-agent-memory-api
+  name: duvo.ai Agent Memory API
+  description: Read an agent's memory files (the Memory feature in the Duvo UI)
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Agent Memory
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-agent-memory-api-openapi.yml
+- aid: duvo-ai:duvoai-agents-api
+  name: duvo.ai Agents API
+  description: Create and manage agents for automation workloads
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Agents
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-agents-api-openapi.yml
+- aid: duvo-ai:duvoai-case-triggers-api
+  name: duvo.ai Case Triggers API
+  description: Configure case triggers that automatically dispatch agent runs (Runs in the Duvo UI) for cases added to a queue
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Case Triggers
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-case-triggers-api-openapi.yml
+- aid: duvo-ai:duvoai-cases-api
+  name: duvo.ai Cases API
+  description: Create, list, and manage cases and their labels within queues
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Cases
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-cases-api-openapi.yml
+- aid: duvo-ai:duvoai-clarity-api
+  name: duvo.ai Clarity API
+  description: The Clarity API from duvo.ai — 17 operation(s) for clarity.
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Clarity
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-clarity-api-openapi.yml
+- aid: duvo-ai:duvoai-clarityv2-api
+  name: duvo.ai ClarityV2 API
+  description: Manage Clarity v2 process snapshots, transformation proposals, and the extra-capture-request follow-up loop
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - ClarityV2
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-clarityv2-api-openapi.yml
+- aid: duvo-ai:duvoai-connections-api
+  name: duvo.ai Connections API
+  description: Manage your connected integrations
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Connections
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-connections-api-openapi.yml
+- aid: duvo-ai:duvoai-credentials-api
+  name: duvo.ai Credentials API
+  description: Manage logins (domain + username + password + TOTP) used by agents to sign in to websites and desktop applications, and attach them to assignment revisions
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Credentials
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-credentials-api-openapi.yml
+- aid: duvo-ai:duvoai-duvo-pulse-api
+  name: duvo.ai Duvo Pulse API
+  description: Create, list, iterate on, and delete Duvo Pulse dashboards — live, agent-generated visualizations of your Duvo data
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Duvo Pulse
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-duvo-pulse-api-openapi.yml
+- aid: duvo-ai:duvoai-files-api
+  name: duvo.ai Files API
+  description: Manage team files.
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - File
+  tags_raw:
+  - Files
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-files-api-openapi.yml
+- aid: duvo-ai:duvoai-integrations-api
+  name: duvo.ai Integrations API
+  description: Browse the team's catalog of available integration types
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Integration
+  tags_raw:
+  - Integrations
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-integrations-api-openapi.yml
+- aid: duvo-ai:duvoai-mcp-api
+  name: duvo.ai MCP API
+  description: MCP JSON-RPC endpoint exposing public API routes as LLM-callable tools
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - MCP
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-mcp-api-openapi.yml
+- aid: duvo-ai:duvoai-organizations-api
+  name: duvo.ai Organizations API
+  description: Inspect organizations you belong to and the teams within them
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Organization
+  tags_raw:
+  - Organizations
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-organizations-api-openapi.yml
+- aid: duvo-ai:duvoai-plugins-api
+  name: duvo.ai Plugins API
+  description: Discover plugins that can be referenced from a revision.
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Plugins
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-plugins-api-openapi.yml
+- aid: duvo-ai:duvoai-queues-api
+  name: duvo.ai Queues API
+  description: Manage queues and their agent bindings
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Queues
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-queues-api-openapi.yml
+- aid: duvo-ai:duvoai-revision-integrations-api
+  name: duvo.ai Revision Integrations API
+  description: Attach integrations to assignment revisions, pin specific connections, and link queues
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Revision Integrations
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-revision-integrations-api-openapi.yml
+- aid: duvo-ai:duvoai-revisions-api
+  name: duvo.ai Revisions API
+  description: Create and manage agent revisions — the underlying Setup for an Agent
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Revisions
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-revisions-api-openapi.yml
+- aid: duvo-ai:duvoai-runs-api
+  name: duvo.ai Runs API
+  description: Start, monitor, and manage agent runs (Runs in the Duvo UI)
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Runs
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-runs-api-openapi.yml
+- aid: duvo-ai:duvoai-sandboxes-api
+  name: duvo.ai Sandboxes API
+  description: Create sandboxes and upload files for agent runs
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Sandboxes
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-sandboxes-api-openapi.yml
+- aid: duvo-ai:duvoai-schedules-api
+  name: duvo.ai Schedules API
+  description: List schedules configured for an agent
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Schedules
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-schedules-api-openapi.yml
+- aid: duvo-ai:duvoai-secrets-api
+  name: duvo.ai Secrets API
+  description: Manage env-var secrets injected into runs, and attach them to assignment revisions. Only metadata is exposed; values are never returned
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Secrets
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-secrets-api-openapi.yml
+- aid: duvo-ai:duvoai-skills-api
+  name: duvo.ai Skills API
+  description: Manage team and system skills (reusable knowledge packs).
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Skills
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-skills-api-openapi.yml
+- aid: duvo-ai:duvoai-suggestions-api
+  name: duvo.ai Suggestions API
+  description: List, apply, and dismiss an Agent's improvement suggestions (the suggestions inbox in the Duvo UI)
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Suggestions
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-suggestions-api-openapi.yml
+- aid: duvo-ai:duvoai-team-api
+  name: duvo.ai Team API
+  description: Inspect the team and members associated with the API key
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Team
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-team-api-openapi.yml
+- aid: duvo-ai:duvoai-triggers-api
+  name: duvo.ai Triggers API
+  description: Configure event triggers that start a Run automatically when an external event fires (e.g. an email arrives, a Linear issue is created, or a file changes in Google Drive)
+  humanURL: https://www.duvo.ai/developers
+  baseURL: https://api.duvo.ai
+  tags:
+  - Triggers
+  properties:
+  - type: OpenAPI
+    url: openapi/duvoai-triggers-api-openapi.yml
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
