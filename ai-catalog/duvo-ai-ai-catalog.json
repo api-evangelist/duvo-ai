@@ -1,0 +1,76 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "Duvo",
+    "identifier": "did:web:duvo.ai"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:duvo.ai:mcp:duvo",
+      "displayName": "Duvo MCP",
+      "type": "application/mcp-server+json",
+      "url": "https://www.duvo.ai/.well-known/mcp/server-card.json",
+      "description": "Hosted Duvo MCP server card, listed in the official MCP Registry as io.github.duvoai/duvo. Approved workspaces use it to start runs and respond to approval gates before write-back. The MCP endpoint is https://api.duvo.ai/v2/mcp.",
+      "capabilities": [
+        "start_run",
+        "get_run",
+        "create_case",
+        "respond_to_human_request"
+      ],
+      "representativeQueries": [
+        "audit all carrier invoices against the freight contract before we pay",
+        "find overcharges on supplier invoices before the payables run",
+        "run grocery inbound exceptions across WMS and ERP and ask for approval before write-back",
+        "connect to the Duvo MCP server to start a freight audit run"
+      ]
+    },
+    {
+      "identifier": "urn:air:duvo.ai:agent:discovery",
+      "displayName": "Duvo agent discovery",
+      "type": "application/json",
+      "url": "https://www.duvo.ai/.well-known/agent.json",
+      "description": "Duvo agent discovery manifest. It lists capabilities, auth, OpenAPI, MCP, and the A2A card for freight audit, payables audit, and grocery or retail work across WMS, ERP, and TMS.",
+      "representativeQueries": [
+        "discover Duvo agent capabilities and authentication",
+        "where is the Duvo OpenAPI spec and MCP server card",
+        "how does an agent connect to Duvo for payables audit"
+      ]
+    },
+    {
+      "identifier": "urn:air:duvo.ai:a2a:duvo",
+      "displayName": "Duvo A2A agent card",
+      "type": "application/a2a-agent-card+json",
+      "url": "https://www.duvo.ai/.well-known/agent-card.json",
+      "description": "Duvo A2A agent card. It describes operational runs, case queues, and human approval before write-back into the systems of record the business already runs.",
+      "representativeQueries": [
+        "Duvo A2A card for freight audit with human approval",
+        "hand a retail OTIF dispute to Duvo for write-back to the TMS",
+        "route a payables exception through Duvo case queues"
+      ]
+    },
+    {
+      "identifier": "urn:air:duvo.ai:api:openapi",
+      "displayName": "Duvo OpenAPI",
+      "type": "application/vnd.oai.openapi+json",
+      "url": "https://www.duvo.ai/openapi.json",
+      "description": "Live OpenAPI for the Duvo public API. Clients use it to start runs, create queue cases, and inspect outcomes after write-back.",
+      "representativeQueries": [
+        "create a Duvo API case for a freight overcharge claim",
+        "approve a Duvo human request before write-back to ERP",
+        "inspect a completed Duvo payables audit run"
+      ]
+    },
+    {
+      "identifier": "urn:air:duvo.ai:skills:index",
+      "displayName": "Duvo public skills",
+      "type": "application/json",
+      "url": "https://www.duvo.ai/.well-known/agent-skills/index.json",
+      "description": "Index of public Duvo skills on this host: duvo-cli, duvo-job-debugger, and duvo-sop-writer.",
+      "representativeQueries": [
+        "install the Duvo CLI skill to script runs and approvals",
+        "debug a failed Duvo freight audit job from the transcript",
+        "write a Duvo SOP for payables audit across ERP and supplier portals"
+      ]
+    }
+  ]
+}
