@@ -386,6 +386,8 @@ apis:
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
+  - Sandbox
+  tags_raw:
   - Sandboxes
   properties:
   - type: OpenAPI
@@ -402,6 +404,8 @@ apis:
   humanURL: https://www.duvo.ai/developers
   baseURL: https://api.duvo.ai
   tags:
+  - Schedule
+  tags_raw:
   - Schedules
   properties:
   - type: OpenAPI
