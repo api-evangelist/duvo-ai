@@ -1,6 +1,6 @@
-openapi: 3.0.3
+openapi: 3.2.0
 info:
-  title: Duvo Public Agent Folders Files API
+  title: Duvo Public Files API
   description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
   version: 1.0.0
 servers:
@@ -54,8 +54,9 @@ paths:
                           type: string
                         metadata:
                           description: File metadata from object storage
-                          nullable: true
-                          type: object
+                          type:
+                          - object
+                          - 'null'
                           properties:
                             mimetype:
                               description: MIME type of the file

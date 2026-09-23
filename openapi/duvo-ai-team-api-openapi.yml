@@ -1,6 +1,6 @@
-openapi: 3.0.3
+openapi: 3.2.0
 info:
-  title: Duvo Public Agent Folders Team API
+  title: Duvo Public Team API
   description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
   version: 1.0.0
 servers:
@@ -48,14 +48,16 @@ paths:
                         type: string
                         description: ISO 8601 creation timestamp
                       organization_id:
-                        nullable: true
                         description: Parent organization ID, or null if the team is standalone
-                        type: string
+                        type:
+                        - string
+                        - 'null'
                         format: uuid
                       slack_team_id:
-                        nullable: true
                         description: Linked Slack workspace ID, or null if Slack is not connected
-                        type: string
+                        type:
+                        - string
+                        - 'null'
                       discovery_mode:
                         type: string
                         description: How the team handles agent discovery
@@ -153,14 +155,16 @@ paths:
                         type: string
                         format: uuid
                       name:
-                        nullable: true
-                        type: string
+                        type:
+                        - string
+                        - 'null'
                       email:
                         type: string
                         format: email
                       teamId:
-                        nullable: true
-                        type: string
+                        type:
+                        - string
+                        - 'null'
                         format: uuid
                     required:
                     - id
@@ -241,8 +245,9 @@ paths:
                         name:
                           type: string
                         organization_id:
-                          nullable: true
-                          type: string
+                          type:
+                          - string
+                          - 'null'
                           format: uuid
                       required:
                       - id
@@ -339,8 +344,9 @@ paths:
                           type: string
                           format: uuid
                         name:
-                          nullable: true
-                          type: string
+                          type:
+                          - string
+                          - 'null'
                         email:
                           type: string
                           format: email
@@ -362,7 +368,6 @@ paths:
                     maximum: 9007199254740991
                   limit:
                     type: integer
-                    exclusiveMinimum: true
                     maximum: 9007199254740991
                   offset:
                     type: integer

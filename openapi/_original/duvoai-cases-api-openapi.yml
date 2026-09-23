@@ -1,6 +1,8 @@
+# x-archived-from: duvoai-cases-api-openapi.yml
+# x-archived-on: 2026-09-16
 openapi: 3.2.0
 info:
-  title: Duvo Public Cases API
+  title: Duvo Public Agent Folders Cases API
   description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
   version: 1.0.0
 servers:

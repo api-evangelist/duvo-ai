@@ -1,6 +1,8 @@
+# x-archived-from: duvoai-mcp-api-openapi.yml
+# x-archived-on: 2026-09-16
 openapi: 3.2.0
 info:
-  title: Duvo Public MCP API
+  title: Duvo Public Agent Folders MCP API
   description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
   version: 1.0.0
 servers:
@@ -20,10 +22,6 @@ paths:
       responses:
         '200':
           description: Default Response
-      summary: Create mcp
-      x-summary-source: derived
-      operationId: postV2Mcp
-      x-operation-id-source: derived
     get:
       tags:
       - MCP
@@ -31,10 +29,6 @@ paths:
       responses:
         '200':
           description: Default Response
-      summary: Get mcp
-      x-summary-source: derived
-      operationId: getV2Mcp
-      x-operation-id-source: derived
 components:
   securitySchemes:
     bearerAuth:

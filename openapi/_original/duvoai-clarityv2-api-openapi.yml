@@ -1,6 +1,8 @@
+# x-archived-from: duvoai-clarityv2-api-openapi.yml
+# x-archived-on: 2026-09-16
 openapi: 3.2.0
 info:
-  title: Duvo Public Clarity V2 API
+  title: Duvo Public Agent Folders Clarity V2 API
   description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
   version: 1.0.0
 servers:
@@ -2723,10 +2725,6 @@ paths:
                 required:
                 - error
                 additionalProperties: false
-      summary: Create clarity v2 processes by process id artifact chat messages
-      x-summary-source: derived
-      operationId: postV2ClarityV2ProcessesByProcessIdArtifactChatMessages
-      x-operation-id-source: derived
   /v2/clarity-v2/processes/{process_id}/artifact-chat/messages/{message_id}:
     put:
       tags:
@@ -3120,10 +3118,6 @@ paths:
                 required:
                 - error
                 additionalProperties: false
-      summary: Replace clarity v2 processes by process id artifact chat messages by message id
-      x-summary-source: derived
-      operationId: putV2ClarityV2ProcessesByProcessIdArtifactChatMessagesByMessageId
-      x-operation-id-source: derived
   /v2/clarity-v2/processes/{process_id}/snapshots/{kind}:
     get:
       operationId: listClarityProcessSnapshots

@@ -1,6 +1,6 @@
-openapi: 3.0.3
+openapi: 3.2.0
 info:
-  title: Duvo Public Agent Folders Revision Integrations API
+  title: Duvo Public Revision Integrations API
   description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
   version: 1.0.0
 servers:
@@ -50,12 +50,14 @@ paths:
                           type: string
                           format: uuid
                         integration_id:
-                          nullable: true
-                          type: string
+                          type:
+                          - string
+                          - 'null'
                           format: uuid
                         custom_integration_id:
-                          nullable: true
-                          type: string
+                          type:
+                          - string
+                          - 'null'
                           format: uuid
                         integration_type:
                           type: string
