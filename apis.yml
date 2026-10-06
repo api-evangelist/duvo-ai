@@ -35,7 +35,7 @@ x-tier: stub
 x-tier-reason: portfolio-lead
 specificationVersion: '0.23'
 created: '2026-07-17'
-modified: '2026-07-18'
+modified: '2026-10-06'
 x-docs-platform: mintlify
 x-docs-platform-confidence: medium
 x-docs-platform-checked: 2026-10-03
@@ -510,6 +510,8 @@ maintainers:
 - FN: APIs.json
   email: info@apis.io
 common:
+- url: https://www.duvo.ai/blog/feed.xml
+  type: BlogRSS
 - type: CapabilityMap
   url: capabilities/duvo-ai-capability-edges.yml
   name: Duvo Ai Business Capability Map
