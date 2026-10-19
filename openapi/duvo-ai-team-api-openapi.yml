@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Team API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -64,6 +82,16 @@ paths:
                         x-extensible-enum:
                         - request
                         - auto
+                      automations_migrated_at:
+                        description: ISO 8601 timestamp of the team's move to the Automations workspace, or null if it has not moved
+                        type:
+                        - string
+                        - 'null'
+                      automation_revisions_migrated_at:
+                        description: 'ISO 8601 timestamp of the team''s move to automation revisions, or null. Narrower than automations_migrated_at: a team can be on the workspace without revisions'
+                        type:
+                        - string
+                        - 'null'
                     required:
                     - id
                     - name
@@ -71,6 +99,8 @@ paths:
                     - organization_id
                     - slack_team_id
                     - discovery_mode
+                    - automations_migrated_at
+                    - automation_revisions_migrated_at
                     additionalProperties: false
                 required:
                 - team
@@ -86,6 +116,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -99,6 +131,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -114,6 +148,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -127,6 +163,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -186,6 +224,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -199,6 +239,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -214,6 +256,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -223,7 +267,7 @@ paths:
       operationId: listMyTeams
       tags:
       - Team
-      description: List teams the authenticated caller can act on. Team-scoped API keys see only the key's team; user-scoped API keys and OAuth callers see every team they're a member of.
+      description: List teams the authenticated caller can act on. Team-scoped API keys see only the key's team; managed Ask Duvo keys stay within their origin boundary; human user-scoped API keys and OAuth callers see every team they're a member of.
       security:
       - bearerAuth: []
       responses:
@@ -268,6 +312,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -281,6 +327,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -355,12 +403,19 @@ paths:
                         inheritedFromOrg:
                           default: false
                           type: boolean
+                        orgRole:
+                          default: null
+                          description: The member's role in the team's organization, or null when the team has no organization or the member holds no organization role
+                          type:
+                          - string
+                          - 'null'
                       required:
                       - id
                       - name
                       - email
                       - role
                       - inheritedFromOrg
+                      - orgRole
                       additionalProperties: false
                   total:
                     type: integer
@@ -390,6 +445,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -403,6 +460,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -418,6 +477,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -431,6 +492,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -446,10 +509,297 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: List Team Members
+  /v2/teams/{teamId}/members/{memberId}:
+    patch:
+      operationId: updateTeamMemberRole
+      tags:
+      - Team
+      description: Update an existing team member's role. Requires the Manager role or above; only an Owner may grant or remove the Owner role, and the last remaining Owner cannot be demoted. A member whose Owner role is inherited from the organization cannot be changed here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+              required:
+              - role
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: teamId
+        required: true
+        description: Team ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: memberId
+        required: true
+        description: Member (user) ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type:
+                    - string
+                    - 'null'
+                  email:
+                    type: string
+                    format: email
+                  role:
+                    type: string
+                  inheritedFromOrg:
+                    default: false
+                    type: boolean
+                  orgRole:
+                    default: null
+                    description: The member's role in the team's organization, or null when the team has no organization or the member holds no organization role
+                    type:
+                    - string
+                    - 'null'
+                required:
+                - id
+                - name
+                - email
+                - role
+                - inheritedFromOrg
+                - orgRole
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Team Member Role
+    delete:
+      operationId: removeTeamMember
+      tags:
+      - Team
+      description: Remove a member from a team. Removing another member requires the Superadmin role or above; any member may remove themselves (leaving the team). The last remaining Owner cannot be removed, and a member whose Owner role is inherited from the organization can only leave voluntarily.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: teamId
+        required: true
+        description: Team ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: memberId
+        required: true
+        description: Member (user) ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  nextTeamId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  planType:
+                    type:
+                    - string
+                    - 'null'
+                    x-extensible-enum:
+                    - pro
+                    - business
+                    - enterprise
+                required:
+                - success
+                - nextTeamId
+                - planType
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Remove Team Member
 components:
   securitySchemes:
     bearerAuth:

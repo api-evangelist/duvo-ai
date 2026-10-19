@@ -1,0 +1,260 @@
+openapi: 3.2.0
+info:
+  title: Duvo Public Cases UI API
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Cases UI
+paths:
+  /v2/queues/{queue_id}/cases/export:
+    post:
+      operationId: exportCases
+      tags:
+      - Cases UI
+      description: 'Export a queue''s cases, respecting the same status, severity, failure source, approval, priority, label, date-range, json_data field, and free-text filters as the list view. Set awaiting_my_approval to export only the cases holding an unanswered approval row assigned to you; like the list view it resolves to the authenticated caller, so a credential with no user behind it is rejected rather than exporting an empty file. `format: "json"` (default) returns a re-importable JSON payload; `format: "csv"` returns a text/csv file with the columns id, title, status, priority, labels, created_at, updated_at, completed_at, postponed_to, data.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  default: json
+                  type: string
+                  enum:
+                  - json
+                  - csv
+                filters:
+                  default: {}
+                  type: object
+                  properties:
+                    status:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - all
+                        - pending
+                        - processing
+                        - needs_input
+                        - postponed
+                        - needs_review
+                        - resolved
+                        - canceled
+                        - claimed
+                        - completed
+                        - failed
+                    issue_severity:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - critical
+                        - medium
+                    failure_source:
+                      description: 'Keep only failed Cases, by who failed them: `system` when Duvo could not finish the Case, `manual` when a person marked it failed.'
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - system
+                        - manual
+                    awaiting_my_approval:
+                      type: boolean
+                    priority:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - none
+                        - medium
+                        - high
+                    created_at_from:
+                      type: string
+                    created_at_to:
+                      type: string
+                    updated_at_from:
+                      type: string
+                    updated_at_to:
+                      type: string
+                    completed_at_from:
+                      description: Keep Cases that reached an outcome at or after this time (inclusive). An ISO timestamp or a lookback such as `7d` or `12h`.
+                      type: string
+                    completed_at_to:
+                      description: Keep Cases that reached an outcome before this time (exclusive). An ISO timestamp or a lookback such as `7d` or `12h`.
+                      type: string
+                    labels:
+                      type: object
+                      additionalProperties:
+                        type: array
+                        items:
+                          type: string
+                    json_data:
+                      maxItems: 12
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          path:
+                            type: string
+                            pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                          operator:
+                            type: string
+                            enum:
+                            - equals
+                            - notEquals
+                            - in
+                            - notIn
+                            - gt
+                            - gte
+                            - lt
+                            - lte
+                            - contains
+                            - isSet
+                            - isNotSet
+                          value:
+                            anyOf:
+                            - anyOf:
+                              - type: string
+                              - type: number
+                              - type: boolean
+                            - minItems: 1
+                              maxItems: 100
+                              type: array
+                              items:
+                                anyOf:
+                                - type: string
+                                - type: number
+                                - type: boolean
+                        required:
+                        - path
+                        - operator
+                        additionalProperties: false
+                search:
+                  type: string
+                sort_by:
+                  default: created_at
+                  type: string
+                  enum:
+                  - created_at
+                  - updated_at
+                  - postponed_to
+                sort_order:
+                  default: asc
+                  type: string
+                  enum:
+                  - asc
+                  - desc
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - type: object
+                  properties:
+                    version:
+                      type: number
+                    queue_name:
+                      type: string
+                    exported_at:
+                      type: string
+                    cases:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                          data:
+                            type: string
+                          priority:
+                            type: string
+                            enum:
+                            - none
+                            - medium
+                            - high
+                        required:
+                        - title
+                        additionalProperties: false
+                  required:
+                  - version
+                  - queue_name
+                  - exported_at
+                  - cases
+                  additionalProperties: false
+                - type: string
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Export Cases
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

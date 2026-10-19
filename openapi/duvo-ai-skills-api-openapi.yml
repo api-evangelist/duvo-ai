@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Skills API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -61,6 +79,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -75,6 +95,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -88,6 +110,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -138,6 +162,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -151,6 +177,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -166,6 +194,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -179,6 +209,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -217,6 +249,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -230,6 +264,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -245,6 +281,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -258,6 +296,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -326,6 +366,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -339,6 +381,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -354,6 +398,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -367,6 +413,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -427,6 +475,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -440,6 +490,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -455,6 +507,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -468,6 +522,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -483,6 +539,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -491,7 +549,7 @@ paths:
       operationId: updateSkillFile
       tags:
       - Skills
-      description: Update the content of a file in a skill. Only team skills can be edited.
+      description: 'Update the content of a file in a skill, overwriting the active revision in place — the previous content is not recoverable. Prefer the non-destructive flow when you can: createSkillRevision to open a draft, updateSkillRevisionFile to edit it, promoteSkillRevision to activate it. Only team skills can be edited.'
       requestBody:
         required: true
         content:
@@ -750,6 +808,155 @@ paths:
                 - error
                 additionalProperties: false
       summary: Update Skill File
+  /v2/skills/{skill_id}/ask-duvo:
+    patch:
+      operationId: updateSkillAskDuvo
+      tags:
+      - Skills
+      description: Mark a team skill as available in Ask Duvo, or take it back off. Every NEW Ask Duvo chat in the team starts with the marked skills on disk. A chat that is already open keeps the set it started with until its sandbox is replaced, and picks up the current set from then on.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                use_in_ask_duvo:
+                  type: boolean
+              required:
+              - use_in_ask_duvo
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_id
+        required: true
+        description: Skill ID.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skill:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      use_in_ask_duvo:
+                        type: boolean
+                    required:
+                    - id
+                    - name
+                    - use_in_ask_duvo
+                    additionalProperties: false
+                required:
+                - skill
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Skill Ask Duvo
   /v2/skills/{skill_id}/assignments:
     get:
       operationId: listSkillAssignments
@@ -810,6 +1017,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -823,6 +1032,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -838,6 +1049,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -852,10 +1065,1547 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: List Skill Assignments
+  /v2/skills/{skill_id}/revisions:
+    get:
+      operationId: listSkillRevisions
+      tags:
+      - Skills
+      description: List a skill's version history. Each revision is a snapshot of the skill's files; at most one is active (live) at a time, plus at most one open draft.
+      parameters:
+      - schema:
+          default: 20
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of revisions per page (1-100, default 20)
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of revisions to skip
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_id
+        required: true
+        description: Skill ID.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revisions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Unique revision identifier
+                        skill_id:
+                          type: string
+                          description: The skill this revision belongs to
+                        revision_number:
+                          description: Sequential version number, null while the revision is a draft
+                          type:
+                          - number
+                          - 'null'
+                        status:
+                          type: string
+                          enum:
+                          - draft
+                          - live
+                          - historic
+                          description: Lifecycle state of the revision
+                        revision_name:
+                          description: Optional user-defined name for this revision
+                          type:
+                          - string
+                          - 'null'
+                        revision_description:
+                          description: Optional user-defined description for this revision
+                          type:
+                          - string
+                          - 'null'
+                        created_by:
+                          description: Profile id of the user who created the revision
+                          type:
+                          - string
+                          - 'null'
+                        created_by_name:
+                          description: Display name of the user who created the revision
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type: string
+                          description: ISO 8601 creation timestamp
+                        updated_at:
+                          type: string
+                          description: ISO 8601 last-update timestamp
+                      required:
+                      - id
+                      - skill_id
+                      - revision_number
+                      - status
+                      - revision_name
+                      - revision_description
+                      - created_by
+                      - created_by_name
+                      - created_at
+                      - updated_at
+                      additionalProperties: false
+                    description: Revisions of the skill, newest first
+                  total:
+                    type: number
+                    description: Total number of revisions for the skill
+                  limit:
+                    type: number
+                    description: The page size that was applied
+                  offset:
+                    type: number
+                    description: The offset that was applied
+                required:
+                - revisions
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Skill Revisions
+    post:
+      operationId: createSkillRevision
+      tags:
+      - Skills
+      description: 'Open a draft revision of a skill, copying its files from the active revision (or from `source_revision_id`). Edit the draft with updateSkillRevisionFile and deleteSkillRevisionFile, then activate it with promoteSkillRevision — the previously active revision stays intact and can be re-activated later. A skill has at most one open draft: if one already exists this returns it with `created: false`.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              default: {}
+              type: object
+              properties:
+                source_revision_id:
+                  description: Revision to fork the new draft from. Defaults to the live revision (or the skill's current files if there is no live revision yet).
+                  type: string
+                  format: uuid
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_id
+        required: true
+        description: Skill ID.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revision:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Unique revision identifier
+                      skill_id:
+                        type: string
+                        description: The skill this revision belongs to
+                      revision_number:
+                        description: Sequential version number, null while the revision is a draft
+                        type:
+                        - number
+                        - 'null'
+                      status:
+                        type: string
+                        enum:
+                        - draft
+                        - live
+                        - historic
+                        description: Lifecycle state of the revision
+                      revision_name:
+                        description: Optional user-defined name for this revision
+                        type:
+                        - string
+                        - 'null'
+                      revision_description:
+                        description: Optional user-defined description for this revision
+                        type:
+                        - string
+                        - 'null'
+                      created_by:
+                        description: Profile id of the user who created the revision
+                        type:
+                        - string
+                        - 'null'
+                      created_by_name:
+                        description: Display name of the user who created the revision
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      updated_at:
+                        type: string
+                        description: ISO 8601 last-update timestamp
+                    required:
+                    - id
+                    - skill_id
+                    - revision_number
+                    - status
+                    - revision_name
+                    - revision_description
+                    - created_by
+                    - created_by_name
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                    description: The open draft revision
+                  created:
+                    type: boolean
+                    description: True if a new draft was created, false if one already existed
+                required:
+                - revision
+                - created
+                additionalProperties: false
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revision:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Unique revision identifier
+                      skill_id:
+                        type: string
+                        description: The skill this revision belongs to
+                      revision_number:
+                        description: Sequential version number, null while the revision is a draft
+                        type:
+                        - number
+                        - 'null'
+                      status:
+                        type: string
+                        enum:
+                        - draft
+                        - live
+                        - historic
+                        description: Lifecycle state of the revision
+                      revision_name:
+                        description: Optional user-defined name for this revision
+                        type:
+                        - string
+                        - 'null'
+                      revision_description:
+                        description: Optional user-defined description for this revision
+                        type:
+                        - string
+                        - 'null'
+                      created_by:
+                        description: Profile id of the user who created the revision
+                        type:
+                        - string
+                        - 'null'
+                      created_by_name:
+                        description: Display name of the user who created the revision
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      updated_at:
+                        type: string
+                        description: ISO 8601 last-update timestamp
+                    required:
+                    - id
+                    - skill_id
+                    - revision_number
+                    - status
+                    - revision_name
+                    - revision_description
+                    - created_by
+                    - created_by_name
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                    description: The open draft revision
+                  created:
+                    type: boolean
+                    description: True if a new draft was created, false if one already existed
+                required:
+                - revision
+                - created
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Skill Revision
+  /v2/skill-revisions/{skill_revision_id}/promote:
+    post:
+      operationId: promoteSkillRevision
+      tags:
+      - Skills
+      description: 'Make a skill revision the active (live) one. The previously active revision becomes historic and can be re-activated later. Idempotent: promoting the already-active revision succeeds rather than erroring, and still applies any revision_name / revision_description supplied in the body.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              default: {}
+              type: object
+              properties:
+                revision_name:
+                  description: Optional display name to set on the promoted revision.
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                revision_description:
+                  description: Optional description for the promoted revision. Pass null to clear an existing description.
+                  type:
+                  - string
+                  - 'null'
+                  maxLength: 500
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_revision_id
+        required: true
+        description: Skill revision ID.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revision:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Unique revision identifier
+                      skill_id:
+                        type: string
+                        description: The skill this revision belongs to
+                      revision_number:
+                        description: Sequential version number, null while the revision is a draft
+                        type:
+                        - number
+                        - 'null'
+                      status:
+                        type: string
+                        enum:
+                        - draft
+                        - live
+                        - historic
+                        description: Lifecycle state of the revision
+                      revision_name:
+                        description: Optional user-defined name for this revision
+                        type:
+                        - string
+                        - 'null'
+                      revision_description:
+                        description: Optional user-defined description for this revision
+                        type:
+                        - string
+                        - 'null'
+                      created_by:
+                        description: Profile id of the user who created the revision
+                        type:
+                        - string
+                        - 'null'
+                      created_by_name:
+                        description: Display name of the user who created the revision
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      updated_at:
+                        type: string
+                        description: ISO 8601 last-update timestamp
+                    required:
+                    - id
+                    - skill_id
+                    - revision_number
+                    - status
+                    - revision_name
+                    - revision_description
+                    - created_by
+                    - created_by_name
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                    description: The now-active revision
+                required:
+                - revision
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Promote Skill Revision
+  /v2/skill-revisions/{skill_revision_id}/files:
+    get:
+      operationId: listSkillRevisionFiles
+      tags:
+      - Skills
+      description: List the files in a skill revision, one page at a time. When `has_more` is true, pass `next_cursor` back as `cursor` to fetch the next page.
+      parameters:
+      - schema:
+          default: 100
+          type: integer
+          minimum: 1
+          maximum: 1000
+        in: query
+        name: limit
+        required: false
+        description: Maximum number of files to return per page (1-1000, default 100)
+      - schema:
+          type: string
+          minLength: 1
+        in: query
+        name: cursor
+        required: false
+        description: Opaque continuation token from a previous response's `next_cursor`. Omit for the first page.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_revision_id
+        required: true
+        description: Skill revision ID.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: File name (basename)
+                        path:
+                          type: string
+                          description: Relative path of the file inside the revision
+                        size:
+                          description: File size in bytes
+                          type: number
+                        contentType:
+                          description: MIME content type of the file
+                          type: string
+                        updatedAt:
+                          description: ISO 8601 timestamp of the last update
+                          type: string
+                      required:
+                      - name
+                      - path
+                      additionalProperties: false
+                    description: Files contained in the revision
+                  limit:
+                    type: number
+                    description: The page size that was applied
+                  has_more:
+                    type: boolean
+                    description: True when further pages remain for this revision
+                  next_cursor:
+                    description: Pass back as `cursor` to fetch the next page; null on the last page
+                    type:
+                    - string
+                    - 'null'
+                required:
+                - files
+                - limit
+                - has_more
+                - next_cursor
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Skill Revision Files
+  /v2/skill-revisions/{skill_revision_id}/files/{*}:
+    get:
+      operationId: getSkillRevisionFileContent
+      tags:
+      - Skills
+      description: Get the content of a text file in a skill revision.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_revision_id
+        required: true
+        description: Skill revision ID.
+      - schema:
+          type: string
+          minLength: 1
+        in: path
+        name: '*'
+        required: true
+        description: Relative path to the file inside the revision, e.g. SKILL.md.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+                    description: UTF-8 decoded contents of the file
+                  path:
+                    type: string
+                    description: Relative path of the file inside the revision
+                  contentType:
+                    description: MIME content type inferred from the file extension
+                    type: string
+                required:
+                - content
+                - path
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Skill Revision File Content
+    put:
+      operationId: updateSkillRevisionFile
+      tags:
+      - Skills
+      description: 'Write a text file into a skill revision. Writing into a draft leaves the active revision untouched until the draft is promoted; writing into the active revision changes what the skill runs immediately. Historic revisions are read-only: create a draft from one to edit it.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: New UTF-8 text content for the file.
+              required:
+              - content
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_revision_id
+        required: true
+        description: Skill revision ID.
+      - schema:
+          type: string
+          minLength: 1
+        in: path
+        name: '*'
+        required: true
+        description: Relative path to the file inside the revision, e.g. SKILL.md.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if the file was written
+                  message:
+                    type: string
+                    description: Human-readable result message
+                required:
+                - success
+                - message
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Skill Revision File
+    delete:
+      operationId: deleteSkillRevisionFile
+      tags:
+      - Skills
+      description: 'Delete a file from a skill revision. Deleting from a draft leaves the active revision untouched until the draft is promoted; deleting from the active revision changes what the skill runs immediately. SKILL.md can''t be deleted. Historic revisions are read-only: create a draft from one to edit it.'
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_revision_id
+        required: true
+        description: Skill revision ID.
+      - schema:
+          type: string
+          minLength: 1
+        in: path
+        name: '*'
+        required: true
+        description: Relative path to the file inside the revision, e.g. scripts/helper.py.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if the file was deleted
+                  message:
+                    type: string
+                    description: Human-readable result message
+                required:
+                - success
+                - message
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Skill Revision File
+  /v2/skill-revisions/{skill_revision_id}:
+    patch:
+      operationId: updateSkillRevision
+      tags:
+      - Skills
+      description: Rename a skill revision or change its description. Works for drafts, the active revision, and historic revisions.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                revision_name:
+                  description: Optional user-defined name for this revision. Pass null to clear.
+                  type:
+                  - string
+                  - 'null'
+                  minLength: 1
+                  maxLength: 80
+                revision_description:
+                  description: Optional user-defined description for this revision. Pass null to clear.
+                  type:
+                  - string
+                  - 'null'
+                  maxLength: 500
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_revision_id
+        required: true
+        description: Skill revision ID.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revision:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: Unique revision identifier
+                      skill_id:
+                        type: string
+                        description: The skill this revision belongs to
+                      revision_number:
+                        description: Sequential version number, null while the revision is a draft
+                        type:
+                        - number
+                        - 'null'
+                      status:
+                        type: string
+                        enum:
+                        - draft
+                        - live
+                        - historic
+                        description: Lifecycle state of the revision
+                      revision_name:
+                        description: Optional user-defined name for this revision
+                        type:
+                        - string
+                        - 'null'
+                      revision_description:
+                        description: Optional user-defined description for this revision
+                        type:
+                        - string
+                        - 'null'
+                      created_by:
+                        description: Profile id of the user who created the revision
+                        type:
+                        - string
+                        - 'null'
+                      created_by_name:
+                        description: Display name of the user who created the revision
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type: string
+                        description: ISO 8601 creation timestamp
+                      updated_at:
+                        type: string
+                        description: ISO 8601 last-update timestamp
+                    required:
+                    - id
+                    - skill_id
+                    - revision_number
+                    - status
+                    - revision_name
+                    - revision_description
+                    - created_by
+                    - created_by_name
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                    description: The updated revision
+                required:
+                - revision
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Skill Revision
+    delete:
+      operationId: deleteSkillRevision
+      tags:
+      - Skills
+      description: Delete a draft or historic skill revision and its files. The active revision can't be deleted — activate another revision first.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: skill_revision_id
+        required: true
+        description: Skill revision ID.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True if the revision was deleted
+                  message:
+                    type: string
+                    description: Human-readable result message
+                required:
+                - success
+                - message
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Skill Revision
   /v2/teams/{teamId}/skills:
     get:
       operationId: listSkills
@@ -928,6 +2678,15 @@ paths:
                           enum:
                           - rdp
                           - sandbox
+                        kind:
+                          type: string
+                          enum:
+                          - skill
+                          - workflow
+                          description: Whether this is an authored/uploaded 'skill' or a recorded 'workflow' (deterministic workflow execution). Surfaced under the Skills vs Workflows tabs.
+                        use_in_ask_duvo:
+                          type: boolean
+                          description: Whether every new Ask Duvo chat in the team starts with this skill available to the agent. Always false for system skills and workflows.
                       required:
                       - id
                       - name
@@ -938,6 +2697,8 @@ paths:
                       - updated_by_user_name
                       - source
                       - computer_use_backend
+                      - kind
+                      - use_in_ask_duvo
                       additionalProperties: false
                     description: Skills available to the current team (team and system skills)
                 required:
@@ -954,6 +2715,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -968,6 +2731,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -981,6 +2746,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

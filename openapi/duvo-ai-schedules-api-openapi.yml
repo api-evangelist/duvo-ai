@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Schedules API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -15,7 +33,7 @@ paths:
       operationId: createSchedule
       tags:
       - Schedules
-      description: Create a schedule for an agent. The schedule fires against the agent's live build. The authenticated user owns the schedule.
+      description: 'Create a schedule for an agent. The schedule fires against the agent''s live build. The authenticated user owns the schedule. On a team with versions, a repeating schedule for an Agent in an automation joins that automation''s versions: one matching a schedule the automation already runs fires at once, and a new one is saved to the automation''s draft and fires once the draft is made active (see `pending_change`).'
       requestBody:
         required: true
         content:
@@ -173,6 +191,56 @@ paths:
                     type:
                     - string
                     - 'null'
+                  pending_change:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      automation_revision_id:
+                        type: string
+                      enabled:
+                        type:
+                        - boolean
+                        - 'null'
+                      cron:
+                        type:
+                        - string
+                        - 'null'
+                      frequency:
+                        type:
+                        - string
+                        - 'null'
+                      time:
+                        type:
+                        - string
+                        - 'null'
+                      timezone:
+                        type:
+                        - string
+                        - 'null'
+                      day:
+                        type:
+                        - string
+                        - 'null'
+                      day_of_month:
+                        type:
+                        - number
+                        - 'null'
+                      task:
+                        type:
+                        - string
+                        - 'null'
+                    required:
+                    - automation_revision_id
+                    - enabled
+                    - cron
+                    - frequency
+                    - time
+                    - timezone
+                    - day
+                    - day_of_month
+                    - task
+                    additionalProperties: false
                 required:
                 - id
                 - build_id
@@ -207,6 +275,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -220,6 +290,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -235,6 +307,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -248,6 +322,24 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -263,6 +355,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -271,7 +365,7 @@ paths:
       operationId: listAgentSchedules
       tags:
       - Schedules
-      description: List all schedules configured for an agent. Returns the schedules you own on this agent.
+      description: List the schedules you own on an agent. Returns only your own schedules, whoever you are. Callers with an elevated team role can read every member's schedules on the agent, including who created each one, via `GET /agents/{agent_id}/schedules/all`.
       parameters:
       - schema:
           type: string
@@ -378,6 +472,56 @@ paths:
                           type:
                           - string
                           - 'null'
+                        pending_change:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            automation_revision_id:
+                              type: string
+                            enabled:
+                              type:
+                              - boolean
+                              - 'null'
+                            cron:
+                              type:
+                              - string
+                              - 'null'
+                            frequency:
+                              type:
+                              - string
+                              - 'null'
+                            time:
+                              type:
+                              - string
+                              - 'null'
+                            timezone:
+                              type:
+                              - string
+                              - 'null'
+                            day:
+                              type:
+                              - string
+                              - 'null'
+                            day_of_month:
+                              type:
+                              - number
+                              - 'null'
+                            task:
+                              type:
+                              - string
+                              - 'null'
+                          required:
+                          - automation_revision_id
+                          - enabled
+                          - cron
+                          - frequency
+                          - time
+                          - timezone
+                          - day
+                          - day_of_month
+                          - task
+                          additionalProperties: false
                       required:
                       - id
                       - build_id
@@ -401,7 +545,7 @@ paths:
                       - created_at
                       - updated_at
                       additionalProperties: false
-                    description: Schedules the authenticated user owns on this agent
+                    description: Schedules the authenticated user owns on this agent. Never another member's, regardless of the caller's role — see `GET /agents/{agent_id}/schedules/all` for the elevated all-users read.
                 required:
                 - schedules
                 additionalProperties: false
@@ -415,6 +559,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -430,6 +576,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -444,6 +592,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -453,7 +603,7 @@ paths:
       operationId: updateSchedule
       tags:
       - Schedules
-      description: Update fields on an existing schedule. Only supplied fields are changed; omitted fields retain their current values. Owners may update their own schedules; team superadmins may update any schedule on agents in the current team.
+      description: 'Update fields on an existing schedule. Only supplied fields are changed; omitted fields retain their current values. Owners may update their own schedules; team superadmins may update any schedule on agents in the current team. A schedule that belongs to an automation with versions keeps firing as its automation''s active version says: a change to its timing is saved to the automation''s draft and takes effect when the draft is made active (see `pending_change`), while `enabled` applies at once.'
       requestBody:
         required: true
         content:
@@ -614,6 +764,56 @@ paths:
                     type:
                     - string
                     - 'null'
+                  pending_change:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      automation_revision_id:
+                        type: string
+                      enabled:
+                        type:
+                        - boolean
+                        - 'null'
+                      cron:
+                        type:
+                        - string
+                        - 'null'
+                      frequency:
+                        type:
+                        - string
+                        - 'null'
+                      time:
+                        type:
+                        - string
+                        - 'null'
+                      timezone:
+                        type:
+                        - string
+                        - 'null'
+                      day:
+                        type:
+                        - string
+                        - 'null'
+                      day_of_month:
+                        type:
+                        - number
+                        - 'null'
+                      task:
+                        type:
+                        - string
+                        - 'null'
+                    required:
+                    - automation_revision_id
+                    - enabled
+                    - cron
+                    - frequency
+                    - time
+                    - timezone
+                    - day
+                    - day_of_month
+                    - task
+                    additionalProperties: false
                 required:
                 - id
                 - build_id
@@ -648,6 +848,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -661,6 +863,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -676,6 +880,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -689,6 +895,24 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -704,6 +928,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -712,7 +938,7 @@ paths:
       operationId: deleteSchedule
       tags:
       - Schedules
-      description: Delete a schedule. Owners may delete their own schedules; team superadmins may delete any schedule on agents in the current team.
+      description: Delete a schedule. Owners may delete their own schedules; team superadmins may delete any schedule on agents in the current team. Deleting a schedule that belongs to an automation with versions stops it for its owner at once; the automation's versions keep the schedule for anyone else subscribed to it.
       parameters:
       - schema:
           type: string
@@ -756,6 +982,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -769,6 +997,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -784,6 +1014,24 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -798,10 +1046,254 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: Delete Schedule
+  /v2/agents/{agent_id}/schedules/all:
+    get:
+      operationId: listAllAgentSchedules
+      tags:
+      - Schedules
+      description: List every team member's schedules on an agent, including who created each one. Requires an elevated team role; callers without one receive 403 and should use `GET /agents/{agent_id}/schedules`, which returns only the schedules they own.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  schedules:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        build_id:
+                          type: string
+                        agent_id:
+                          type: string
+                        user_id:
+                          type: string
+                        enabled:
+                          type: boolean
+                        frequency:
+                          type: string
+                          enum:
+                          - every_5_minutes
+                          - every_15_minutes
+                          - hourly
+                          - daily
+                          - workday
+                          - weekly
+                          - monthly
+                          - custom
+                        time:
+                          type:
+                          - string
+                          - 'null'
+                        timezone:
+                          type: string
+                        day:
+                          type:
+                          - string
+                          - 'null'
+                        day_of_month:
+                          type:
+                          - number
+                          - 'null'
+                        cron:
+                          type:
+                          - string
+                          - 'null'
+                        source:
+                          type:
+                          - string
+                          - 'null'
+                        task:
+                          type:
+                          - string
+                          - 'null'
+                        recurring:
+                          type:
+                          - boolean
+                          - 'null'
+                        auto_disabled_at:
+                          type:
+                          - string
+                          - 'null'
+                        auto_disabled_reason:
+                          type:
+                          - string
+                          - 'null'
+                        consecutive_missing_connection_failures:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        first_missing_connection_failure_at:
+                          type:
+                          - string
+                          - 'null'
+                        last_missing_connection_failure_at:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        user_name:
+                          type:
+                          - string
+                          - 'null'
+                        user_email:
+                          type:
+                          - string
+                          - 'null'
+                        pending_change:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            automation_revision_id:
+                              type: string
+                            enabled:
+                              type:
+                              - boolean
+                              - 'null'
+                            cron:
+                              type:
+                              - string
+                              - 'null'
+                            frequency:
+                              type:
+                              - string
+                              - 'null'
+                            time:
+                              type:
+                              - string
+                              - 'null'
+                            timezone:
+                              type:
+                              - string
+                              - 'null'
+                            day:
+                              type:
+                              - string
+                              - 'null'
+                            day_of_month:
+                              type:
+                              - number
+                              - 'null'
+                            task:
+                              type:
+                              - string
+                              - 'null'
+                          required:
+                          - automation_revision_id
+                          - enabled
+                          - cron
+                          - frequency
+                          - time
+                          - timezone
+                          - day
+                          - day_of_month
+                          - task
+                          additionalProperties: false
+                      required:
+                      - id
+                      - build_id
+                      - agent_id
+                      - user_id
+                      - enabled
+                      - frequency
+                      - time
+                      - timezone
+                      - day
+                      - day_of_month
+                      - cron
+                      - source
+                      - task
+                      - recurring
+                      - auto_disabled_at
+                      - auto_disabled_reason
+                      - consecutive_missing_connection_failures
+                      - first_missing_connection_failure_at
+                      - last_missing_connection_failure_at
+                      - created_at
+                      - updated_at
+                      additionalProperties: false
+                    description: Every schedule on this agent, across all team members. Each row carries `user_id` plus the `user_name` and `user_email` of the member who created it.
+                  truncated:
+                    type: boolean
+                    description: True when the agent has more schedules than one response can carry and some were omitted. The rows returned are the oldest by `created_at`.
+                required:
+                - schedules
+                - truncated
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List All Agent Schedules
 components:
   securitySchemes:
     bearerAuth:

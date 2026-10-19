@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Case Triggers API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -81,6 +99,28 @@ paths:
                             - id
                             - name
                             additionalProperties: false
+                        pending_change:
+                          description: On a team with versions, a change to this trigger saved to the automation's draft. The trigger keeps its current values until the draft is made active. Null when nothing is waiting.
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            automation_revision_id:
+                              type: string
+                              description: The automation's draft revision that holds the change
+                            case_queue_id:
+                              description: The queue the draft routes to this agent, or null when the draft takes the trigger away
+                              type:
+                              - string
+                              - 'null'
+                            enabled:
+                              type: boolean
+                              description: Whether the trigger will be on once the draft is made active
+                          required:
+                          - automation_revision_id
+                          - case_queue_id
+                          - enabled
+                          additionalProperties: false
                       required:
                       - id
                       - agent_id
@@ -110,6 +150,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -123,6 +165,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -138,6 +182,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -151,6 +197,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -176,7 +224,7 @@ paths:
                   type: boolean
                   description: Whether the trigger is active. Disabled triggers do not dispatch runs.
                 concurrency:
-                  description: Per-trigger concurrency override. Only 1 (run cases one at a time) or null/omitted (use the platform default) can be set here; higher caps are configured directly in the database.
+                  description: Concurrency cap for the target queue. The cap is queue-wide, so this affects every Agent working the queue, not just this trigger. Only 1 (run cases one at a time) or null (reset the whole queue's cap to the platform default) can be set here; higher caps are configured per-queue via PATCH /v2/admin/case-queues/{queueId}/concurrency. Omit to leave the queue's current cap unchanged.
                   type:
                   - number
                   - 'null'
@@ -248,6 +296,28 @@ paths:
                           - id
                           - name
                           additionalProperties: false
+                      pending_change:
+                        description: On a team with versions, a change to this trigger saved to the automation's draft. The trigger keeps its current values until the draft is made active. Null when nothing is waiting.
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          automation_revision_id:
+                            type: string
+                            description: The automation's draft revision that holds the change
+                          case_queue_id:
+                            description: The queue the draft routes to this agent, or null when the draft takes the trigger away
+                            type:
+                            - string
+                            - 'null'
+                          enabled:
+                            type: boolean
+                            description: Whether the trigger will be on once the draft is made active
+                        required:
+                        - automation_revision_id
+                        - case_queue_id
+                        - enabled
+                        additionalProperties: false
                     required:
                     - id
                     - agent_id
@@ -277,6 +347,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -290,6 +362,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -305,6 +379,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -318,6 +394,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -333,6 +411,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -346,6 +426,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -412,6 +494,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -425,6 +509,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -440,6 +526,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -453,6 +541,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -534,6 +624,28 @@ paths:
                           - id
                           - name
                           additionalProperties: false
+                      pending_change:
+                        description: On a team with versions, a change to this trigger saved to the automation's draft. The trigger keeps its current values until the draft is made active. Null when nothing is waiting.
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          automation_revision_id:
+                            type: string
+                            description: The automation's draft revision that holds the change
+                          case_queue_id:
+                            description: The queue the draft routes to this agent, or null when the draft takes the trigger away
+                            type:
+                            - string
+                            - 'null'
+                          enabled:
+                            type: boolean
+                            description: Whether the trigger will be on once the draft is made active
+                        required:
+                        - automation_revision_id
+                        - case_queue_id
+                        - enabled
+                        additionalProperties: false
                     required:
                     - id
                     - agent_id
@@ -563,6 +675,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -576,6 +690,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -591,6 +707,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -605,6 +723,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -613,7 +733,7 @@ paths:
       operationId: updateAgentCaseTrigger
       tags:
       - Case Triggers
-      description: Update fields on a case trigger. Only the trigger creator or a builder/admin can disable an enabled trigger or change its queue.
+      description: Update fields on a case trigger. Only the trigger creator or a builder/admin can disable an enabled trigger or change its queue, and only a builder/admin can change queue concurrency.
       requestBody:
         required: true
         content:
@@ -629,7 +749,7 @@ paths:
                   description: Whether the trigger is active. Disabled triggers do not dispatch runs.
                   type: boolean
                 concurrency:
-                  description: Per-trigger concurrency override. Only 1 (run cases one at a time) or null (use the platform default) can be set here; higher caps are configured directly in the database. Omit to leave the current value unchanged.
+                  description: Concurrency cap for the trigger's queue. The cap is queue-wide, so this affects every Agent working the queue, not just this trigger. Only 1 (run cases one at a time) or null (reset the whole queue's cap to the platform default) can be set here; higher caps are configured per-queue via PATCH /v2/admin/case-queues/{queueId}/concurrency. Omit to leave the current value unchanged.
                   type:
                   - number
                   - 'null'
@@ -705,6 +825,28 @@ paths:
                           - id
                           - name
                           additionalProperties: false
+                      pending_change:
+                        description: On a team with versions, a change to this trigger saved to the automation's draft. The trigger keeps its current values until the draft is made active. Null when nothing is waiting.
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          automation_revision_id:
+                            type: string
+                            description: The automation's draft revision that holds the change
+                          case_queue_id:
+                            description: The queue the draft routes to this agent, or null when the draft takes the trigger away
+                            type:
+                            - string
+                            - 'null'
+                          enabled:
+                            type: boolean
+                            description: Whether the trigger will be on once the draft is made active
+                        required:
+                        - automation_revision_id
+                        - case_queue_id
+                        - enabled
+                        additionalProperties: false
                     required:
                     - id
                     - agent_id
@@ -734,6 +876,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -747,6 +891,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -762,6 +908,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -775,6 +923,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -790,6 +940,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -803,6 +955,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -856,6 +1010,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -869,6 +1025,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -884,6 +1042,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -898,6 +1058,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -911,6 +1073,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

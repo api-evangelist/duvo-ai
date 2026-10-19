@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Connections API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -15,7 +33,7 @@ paths:
       operationId: startNativeOAuth
       tags:
       - Connections
-      description: Start an OAuth-based connection with a native provider (Gmail, Google Sheets, Outlook, etc.). Returns an authorization URL that must be opened in a browser by a human end-user; once they grant consent, Duvo creates the matching connection and redirects the browser to the optional `return_url` (or the Duvo dashboard if none is provided). Poll `/v2/teams/:team_id/connections` to detect the new connection.
+      description: Start an OAuth-based connection with a native provider (Gmail, Google Sheets, Outlook, etc.). The provider path parameter is the native OAuth provider key from listIntegrations, not the integration type. Returns an authorization URL that must be opened in a browser by a human end-user; once they grant consent, Duvo creates the matching connection and redirects the browser to the optional `return_url` (or the Duvo dashboard if none is provided). Poll `/v2/teams/:team_id/connections` to detect the new connection.
       requestBody:
         required: true
         content:
@@ -39,7 +57,7 @@ paths:
         in: path
         name: provider
         required: true
-        description: OAuth provider slug (e.g. 'google', 'gmail', 'googlesheets', 'outlook'). Must match a configured native OAuth provider.
+        description: Native OAuth provider key, not the integration type. Use oauth_provider_key from listIntegrations (for example, google_gmail for integration type gmail, google_sheets for googlesheets, or microsoft_outlook for outlook); passing an integration type returns 404 "Unknown OAuth provider".
       security:
       - bearerAuth: []
       responses:
@@ -56,6 +74,22 @@ paths:
                 required:
                 - authorization_url
                 additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
         '401':
           description: Default Response
           content:
@@ -66,6 +100,24 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -81,6 +133,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -94,6 +148,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -128,12 +184,20 @@ paths:
                   description: Where to send the user's browser after consent completes. Accepts an absolute URL on a domain Duvo allows, or a path relative to the Duvo frontend (e.g. `/integrations/slack`).
                   type: string
                 integration_type:
-                  description: Optional integration type label.
+                  description: Optional catalog integration type (e.g. `netsuite`, `asana`). When it names a known MCP OAuth catalog integration and `mcp_server_url` matches that integration's registered server, the connection is treated as a catalog connection; otherwise it requires the custom MCP servers capability.
                   type: string
                 reconnect_instance_id:
                   description: When set, the OAuth flow will update the existing connection in place rather than creating a new one.
                   type: string
                   format: uuid
+                oauth_client_id:
+                  description: OAuth client ID of a client the user registered on the authorization server themselves (e.g. a NetSuite Integration record). Takes precedence over preregistered credentials and Dynamic Client Registration. Cannot be combined with custom_integration_id. On reconnect, omit to reuse the connection's stored credentials, or provide to replace (rotate) them.
+                  type: string
+                  minLength: 1
+                oauth_client_secret:
+                  description: Client secret for `oauth_client_id`. Omit for public clients (PKCE-only).
+                  type: string
+                  minLength: 1
               required:
               - mcp_server_url
               - name
@@ -170,6 +234,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -184,6 +250,24 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -197,6 +281,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -256,6 +342,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -270,6 +358,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -283,6 +373,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -351,6 +443,7 @@ paths:
                     - string
                     - 'null'
                   oauth_provider_key:
+                    description: Native OAuth provider key used in the native OAuth start endpoint's provider path parameter. Read this value from listIntegrations; null when the integration type has no native OAuth provider.
                     type:
                     - string
                     - 'null'
@@ -410,6 +503,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -423,6 +518,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -438,6 +535,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -452,6 +551,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -465,6 +566,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -567,6 +670,7 @@ paths:
                     - string
                     - 'null'
                   oauth_provider_key:
+                    description: Native OAuth provider key used in the native OAuth start endpoint's provider path parameter. Read this value from listIntegrations; null when the integration type has no native OAuth provider.
                     type:
                     - string
                     - 'null'
@@ -626,6 +730,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -639,6 +745,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -654,6 +762,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -668,6 +778,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -681,6 +793,24 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '503':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -728,6 +858,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -741,6 +873,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -756,6 +890,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -770,6 +906,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -783,6 +921,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -834,6 +974,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -847,6 +989,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -862,6 +1006,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -876,6 +1022,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -885,7 +1033,7 @@ paths:
       operationId: listConnections
       tags:
       - Connections
-      description: List the authenticated user's connections (connected integration instances) for the current team. Includes team-shared instances visible to the caller when the org-level Connections sharing setting is on. Filter by integration type with the `type` query parameter.
+      description: List the authenticated user's connections (connected integration instances) for the current team. Includes team-shared instances visible to the caller, and instances another team has granted to this one, when the org-level Connections sharing setting is on. The `type` query parameter filters by integration type, not native OAuth provider key.
       parameters:
       - schema:
           type: string
@@ -966,6 +1114,7 @@ paths:
                           - string
                           - 'null'
                         oauth_provider_key:
+                          description: Native OAuth provider key used in the native OAuth start endpoint's provider path parameter. Read this value from listIntegrations; null when the integration type has no native OAuth provider.
                           type:
                           - string
                           - 'null'
@@ -1043,6 +1192,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1056,6 +1207,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1166,6 +1319,7 @@ paths:
                     - string
                     - 'null'
                   oauth_provider_key:
+                    description: Native OAuth provider key used in the native OAuth start endpoint's provider path parameter. Read this value from listIntegrations; null when the integration type has no native OAuth provider.
                     type:
                     - string
                     - 'null'
@@ -1225,6 +1379,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1238,6 +1394,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1253,6 +1411,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1267,6 +1427,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1280,6 +1442,24 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '503':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1320,7 +1500,6 @@ paths:
                   - exa-company-search
                   - exa-people-search
                   - deep-research
-                  - system
                   - browser-agent
                   - browser-agent-devtools
                   - notion
@@ -1349,7 +1528,6 @@ paths:
                   - sap-ecc
                   - msteams
                   - human-in-the-loop
-                  - email-attachments-reader
                   - document-processor
                   - google-docs
                   - google-sheets
@@ -1377,6 +1555,7 @@ paths:
                   - duvo-computer-use-rdp
                   - eu-commodity-prices
                   - asana
+                  - jira
                   - ssh
                   - scheduling
                   - github
@@ -1385,6 +1564,26 @@ paths:
                   - granola
                   - apify
                   - bamboohr
+                  - edi
+                  - maersk
+                  - infor-nexus
+                  - dhl
+                  - fedex
+                  - ups
+                  - dsv
+                  - trinity-logistics
+                  - ontrac
+                  - dachser
+                  - hellmann
+                  - omni-logistics
+                  - ceva-logistics
+                  - dpd
+                  - canada-post
+                  - o9
+                  - manhattan
+                  - blue-yonder
+                  - system
+                  - email-attachments-reader
                 headers:
                   description: Optional HTTP headers for authentication (raw server_url mode only)
                   type: object
@@ -1420,11 +1619,19 @@ paths:
                         input_schema:
                           type: object
                           additionalProperties: {}
+                        output_schema:
+                          type: object
+                          additionalProperties: {}
                       required:
                       - name
                       additionalProperties: false
                   error:
                     type: string
+                  code:
+                    type: string
+                    enum:
+                    - listing_unavailable
+                    - probe_failed
                 required:
                 - success
                 additionalProperties: false
@@ -1438,6 +1645,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1453,6 +1662,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1467,6 +1678,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1480,6 +1693,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

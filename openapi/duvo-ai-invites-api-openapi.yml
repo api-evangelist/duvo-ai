@@ -1,0 +1,1243 @@
+openapi: 3.2.0
+info:
+  title: Duvo Public Invites API
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Invites
+  description: Invite people to a team — one at a time or in bulk, scoped to a Clarity process or the whole team — and manage the team's shareable invite link
+paths:
+  /v2/teams/{teamId}/invites:
+    post:
+      operationId: createTeamInvite
+      tags:
+      - Invites
+      description: Invite one person to a team. Pass `processId` to invite them to a specific Clarity process instead of the whole team (that requires the `team:clarity-member` role). Creating the invitation does NOT email anyone — call sendTeamInviteEmail with the returned id to deliver it, or use bulkCreateTeamInvites, which creates and emails in one step.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the person to invite.
+                role:
+                  type: string
+                  description: 'Team role to grant. One of: team:owner, team:superadmin, team:admin (deprecated), team:manager, team:builder, team:member, team:clarity-member. You cannot grant a role above your own. Process invitations must use team:clarity-member.'
+                processId:
+                  description: Invite the person to this Clarity process rather than the whole team. Requires the team:clarity-member role.
+                  type: string
+                  format: uuid
+                process_role_id:
+                  description: Configured Process role to assign alongside the Clarity invitation. Requires processId; the role must belong to that Process.
+                  type: string
+                  format: uuid
+                interviewRequested:
+                  description: Whether to ask the person to record an interview about the process. Defaults to true. Pass false to give Clarity Member access to the process only; that requires processId and the clarity_invite_without_interview feature flag. Inviting someone already asked for an interview with false keeps the request.
+                  type: boolean
+              required:
+              - email
+              - role
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  team_id:
+                    type: string
+                  email:
+                    type: string
+                    format: email
+                  invited_by:
+                    type: string
+                  role:
+                    type: string
+                  status:
+                    type: string
+                  name:
+                    type:
+                    - string
+                    - 'null'
+                  created_at:
+                    type: string
+                  process_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  team:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - name
+                    additionalProperties: false
+                  invitedBy:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type:
+                        - string
+                        - 'null'
+                      email:
+                        type: string
+                        format: email
+                    required:
+                    - id
+                    - name
+                    - email
+                    additionalProperties: false
+                  process:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - name
+                    additionalProperties: false
+                  interview_requested:
+                    type: boolean
+                required:
+                - id
+                - team_id
+                - email
+                - invited_by
+                - role
+                - status
+                - name
+                - created_at
+                - team
+                - invitedBy
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Team Invite
+    get:
+      operationId: listTeamInvites
+      tags:
+      - Invites
+      description: List a team's pending invitations — everyone invited who has not yet accepted or declined. Pass `processId` to list the pending invitations for a single Clarity process instead.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: processId
+        required: false
+        description: List the pending invitations for this Clarity process instead of the team's own invitations. Requires the process creator or a team admin.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: teamId
+        required: true
+        description: Team ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invitations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        team_id:
+                          type: string
+                        email:
+                          type: string
+                          format: email
+                        invited_by:
+                          type: string
+                        role:
+                          type: string
+                        status:
+                          type: string
+                        name:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type: string
+                        process_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                      required:
+                      - id
+                      - team_id
+                      - email
+                      - invited_by
+                      - role
+                      - status
+                      - name
+                      - created_at
+                      additionalProperties: false
+                required:
+                - invitations
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Team Invites
+  /v2/teams/{teamId}/invites/{id}:
+    delete:
+      operationId: deleteTeamInvite
+      tags:
+      - Invites
+      description: Revoke a pending invitation so its link and email can no longer be used. Accepts either a team invitation (requires Superadmin or above on the invitation's team) or a Clarity process invitation (requires the process creator or a team admin). Revoking one side also revokes its linked counterpart when a process invitation created both. An invitation already accepted or declined is refused with 409, including one accepted a moment before, and process access the invitee already holds through an earlier acceptance is kept, so revoking never undoes an acceptance.
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: id
+        required: true
+        description: ID of the invitation to revoke. Accepts either a team invitation or a Clarity process invitation.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Team Invite
+    patch:
+      operationId: updateTeamInvite
+      tags:
+      - Invites
+      description: Change the role on a pending team invitation. Only pending invitations can be updated — one already accepted or declined is rejected. Requires the Manager role or above on the invitation's own team.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  description: 'New team role for the invitation. One of: team:owner, team:superadmin, team:admin (deprecated), team:manager, team:builder, team:member, team:clarity-member. You cannot assign a role above your own.'
+              required:
+              - role
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: ID of the pending invitation to update.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  role:
+                    type: string
+                required:
+                - id
+                - role
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Team Invite
+  /v2/teams/{teamId}/invites/{id}/send-email:
+    post:
+      operationId: sendTeamInviteEmail
+      tags:
+      - Invites
+      description: Email an invitation to its recipient. Use this to deliver an invitation created by createTeamInvite (which never sends mail on its own), or to resend one the recipient never received. The accept link is always built from the server-configured app origin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                frontendUrl:
+                  description: 'Deprecated. Accepted for backward compatibility and IGNORED: the accept link is always built from the server-configured app origin, so a caller cannot point invitation emails at another host.'
+                  type: string
+                  format: uri
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: id
+        required: true
+        description: ID of the invitation to email.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Send Team Invite Email
+  /v2/teams/{teamId}/invites/bulk:
+    post:
+      operationId: bulkCreateTeamInvites
+      tags:
+      - Invites
+      description: 'Invite several people to a team in one call, emailing each invitation immediately. Returns per-batch counts: `succeeded` were invited, `skipped` were already on the team, already had a pending invitation, or were a duplicate of an earlier entry in the same batch, `failed` could not be emailed (those invitations are rolled back). The accept link is always built from the server-configured app origin.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                members:
+                  maxItems: 50
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                        description: Email address of the person to invite.
+                      role:
+                        type: string
+                        description: 'Team role to grant. One of: team:owner, team:superadmin, team:admin (deprecated), team:manager, team:builder, team:member, team:clarity-member. You cannot grant a role above your own.'
+                    required:
+                    - email
+                    - role
+                  description: People to invite, at most 50 per request. An email already on the team, or already holding a pending invitation, is skipped rather than failing the batch.
+                frontendUrl:
+                  description: 'Deprecated. Accepted for backward compatibility and IGNORED: the accept link is always built from the server-configured app origin, so a caller cannot point invitation emails at another host.'
+                  type: string
+                  format: uri
+              required:
+              - members
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  succeeded:
+                    type: number
+                  skipped:
+                    type: number
+                  failed:
+                    type: number
+                required:
+                - succeeded
+                - skipped
+                - failed
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Bulk Create Team Invites
+  /v2/teams/{teamId}/team-invite-link:
+    get:
+      operationId: getTeamInviteLink
+      tags:
+      - Invites
+      description: 'Get the team''s shareable invite link — the one URL anyone can use to join the team, as opposed to a per-person invitation. Returns `hasLink: false` when no link has been created. Requires the Manager role or above.'
+      parameters:
+      - schema:
+          type: string
+          format: uri
+        in: query
+        name: frontendUrl
+        required: false
+        description: Deprecated and ignored. The link is built from the server's configured frontend URL so a caller can't choose the host in a Duvo-branded email.
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasLink:
+                    type: boolean
+                  link:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      url:
+                        type: string
+                        format: uri
+                      createdAt:
+                        type: string
+                      createdBy:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          name:
+                            type:
+                            - string
+                            - 'null'
+                          email:
+                            type: string
+                            format: email
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
+                    required:
+                    - id
+                    - createdAt
+                    - createdBy
+                    additionalProperties: false
+                required:
+                - hasLink
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Team Invite Link
+    post:
+      operationId: createTeamInviteLink
+      tags:
+      - Invites
+      description: Create or regenerate the team's shareable invite link — the one URL anyone can use to join the team. Regenerating invalidates the previous link, so anyone still holding the old URL can no longer join. Requires the Manager role or above.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                frontendUrl:
+                  description: Deprecated and ignored. The link is built from the server's configured frontend URL so a caller can't choose the host in a Duvo-branded email.
+                  type: string
+                  format: uri
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  url:
+                    type: string
+                    format: uri
+                  createdAt:
+                    type: string
+                  createdBy:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type:
+                        - string
+                        - 'null'
+                      email:
+                        type: string
+                        format: email
+                    required:
+                    - id
+                    - name
+                    - email
+                    additionalProperties: false
+                required:
+                - id
+                - createdAt
+                - createdBy
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Team Invite Link
+    delete:
+      operationId: deleteTeamInviteLink
+      tags:
+      - Invites
+      description: Delete the team's shareable invite link so the URL stops working. Per-person invitations are unaffected. Requires the Manager role or above.
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '204':
+          description: Default Response
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Team Invite Link
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

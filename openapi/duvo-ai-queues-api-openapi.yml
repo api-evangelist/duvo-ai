@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Queues API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -62,6 +80,24 @@ paths:
                         - 'null'
                       created_at:
                         type: string
+                      created_by:
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type:
+                            - string
+                            - 'null'
+                          email:
+                            type: string
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
                       has_approvals:
                         type: boolean
                     required:
@@ -86,6 +122,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -99,6 +137,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -114,6 +154,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -127,6 +169,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -145,7 +189,7 @@ paths:
               type: object
               properties:
                 name:
-                  description: New queue name. Must be unique within the team.
+                  description: New queue name. A standalone queue's name must be unique within the team, and a queue inside an automation's name must be unique within that automation. Queue names are not versioned, so this is the canonical name on any Automations workspace team, with or without revisions. A revision carrying a per-revision name override applies it over this one when that revision is activated.
                   type: string
                   minLength: 1
                   maxLength: 100
@@ -207,6 +251,24 @@ paths:
                         - 'null'
                       created_at:
                         type: string
+                      created_by:
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type:
+                            - string
+                            - 'null'
+                          email:
+                            type: string
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
                       has_approvals:
                         type: boolean
                     required:
@@ -231,6 +293,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -244,6 +308,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -259,6 +325,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -272,6 +340,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -287,6 +357,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -300,6 +372,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -353,6 +427,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -366,6 +442,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -381,6 +459,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -394,6 +474,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -409,6 +491,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -423,10 +507,2774 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: Delete Queue
+  /v2/queues/{queue_id}/aggregations:
+    get:
+      operationId: listQueueAggregations
+      tags:
+      - Queues
+      description: List a queue's aggregation definitions.
+      parameters:
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+      - schema:
+          default: 0
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        queue_id:
+                          type: string
+                          format: uuid
+                        schema_family_id:
+                          type: string
+                          format: uuid
+                        schema_id:
+                          type: string
+                          format: uuid
+                        schema_version:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                        definition:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                            measures:
+                              minItems: 1
+                              maxItems: 8
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
+                                    pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                                  operation:
+                                    type: string
+                                    enum:
+                                    - count
+                                    - sum
+                                    - avg
+                                    - min
+                                    - max
+                                    - count_distinct
+                                    - p50
+                                    - p90
+                                    - p95
+                                    - p99
+                                  path:
+                                    type: string
+                                    pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                                required:
+                                - name
+                                - operation
+                                additionalProperties: false
+                            dimensions:
+                              maxItems: 4
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  name:
+                                    type: string
+                                    pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                                  path:
+                                    type: string
+                                    pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                                required:
+                                - name
+                                - path
+                                additionalProperties: false
+                            timeDimension:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                  pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                                path:
+                                  type: string
+                                  pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                                granularity:
+                                  type: string
+                                  enum:
+                                  - hour
+                                  - day
+                                  - week
+                                  - month
+                                  - quarter
+                                  - year
+                              required:
+                              - name
+                              - path
+                              - granularity
+                              additionalProperties: false
+                            filters:
+                              maxItems: 12
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  path:
+                                    type: string
+                                    pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                                  operator:
+                                    type: string
+                                    enum:
+                                    - equals
+                                    - notEquals
+                                    - in
+                                    - notIn
+                                    - gt
+                                    - gte
+                                    - lt
+                                    - lte
+                                    - contains
+                                    - isSet
+                                    - isNotSet
+                                  value:
+                                    anyOf:
+                                    - anyOf:
+                                      - type: string
+                                      - type: number
+                                      - type: boolean
+                                    - minItems: 1
+                                      maxItems: 100
+                                      type: array
+                                      items:
+                                        anyOf:
+                                        - type: string
+                                        - type: number
+                                        - type: boolean
+                                required:
+                                - path
+                                - operator
+                                additionalProperties: false
+                            order:
+                              maxItems: 8
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  field:
+                                    type: string
+                                    pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                                  direction:
+                                    type: string
+                                    enum:
+                                    - asc
+                                    - desc
+                                required:
+                                - field
+                                - direction
+                                additionalProperties: false
+                            caseFilters:
+                              type: object
+                              properties:
+                                createdAtFrom:
+                                  type: string
+                                  format: date-time
+                                createdAtTo:
+                                  type: string
+                                  format: date-time
+                                statuses:
+                                  minItems: 1
+                                  maxItems: 10
+                                  type: array
+                                  items:
+                                    type: string
+                                    enum:
+                                    - pending
+                                    - in_progress
+                                    - needs_input
+                                    - postponed
+                                    - evaluating
+                                    - success
+                                    - issues
+                                    - completed
+                                    - failed
+                                    - canceled
+                                priorities:
+                                  minItems: 1
+                                  maxItems: 3
+                                  type: array
+                                  items:
+                                    type: string
+                                    enum:
+                                    - none
+                                    - medium
+                                    - high
+                                labelIds:
+                                  minItems: 1
+                                  maxItems: 100
+                                  type: array
+                                  items:
+                                    type: string
+                                    format: uuid
+                              additionalProperties: false
+                            limit:
+                              type: integer
+                              minimum: 1
+                              maximum: 500
+                          required:
+                          - name
+                          - measures
+                          additionalProperties: false
+                        definition_hash:
+                          type: string
+                        maximum_stale_age_seconds:
+                          type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                      required:
+                      - id
+                      - queue_id
+                      - schema_family_id
+                      - schema_id
+                      - schema_version
+                      - definition
+                      - definition_hash
+                      - maximum_stale_age_seconds
+                      - created_at
+                      - updated_at
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  limit:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                required:
+                - data
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Queue Aggregations
+    post:
+      operationId: createQueueAggregation
+      tags:
+      - Queues
+      description: Create an immutable aggregation definition on a queue.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                definition:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                    measures:
+                      minItems: 1
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                          operation:
+                            type: string
+                            enum:
+                            - count
+                            - sum
+                            - avg
+                            - min
+                            - max
+                            - count_distinct
+                            - p50
+                            - p90
+                            - p95
+                            - p99
+                          path:
+                            type: string
+                            pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                        required:
+                        - name
+                        - operation
+                        additionalProperties: false
+                    dimensions:
+                      maxItems: 4
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                          path:
+                            type: string
+                            pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                        required:
+                        - name
+                        - path
+                        additionalProperties: false
+                    timeDimension:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                        path:
+                          type: string
+                          pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                        granularity:
+                          type: string
+                          enum:
+                          - hour
+                          - day
+                          - week
+                          - month
+                          - quarter
+                          - year
+                      required:
+                      - name
+                      - path
+                      - granularity
+                      additionalProperties: false
+                    filters:
+                      maxItems: 12
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          path:
+                            type: string
+                            pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                          operator:
+                            type: string
+                            enum:
+                            - equals
+                            - notEquals
+                            - in
+                            - notIn
+                            - gt
+                            - gte
+                            - lt
+                            - lte
+                            - contains
+                            - isSet
+                            - isNotSet
+                          value:
+                            anyOf:
+                            - anyOf:
+                              - type: string
+                              - type: number
+                              - type: boolean
+                            - minItems: 1
+                              maxItems: 100
+                              type: array
+                              items:
+                                anyOf:
+                                - type: string
+                                - type: number
+                                - type: boolean
+                        required:
+                        - path
+                        - operator
+                        additionalProperties: false
+                    order:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          field:
+                            type: string
+                            pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                          direction:
+                            type: string
+                            enum:
+                            - asc
+                            - desc
+                        required:
+                        - field
+                        - direction
+                        additionalProperties: false
+                    caseFilters:
+                      type: object
+                      properties:
+                        createdAtFrom:
+                          type: string
+                          format: date-time
+                        createdAtTo:
+                          type: string
+                          format: date-time
+                        statuses:
+                          minItems: 1
+                          maxItems: 10
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                            - pending
+                            - in_progress
+                            - needs_input
+                            - postponed
+                            - evaluating
+                            - success
+                            - issues
+                            - completed
+                            - failed
+                            - canceled
+                        priorities:
+                          minItems: 1
+                          maxItems: 3
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                            - none
+                            - medium
+                            - high
+                        labelIds:
+                          minItems: 1
+                          maxItems: 100
+                          type: array
+                          items:
+                            type: string
+                            format: uuid
+                      additionalProperties: false
+                    limit:
+                      type: integer
+                      minimum: 1
+                      maximum: 500
+                  required:
+                  - name
+                  - measures
+                  additionalProperties: false
+                maximum_stale_age_seconds:
+                  type: integer
+                  minimum: 1
+                  maximum: 604800
+              required:
+              - definition
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  queue_id:
+                    type: string
+                    format: uuid
+                  schema_family_id:
+                    type: string
+                    format: uuid
+                  schema_id:
+                    type: string
+                    format: uuid
+                  schema_version:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  definition:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                      measures:
+                        minItems: 1
+                        maxItems: 8
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                            operation:
+                              type: string
+                              enum:
+                              - count
+                              - sum
+                              - avg
+                              - min
+                              - max
+                              - count_distinct
+                              - p50
+                              - p90
+                              - p95
+                              - p99
+                            path:
+                              type: string
+                              pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                          required:
+                          - name
+                          - operation
+                          additionalProperties: false
+                      dimensions:
+                        maxItems: 4
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                              pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                            path:
+                              type: string
+                              pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                          required:
+                          - name
+                          - path
+                          additionalProperties: false
+                      timeDimension:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                          path:
+                            type: string
+                            pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                          granularity:
+                            type: string
+                            enum:
+                            - hour
+                            - day
+                            - week
+                            - month
+                            - quarter
+                            - year
+                        required:
+                        - name
+                        - path
+                        - granularity
+                        additionalProperties: false
+                      filters:
+                        maxItems: 12
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                              pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                            operator:
+                              type: string
+                              enum:
+                              - equals
+                              - notEquals
+                              - in
+                              - notIn
+                              - gt
+                              - gte
+                              - lt
+                              - lte
+                              - contains
+                              - isSet
+                              - isNotSet
+                            value:
+                              anyOf:
+                              - anyOf:
+                                - type: string
+                                - type: number
+                                - type: boolean
+                              - minItems: 1
+                                maxItems: 100
+                                type: array
+                                items:
+                                  anyOf:
+                                  - type: string
+                                  - type: number
+                                  - type: boolean
+                          required:
+                          - path
+                          - operator
+                          additionalProperties: false
+                      order:
+                        maxItems: 8
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            field:
+                              type: string
+                              pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                            direction:
+                              type: string
+                              enum:
+                              - asc
+                              - desc
+                          required:
+                          - field
+                          - direction
+                          additionalProperties: false
+                      caseFilters:
+                        type: object
+                        properties:
+                          createdAtFrom:
+                            type: string
+                            format: date-time
+                          createdAtTo:
+                            type: string
+                            format: date-time
+                          statuses:
+                            minItems: 1
+                            maxItems: 10
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                              - pending
+                              - in_progress
+                              - needs_input
+                              - postponed
+                              - evaluating
+                              - success
+                              - issues
+                              - completed
+                              - failed
+                              - canceled
+                          priorities:
+                            minItems: 1
+                            maxItems: 3
+                            type: array
+                            items:
+                              type: string
+                              enum:
+                              - none
+                              - medium
+                              - high
+                          labelIds:
+                            minItems: 1
+                            maxItems: 100
+                            type: array
+                            items:
+                              type: string
+                              format: uuid
+                        additionalProperties: false
+                      limit:
+                        type: integer
+                        minimum: 1
+                        maximum: 500
+                    required:
+                    - name
+                    - measures
+                    additionalProperties: false
+                  definition_hash:
+                    type: string
+                  maximum_stale_age_seconds:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  created_at:
+                    type: string
+                  updated_at:
+                    type: string
+                required:
+                - id
+                - queue_id
+                - schema_family_id
+                - schema_id
+                - schema_version
+                - definition
+                - definition_hash
+                - maximum_stale_age_seconds
+                - created_at
+                - updated_at
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Queue Aggregation
+  /v2/queues/{queue_id}/aggregations/evaluate:
+    post:
+      operationId: evaluateQueueAggregation
+      tags:
+      - Queues
+      description: Evaluate an aggregation definition against the current data without persisting it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                definition:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                    measures:
+                      minItems: 1
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                          operation:
+                            type: string
+                            enum:
+                            - count
+                            - sum
+                            - avg
+                            - min
+                            - max
+                            - count_distinct
+                            - p50
+                            - p90
+                            - p95
+                            - p99
+                          path:
+                            type: string
+                            pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                        required:
+                        - name
+                        - operation
+                        additionalProperties: false
+                    dimensions:
+                      maxItems: 4
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                          path:
+                            type: string
+                            pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                        required:
+                        - name
+                        - path
+                        additionalProperties: false
+                    timeDimension:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                        path:
+                          type: string
+                          pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                        granularity:
+                          type: string
+                          enum:
+                          - hour
+                          - day
+                          - week
+                          - month
+                          - quarter
+                          - year
+                      required:
+                      - name
+                      - path
+                      - granularity
+                      additionalProperties: false
+                    filters:
+                      maxItems: 12
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          path:
+                            type: string
+                            pattern: ^\$(\.[A-Za-z_][A-Za-z0-9_]{0,63})+$
+                          operator:
+                            type: string
+                            enum:
+                            - equals
+                            - notEquals
+                            - in
+                            - notIn
+                            - gt
+                            - gte
+                            - lt
+                            - lte
+                            - contains
+                            - isSet
+                            - isNotSet
+                          value:
+                            anyOf:
+                            - anyOf:
+                              - type: string
+                              - type: number
+                              - type: boolean
+                            - minItems: 1
+                              maxItems: 100
+                              type: array
+                              items:
+                                anyOf:
+                                - type: string
+                                - type: number
+                                - type: boolean
+                        required:
+                        - path
+                        - operator
+                        additionalProperties: false
+                    order:
+                      maxItems: 8
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          field:
+                            type: string
+                            pattern: ^[A-Za-z_][A-Za-z0-9_]{0,63}$
+                          direction:
+                            type: string
+                            enum:
+                            - asc
+                            - desc
+                        required:
+                        - field
+                        - direction
+                        additionalProperties: false
+                    caseFilters:
+                      type: object
+                      properties:
+                        createdAtFrom:
+                          type: string
+                          format: date-time
+                        createdAtTo:
+                          type: string
+                          format: date-time
+                        statuses:
+                          minItems: 1
+                          maxItems: 10
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                            - pending
+                            - in_progress
+                            - needs_input
+                            - postponed
+                            - evaluating
+                            - success
+                            - issues
+                            - completed
+                            - failed
+                            - canceled
+                        priorities:
+                          minItems: 1
+                          maxItems: 3
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                            - none
+                            - medium
+                            - high
+                        labelIds:
+                          minItems: 1
+                          maxItems: 100
+                          type: array
+                          items:
+                            type: string
+                            format: uuid
+                      additionalProperties: false
+                    limit:
+                      type: integer
+                      minimum: 1
+                      maximum: 500
+                  required:
+                  - name
+                  - measures
+                  additionalProperties: false
+              required:
+              - definition
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  definition_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  columns:
+                    type: array
+                    items:
+                      type: string
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties:
+                        type:
+                        - string
+                        - 'null'
+                  freshness_outcome:
+                    type: string
+                    enum:
+                    - exact
+                    - folded_forward
+                    - recomputed
+                  schema_id:
+                    type: string
+                    format: uuid
+                  schema_version:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  current_schema_version:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  source_revision:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  current_revision:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  is_stale:
+                    type: boolean
+                  computed_at:
+                    type: string
+                  total_rows:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  excluded_rows:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      reason:
+                        type: string
+                        enum:
+                        - legacy
+                        - incompatible_schema
+                        - both
+                    required:
+                    - count
+                    - reason
+                    additionalProperties: false
+                required:
+                - definition_id
+                - columns
+                - rows
+                - freshness_outcome
+                - schema_id
+                - schema_version
+                - current_schema_version
+                - source_revision
+                - current_revision
+                - is_stale
+                - computed_at
+                - total_rows
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Evaluate Queue Aggregation
+  /v2/queues/{queue_id}/aggregations/{definition_id}/result:
+    get:
+      operationId: getQueueAggregationResult
+      tags:
+      - Queues
+      description: Read an aggregation definition's cached result.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: definition_id
+        required: true
+        description: The aggregation definition's identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  definition_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  columns:
+                    type: array
+                    items:
+                      type: string
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties:
+                        type:
+                        - string
+                        - 'null'
+                  freshness_outcome:
+                    type: string
+                    enum:
+                    - exact
+                    - folded_forward
+                    - recomputed
+                  schema_id:
+                    type: string
+                    format: uuid
+                  schema_version:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  current_schema_version:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  source_revision:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  current_revision:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  is_stale:
+                    type: boolean
+                  computed_at:
+                    type: string
+                  total_rows:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  excluded_rows:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      reason:
+                        type: string
+                        enum:
+                        - legacy
+                        - incompatible_schema
+                        - both
+                    required:
+                    - count
+                    - reason
+                    additionalProperties: false
+                required:
+                - definition_id
+                - columns
+                - rows
+                - freshness_outcome
+                - schema_id
+                - schema_version
+                - current_schema_version
+                - source_revision
+                - current_revision
+                - is_stale
+                - computed_at
+                - total_rows
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Queue Aggregation Result
+  /v2/queues/{queue_id}/aggregations/{definition_id}/refresh:
+    post:
+      operationId: refreshQueueAggregation
+      tags:
+      - Queues
+      description: Force a fresh recompute of an aggregation definition.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: definition_id
+        required: true
+        description: The aggregation definition's identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  definition_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  columns:
+                    type: array
+                    items:
+                      type: string
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties:
+                        type:
+                        - string
+                        - 'null'
+                  freshness_outcome:
+                    type: string
+                    enum:
+                    - exact
+                    - folded_forward
+                    - recomputed
+                  schema_id:
+                    type: string
+                    format: uuid
+                  schema_version:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  current_schema_version:
+                    type: integer
+                    minimum: -9007199254740991
+                    maximum: 9007199254740991
+                  source_revision:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  current_revision:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  is_stale:
+                    type: boolean
+                  computed_at:
+                    type: string
+                  total_rows:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  excluded_rows:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      reason:
+                        type: string
+                        enum:
+                        - legacy
+                        - incompatible_schema
+                        - both
+                    required:
+                    - count
+                    - reason
+                    additionalProperties: false
+                required:
+                - definition_id
+                - columns
+                - rows
+                - freshness_outcome
+                - schema_id
+                - schema_version
+                - current_schema_version
+                - source_revision
+                - current_revision
+                - is_stale
+                - computed_at
+                - total_rows
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Refresh Queue Aggregation
+  /v2/queues/{queue_id}/aggregations/{definition_id}:
+    delete:
+      operationId: deleteQueueAggregation
+      tags:
+      - Queues
+      description: Soft-delete an aggregation definition.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: definition_id
+        required: true
+        description: The aggregation definition's identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: boolean
+                required:
+                - deleted
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Queue Aggregation
+  /v2/queues/{queue_id}/json-schema:
+    get:
+      operationId: getQueueJsonSchema
+      tags:
+      - Queues
+      description: 'Get a queue''s Case schema settings: whether it requires typed cases, and the schema it validates them against.'
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guarded:
+                    type: boolean
+                  schema:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      family_id:
+                        type: string
+                      family_name:
+                        type: string
+                      schema_id:
+                        type: string
+                      version:
+                        type: number
+                      schema:
+                        type: object
+                        additionalProperties: {}
+                      fields:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                            types:
+                              type: array
+                              items:
+                                type: string
+                            required:
+                              type: boolean
+                          required:
+                          - path
+                          - types
+                          - required
+                          additionalProperties: false
+                      change_summary:
+                        type: string
+                      created_at:
+                        type: string
+                      frozen:
+                        type: boolean
+                    required:
+                    - family_id
+                    - family_name
+                    - schema_id
+                    - version
+                    - schema
+                    - fields
+                    - change_summary
+                    - created_at
+                    - frozen
+                    additionalProperties: false
+                required:
+                - guarded
+                - schema
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Queue Json Schema
+    post:
+      operationId: createQueueJsonSchema
+      tags:
+      - Queues
+      description: Declare a queue's first Case schema by hand, so a person can type a queue up front instead of waiting for its producing agent to declare the shape. Fails if the queue already has a schema — replace an existing one with PUT. Every object schema, including nested objects, must set additionalProperties to false or the request fails with 400 "Object schemas must set additionalProperties to false".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: A human-readable name for the Case schema (1–100 characters).
+                schema:
+                  type: object
+                  additionalProperties: {}
+                  description: 'A JSON Schema 2020-12 subset. The root must have type "object"; every object schema, including nested objects, must set additionalProperties to false or the request fails with 400 "Object schemas must set additionalProperties to false". Allowed types: object, array, string, number, integer, boolean, null. Allowed keywords: $schema, $defs, $ref, type, properties, required, additionalProperties, items, enum, const, description, format, minimum, maximum, minLength, maxLength, minItems, maxItems. Allowed formats: date, date-time, email, uuid. Property names must match /^[A-Za-z_][A-Za-z0-9_]{0,63}$/, and every array needs items. Schemas are limited to 65,536 bytes, 16 nested levels, and 256 declared or expanded fields; case JSON payloads are limited to 8 MiB and 10,000 items per array. Minimal valid example: {"type":"object","additionalProperties":false,"properties":{}}.'
+              required:
+              - name
+              - schema
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guarded:
+                    type: boolean
+                  schema:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      family_id:
+                        type: string
+                      family_name:
+                        type: string
+                      schema_id:
+                        type: string
+                      version:
+                        type: number
+                      schema:
+                        type: object
+                        additionalProperties: {}
+                      fields:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                            types:
+                              type: array
+                              items:
+                                type: string
+                            required:
+                              type: boolean
+                          required:
+                          - path
+                          - types
+                          - required
+                          additionalProperties: false
+                      change_summary:
+                        type: string
+                      created_at:
+                        type: string
+                      frozen:
+                        type: boolean
+                    required:
+                    - family_id
+                    - family_name
+                    - schema_id
+                    - version
+                    - schema
+                    - fields
+                    - change_summary
+                    - created_at
+                    - frozen
+                    additionalProperties: false
+                required:
+                - guarded
+                - schema
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Queue Json Schema
+    put:
+      operationId: replaceQueueJsonSchema
+      tags:
+      - Queues
+      description: Replace a queue's Case schema with a new version. Every declared field is frozen against automated change, so this is the only way one can be edited. Every object schema, including nested objects, must set additionalProperties to false or the request fails with 400 "Object schemas must set additionalProperties to false".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                schema:
+                  type: object
+                  additionalProperties: {}
+                  description: 'A JSON Schema 2020-12 subset. The root must have type "object"; every object schema, including nested objects, must set additionalProperties to false or the request fails with 400 "Object schemas must set additionalProperties to false". Allowed types: object, array, string, number, integer, boolean, null. Allowed keywords: $schema, $defs, $ref, type, properties, required, additionalProperties, items, enum, const, description, format, minimum, maximum, minLength, maxLength, minItems, maxItems. Allowed formats: date, date-time, email, uuid. Property names must match /^[A-Za-z_][A-Za-z0-9_]{0,63}$/, and every array needs items. Schemas are limited to 65,536 bytes, 16 nested levels, and 256 declared or expanded fields; case JSON payloads are limited to 8 MiB and 10,000 items per array. Minimal valid example: {"type":"object","additionalProperties":false,"properties":{}}.'
+                change_summary:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  description: A short note about what changed and why (1–500 characters).
+                expected_schema_id:
+                  description: Only replace the schema if its current ID matches this value.
+                  type: string
+                  format: uuid
+              required:
+              - schema
+              - change_summary
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guarded:
+                    type: boolean
+                  schema:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      family_id:
+                        type: string
+                      family_name:
+                        type: string
+                      schema_id:
+                        type: string
+                      version:
+                        type: number
+                      schema:
+                        type: object
+                        additionalProperties: {}
+                      fields:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                            types:
+                              type: array
+                              items:
+                                type: string
+                            required:
+                              type: boolean
+                          required:
+                          - path
+                          - types
+                          - required
+                          additionalProperties: false
+                      change_summary:
+                        type: string
+                      created_at:
+                        type: string
+                      frozen:
+                        type: boolean
+                    required:
+                    - family_id
+                    - family_name
+                    - schema_id
+                    - version
+                    - schema
+                    - fields
+                    - change_summary
+                    - created_at
+                    - frozen
+                    additionalProperties: false
+                required:
+                - guarded
+                - schema
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Replace Queue Json Schema
+    patch:
+      operationId: updateQueueJsonSchemaSettings
+      tags:
+      - Queues
+      description: Turn a queue's schema guard on or off, and freeze or unfreeze the schema document. A guarded queue with no schema yet asks its producing agent to declare one; a frozen schema refuses every change until it is unfrozen.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                guarded:
+                  description: Require every new case on this queue to be typed. When on and the queue has no schema yet, the producing agent must declare one before it can add cases.
+                  type: boolean
+                frozen:
+                  description: Close the schema document to change. The queue must already have a schema.
+                  type: boolean
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guarded:
+                    type: boolean
+                  schema:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      family_id:
+                        type: string
+                      family_name:
+                        type: string
+                      schema_id:
+                        type: string
+                      version:
+                        type: number
+                      schema:
+                        type: object
+                        additionalProperties: {}
+                      fields:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                            types:
+                              type: array
+                              items:
+                                type: string
+                            required:
+                              type: boolean
+                          required:
+                          - path
+                          - types
+                          - required
+                          additionalProperties: false
+                      change_summary:
+                        type: string
+                      created_at:
+                        type: string
+                      frozen:
+                        type: boolean
+                    required:
+                    - family_id
+                    - family_name
+                    - schema_id
+                    - version
+                    - schema
+                    - fields
+                    - change_summary
+                    - created_at
+                    - frozen
+                    additionalProperties: false
+                required:
+                - guarded
+                - schema
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Queue Json Schema Settings
+    delete:
+      operationId: detachQueueJsonSchema
+      tags:
+      - Queues
+      description: Stop validating new cases on a queue. Typed cases already written keep their payload and their pinned schema version.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detached:
+                    type: boolean
+                required:
+                - detached
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Detach Queue Json Schema
+  /v2/queues/{queue_id}/json-schema/attach:
+    post:
+      operationId: attachQueueJsonSchema
+      tags:
+      - Queues
+      description: Put a queue on an existing Case schema, so both queues share one document and a later change moves them together. The queue must not already have a schema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                family_id:
+                  type: string
+                  format: uuid
+              required:
+              - family_id
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guarded:
+                    type: boolean
+                  schema:
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      family_id:
+                        type: string
+                      family_name:
+                        type: string
+                      schema_id:
+                        type: string
+                      version:
+                        type: number
+                      schema:
+                        type: object
+                        additionalProperties: {}
+                      fields:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            path:
+                              type: string
+                            types:
+                              type: array
+                              items:
+                                type: string
+                            required:
+                              type: boolean
+                          required:
+                          - path
+                          - types
+                          - required
+                          additionalProperties: false
+                      change_summary:
+                        type: string
+                      created_at:
+                        type: string
+                      frozen:
+                        type: boolean
+                    required:
+                    - family_id
+                    - family_name
+                    - schema_id
+                    - version
+                    - schema
+                    - fields
+                    - change_summary
+                    - created_at
+                    - frozen
+                    additionalProperties: false
+                required:
+                - guarded
+                - schema
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Attach Queue Json Schema
   /v2/queues/{queue_id}/agents:
     get:
       operationId: listQueueAgents
@@ -463,6 +3311,12 @@ paths:
                           format: uuid
                         agent_name:
                           type: string
+                        agent_type:
+                          type: string
+                          enum:
+                          - agent
+                          - code
+                          description: 'Flavour of the step: "agent" for an agentic step, "code" for a deterministic code step. Fixed at creation — a step''s builds all belong to the matching config family.'
                         case_trigger_enabled:
                           type: boolean
                         case_trigger_queue_name:
@@ -493,6 +3347,12 @@ paths:
                           format: uuid
                         agent_name:
                           type: string
+                        agent_type:
+                          type: string
+                          enum:
+                          - agent
+                          - code
+                          description: 'Flavour of the step: "agent" for an agentic step, "code" for a deterministic code step. Fixed at creation — a step''s builds all belong to the matching config family.'
                         case_trigger_enabled:
                           type: boolean
                         is_handover_target:
@@ -533,6 +3393,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -546,6 +3408,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -561,6 +3425,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -575,10 +3441,791 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: List Queue Agents
+  /v2/case-queues/{queue_id}/eval-rubrics:
+    get:
+      operationId: getCaseQueueEvalRubrics
+      tags:
+      - Queues
+      description: List a queue's active case-level evaluation rubrics — the Pass/Fail questions a whole case is judged against at settlement. Shows the queue's current version's set (auto-generated from the connected Assignments' AOPs, plus any manually-authored rubrics).
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rubrics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        slug:
+                          type: string
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        sort_order:
+                          type: number
+                        deleted_at:
+                          type:
+                          - string
+                          - 'null'
+                      required:
+                      - id
+                      - slug
+                      - title
+                      - description
+                      - sort_order
+                      - deleted_at
+                      additionalProperties: false
+                required:
+                - rubrics
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Case Queue Eval Rubrics
+    post:
+      operationId: createCaseQueueEvalRubric
+      tags:
+      - Queues
+      description: Add one case-level evaluation rubric to a queue's current rubric set. Case-level rubrics judge the whole case (across every Run that touched it) as a Pass/Fail question at settlement. The rubric is added to the queue's current version (build-set) — the set new cases are judged against; a queue only gets one after its first Agent-processed case settles, so this fails with 409 before then, and once the version holds 12 rubrics by default (25 on teams with the newer rubric generator enabled); the error message states the ceiling.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 80
+                  description: Short, human-readable Pass/Fail rubric title.
+                description:
+                  type: string
+                  minLength: 20
+                  maxLength: 400
+                  description: A 1-2 sentence Pass condition phrased as a question.
+              required:
+              - title
+              - description
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rubric:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      slug:
+                        type: string
+                      title:
+                        type: string
+                      description:
+                        type: string
+                      sort_order:
+                        type: number
+                      deleted_at:
+                        type:
+                        - string
+                        - 'null'
+                    required:
+                    - id
+                    - slug
+                    - title
+                    - description
+                    - sort_order
+                    - deleted_at
+                    additionalProperties: false
+                required:
+                - rubric
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Case Queue Eval Rubric
+    put:
+      operationId: replaceCaseQueueEvalRubrics
+      tags:
+      - Queues
+      description: Replace the entire case-level evaluation rubric set on a queue's current version (1 to N rubrics, N being 12 by default and 25 on teams with the newer rubric generator enabled). Existing rubrics are removed and the supplied list becomes the new set. An empty list is refused — whole-case evaluation regenerates rubrics for an empty set at the next settlement, so a cleared set would not stay cleared; remove individual rubrics instead. Targets the queue's current version (build-set), which exists once its first Agent-processed case settles — this fails with 409 before then. Cases already judged keep their original verdicts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rubrics:
+                  minItems: 1
+                  maxItems: 25
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        minLength: 3
+                        maxLength: 80
+                        description: Short, human-readable Pass/Fail rubric title.
+                      description:
+                        type: string
+                        minLength: 20
+                        maxLength: 400
+                        description: A 1-2 sentence Pass condition phrased as a question.
+                    required:
+                    - title
+                    - description
+                    additionalProperties: false
+                  description: The complete case-level rubric set for the queue's current version (at least 1 rubric). Replaces every existing rubric.
+              required:
+              - rubrics
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rubrics:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        slug:
+                          type: string
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        sort_order:
+                          type: number
+                        deleted_at:
+                          type:
+                          - string
+                          - 'null'
+                      required:
+                      - id
+                      - slug
+                      - title
+                      - description
+                      - sort_order
+                      - deleted_at
+                      additionalProperties: false
+                required:
+                - rubrics
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Replace Case Queue Eval Rubrics
+  /v2/case-queues/{queue_id}/eval-rubrics/{rubric_id}:
+    patch:
+      operationId: updateCaseQueueEvalRubric
+      tags:
+      - Queues
+      description: Edit a single case-level evaluation rubric's title and/or description. The edit produces a NEW rubric (with a new id and slug) so previously judged cases stay attributed to the original criterion; the response contains the new rubric.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 3
+                  maxLength: 80
+                  description: Short, human-readable Pass/Fail rubric title.
+                description:
+                  type: string
+                  minLength: 20
+                  maxLength: 400
+                  description: A 1-2 sentence Pass condition phrased as a question.
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: rubric_id
+        required: true
+        description: The case-level rubric's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rubric:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      slug:
+                        type: string
+                      title:
+                        type: string
+                      description:
+                        type: string
+                      sort_order:
+                        type: number
+                      deleted_at:
+                        type:
+                        - string
+                        - 'null'
+                    required:
+                    - id
+                    - slug
+                    - title
+                    - description
+                    - sort_order
+                    - deleted_at
+                    additionalProperties: false
+                required:
+                - rubric
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Case Queue Eval Rubric
+    delete:
+      operationId: deleteCaseQueueEvalRubric
+      tags:
+      - Queues
+      description: Remove a single case-level evaluation rubric. Cases settled after this are no longer judged against it; already-judged cases keep their original verdicts. Removing the queue's last remaining rubric is refused with 409 — whole-case evaluation regenerates rubrics for an empty set at the next settlement, so the removal would not stay removed.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+        description: The queue's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: rubric_id
+        required: true
+        description: The case-level rubric's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Case Queue Eval Rubric
   /v2/teams/{teamId}/queues:
     get:
       operationId: listQueues
@@ -655,6 +4302,24 @@ paths:
                           - 'null'
                         created_at:
                           type: string
+                        created_by:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type:
+                              - string
+                              - 'null'
+                            email:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          - email
+                          additionalProperties: false
                         has_approvals:
                           type: boolean
                       required:
@@ -688,6 +4353,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -702,6 +4369,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -715,6 +4384,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -736,7 +4407,7 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 100
-                  description: Queue name. Must be unique within the team.
+                  description: Queue name. A standalone queue must be uniquely named within the team. A queue created inside an automation instead has to be uniquely named within a revision, which is checked when that revision is activated.
                 description:
                   description: Optional human-readable description.
                   type:
@@ -801,6 +4472,24 @@ paths:
                         - 'null'
                       created_at:
                         type: string
+                      created_by:
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type:
+                            - string
+                            - 'null'
+                          email:
+                            type: string
+                        required:
+                        - id
+                        - name
+                        - email
+                        additionalProperties: false
                       has_approvals:
                         type: boolean
                     required:
@@ -825,6 +4514,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -838,6 +4529,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -853,6 +4546,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -867,6 +4562,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -880,6 +4577,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

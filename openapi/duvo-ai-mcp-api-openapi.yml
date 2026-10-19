@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public MCP API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -14,7 +32,7 @@ paths:
     post:
       tags:
       - MCP
-      description: MCP JSON-RPC endpoint (Streamable HTTP transport). Exposes every public API route as an LLM-callable tool.
+      description: MCP JSON-RPC endpoint (Streamable HTTP transport). Exposes every public API route as an LLM-callable tool. The handshake (initialize, ping, tools/list) is open; tool calls require Bearer auth.
       security:
       - bearerAuth: []
       responses:
@@ -27,7 +45,7 @@ paths:
     get:
       tags:
       - MCP
-      description: 'MCP Streamable HTTP: GET is not supported (no server-initiated streaming). Use POST.'
+      description: 'MCP Streamable HTTP: GET (server-initiated streaming) is not supported. Use POST. Without credentials it returns the RFC 9728 challenge so clients and scanners can discover the OAuth metadata.'
       responses:
         '200':
           description: Default Response

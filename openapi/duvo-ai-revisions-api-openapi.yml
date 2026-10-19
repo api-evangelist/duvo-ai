@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Revisions API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -28,238 +46,401 @@ paths:
                   minLength: 1
                   description: Build name
                 config:
-                  description: Build configuration (latest schema version only; legacy v1 configs are not accepted)
-                  type: object
-                  properties:
-                    version:
-                      type: string
-                      enum:
-                      - v2
-                      description: Schema version discriminator — must be "v2" for the current schema
-                    data:
-                      type: object
-                      properties:
-                        models:
-                          type: object
-                          properties:
-                            agent:
-                              type: object
-                              properties:
-                                model:
-                                  type: string
-                                  enum:
-                                  - claude-sonnet-5
-                                  - claude-sonnet-5[1m]
-                                  - claude-opus-4-8
-                                  - claude-opus-4-8[1m]
-                                  - d1-max
-                                  - duvo-1-max
-                                  - duvo-1-max-sonnet-1m
-                                  - duvo-1-max-sonnet-4.5
-                                  - duvo-1-max-sonnet-4.5-1m
-                                  - duvo-1-max-opus
-                                  - duvo-1-max-opus-4.5
-                                  - gpt-4.1
-                                  - gpt-4o
-                                  - gpt-4o-mini
-                                  - gpt-5
-                                  - gpt-5.1
-                                  - claude-sonnet-4-20250514
-                                  - claude-sonnet-4-20250514[1m]
-                                  - claude-sonnet-4-5-20250929
-                                  - claude-sonnet-4-5-20250929[1m]
-                                  - claude-sonnet-4-6
-                                  - claude-sonnet-4-6[1m]
-                                  - claude-opus-4-1-20250805
-                                  - claude-opus-4-5-20251101
-                                  - claude-opus-4-6
-                                  - claude-opus-4-6[1m]
-                                  - claude-opus-4-7
-                                  - claude-opus-4-7[1m]
-                                  description: Claude model identifier used for the primary agent loop
-                              required:
-                              - model
-                              description: Primary Claude agent model configuration
-                            browsing:
-                              type: object
-                              properties:
-                                provider:
-                                  type: string
-                                  enum:
-                                  - google
-                                  - anthropic
-                                  description: Provider backing the browsing/computer-use model
-                                model:
-                                  type: string
-                                  enum:
-                                  - gemini-2.5-pro
-                                  - gemini-2.5-flash
-                                  - gemini-3-pro-preview
-                                  - claude-haiku-4-5
-                                  - claude-sonnet-4-5
-                                  - claude-opus-4-1
-                                  description: Model identifier for the browsing provider
-                              required:
-                              - provider
-                              - model
-                              description: Browsing/computer-use model configuration
-                          required:
-                          - agent
-                          - browsing
-                          description: Model configuration for each capability the agent uses
-                        input:
-                          anyOf:
-                          - type: string
-                          - type: array
-                            items:
-                              type: object
-                              properties:
-                                role:
-                                  type: string
-                                  enum:
-                                  - system
-                                  - user
-                                  - assistant
-                                content:
-                                  anyOf:
-                                  - type: string
-                                  - type: array
-                                    items:
-                                      anyOf:
-                                      - type: object
-                                        properties:
-                                          type:
-                                            type: string
-                                            enum:
-                                            - input_text
-                                          text:
-                                            type: string
-                                        required:
-                                        - type
-                                        - text
-                                      - type: object
-                                        properties:
-                                          type:
-                                            type: string
-                                            enum:
-                                            - input_image
-                                          detail:
-                                            type:
-                                            - string
-                                            - 'null'
-                                            enum:
-                                            - low
-                                            - high
-                                            - auto
-                                          file_id:
-                                            type:
-                                            - string
-                                            - 'null'
-                                          url:
-                                            type:
-                                            - string
-                                            - 'null'
-                                        required:
-                                        - type
-                                      - type: object
-                                        properties:
-                                          type:
-                                            type: string
-                                            enum:
-                                            - input_file
-                                          file_id:
-                                            type: string
-                                        required:
-                                        - type
-                                        - file_id
-                                type:
-                                  type:
-                                  - string
-                                  - 'null'
-                                  enum:
-                                  - message
-                              required:
-                              - role
-                              - content
-                          description: Initial agent instructions — either a single system prompt string or a list of structured messages
-                        files:
-                          default: []
-                          description: IDs of team files that should be available to the agent
-                          type:
-                          - array
-                          - 'null'
-                          items:
-                            type: string
-                        skills:
-                          default: []
-                          description: IDs of skills (team or system) that should be available to the agent
-                          type:
-                          - array
-                          - 'null'
-                          items:
-                            type: string
-                        plugins:
-                          default: []
-                          description: Plugins to load — either a built-in plugin name (e.g. "code-review") or a GitHub URL (e.g. "https://github.com/owner/repo")
-                          type:
-                          - array
-                          - 'null'
-                          items:
-                            type: string
-                        subAgents:
-                          default: []
-                          description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
-                          type:
-                          - array
-                          - 'null'
-                          items:
-                            type: string
-                            format: uuid
-                        options:
-                          description: Optional runtime options controlling how the agent executes
-                          type: object
-                          properties:
-                            browserProvider:
-                              description: Browser infrastructure provider
-                              type: string
-                              enum:
-                              - browserbase
-                              - browser-use
-                            evaluationSchemaId:
-                              description: ID of the evaluation schema to apply to runs of this agent
-                              type: string
-                            benchmarkExpectedOutcomes:
-                              description: Expected outcomes used when running benchmark scenarios
-                              type: array
+                  description: Build configuration. An agent step takes the latest agent schema (legacy v1 agent configs are not accepted); a code step takes a code-step config. Omit it to get the step family's default first build.
+                  anyOf:
+                  - type: object
+                    properties:
+                      version:
+                        type: string
+                        enum:
+                        - v2
+                        description: Schema version discriminator — must be "v2" for the current schema
+                      data:
+                        type: object
+                        properties:
+                          models:
+                            type: object
+                            properties:
+                              agent:
+                                type: object
+                                properties:
+                                  model:
+                                    type: string
+                                    x-extensible-enum:
+                                    - claude-haiku-4-5-20251001
+                                    - claude-haiku-5-5
+                                    - claude-haiku-5-5[1m]
+                                    - claude-sonnet-5
+                                    - claude-sonnet-5[1m]
+                                    - claude-sonnet-5-5
+                                    - claude-sonnet-5-5[1m]
+                                    - claude-opus-5
+                                    - claude-opus-5[1m]
+                                    - claude-opus-5-5
+                                    - claude-opus-5-5[1m]
+                                    - kimi-k3
+                                    - kimi-k3-duvo
+                                    - glm-5.3-flash
+                                    - deepseek-v4.1-flash
+                                    - minimax-m3
+                                    - d1-max
+                                    - duvo-1-max
+                                    - duvo-1-max-sonnet-1m
+                                    - duvo-1-max-sonnet-4.5
+                                    - duvo-1-max-sonnet-4.5-1m
+                                    - duvo-1-max-opus
+                                    - duvo-1-max-opus-4.5
+                                    - gpt-4.1
+                                    - gpt-4o
+                                    - gpt-4o-mini
+                                    - gpt-5
+                                    - gpt-5.1
+                                    - claude-sonnet-4-20250514
+                                    - claude-sonnet-4-20250514[1m]
+                                    - claude-sonnet-4-5-20250929
+                                    - claude-sonnet-4-5-20250929[1m]
+                                    - claude-sonnet-4-6
+                                    - claude-sonnet-4-6[1m]
+                                    - claude-opus-4-1-20250805
+                                    - claude-opus-4-5-20251101
+                                    - claude-opus-4-6
+                                    - claude-opus-4-6[1m]
+                                    - claude-opus-4-7
+                                    - claude-opus-4-7[1m]
+                                    - claude-opus-4-8
+                                    - claude-opus-4-8[1m]
+                                    - glm-5.2
+                                    - qwen3.6-27b
+                                    - qwen3.8-max
+                                    - deepseek-v4-flash
+                                    description: Model identifier used for the primary agent loop (Claude, or an OSS model when the team's oss_models flag — or oss_models_public for the public subset — is enabled)
+                                required:
+                                - model
+                                description: Primary agent model configuration
+                              browsing:
+                                type: object
+                                properties:
+                                  provider:
+                                    type: string
+                                    enum:
+                                    - google
+                                    - anthropic
+                                    description: Provider backing the browsing/computer-use model
+                                  model:
+                                    type: string
+                                    enum:
+                                    - gemini-2.5-pro
+                                    - gemini-2.5-flash
+                                    - gemini-3-pro-preview
+                                    - claude-haiku-4-5
+                                    - claude-sonnet-4-5
+                                    - claude-opus-4-1
+                                    description: Model identifier for the browsing provider
+                                required:
+                                - provider
+                                - model
+                                description: Browsing/computer-use model configuration
+                            required:
+                            - agent
+                            - browsing
+                            description: Model configuration for each capability the agent uses
+                          input:
+                            anyOf:
+                            - type: string
+                            - type: array
                               items:
                                 type: object
                                 properties:
-                                  description:
+                                  role:
                                     type: string
-                                    description: Human-readable description of the expected outcome
-                                  criteria:
-                                    type: string
-                                    description: Pass/fail criteria used to evaluate the outcome
+                                    enum:
+                                    - system
+                                    - user
+                                    - assistant
+                                  content:
+                                    anyOf:
+                                    - type: string
+                                    - type: array
+                                      items:
+                                        anyOf:
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              enum:
+                                              - input_text
+                                            text:
+                                              type: string
+                                          required:
+                                          - type
+                                          - text
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              enum:
+                                              - input_image
+                                            detail:
+                                              type:
+                                              - string
+                                              - 'null'
+                                              enum:
+                                              - low
+                                              - high
+                                              - auto
+                                            file_id:
+                                              type:
+                                              - string
+                                              - 'null'
+                                            url:
+                                              type:
+                                              - string
+                                              - 'null'
+                                          required:
+                                          - type
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              enum:
+                                              - input_file
+                                            file_id:
+                                              type: string
+                                          required:
+                                          - type
+                                          - file_id
+                                  type:
+                                    type:
+                                    - string
+                                    - 'null'
+                                    enum:
+                                    - message
                                 required:
-                                - description
-                                - criteria
-                          additionalProperties: {}
-                      required:
-                      - models
-                      - input
-                      description: Agent configuration payload
-                  required:
-                  - version
-                  - data
+                                - role
+                                - content
+                            description: Initial agent instructions — either a single system prompt string or a list of structured messages
+                          files:
+                            default: []
+                            description: Team files that should be available to the agent, each given as the relative file path returned in the `path` field of `GET /v2/teams/{teamId}/files` (for example `report.md` or `folder/doc.md`) — not the `id` field, which is a GCS object identifier.
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: string
+                          skills:
+                            default: []
+                            description: IDs of skills (team or system) that should be available to the agent
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: string
+                          plugins:
+                            default: []
+                            description: Plugins to load — either a built-in plugin name (e.g. "code-review") or a GitHub URL (e.g. "https://github.com/owner/repo")
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: string
+                          subAgents:
+                            default: []
+                            description: Retired — Sub-Assignments was removed. Accepted for backwards compatibility and ignored.
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: string
+                              format: uuid
+                          options:
+                            description: Optional runtime options controlling how the agent executes
+                            type: object
+                            properties:
+                              browserProvider:
+                                description: Browser infrastructure provider
+                                type: string
+                                enum:
+                                - browserbase
+                                - browser-use
+                              evaluationSchemaId:
+                                description: ID of the evaluation schema to apply to runs of this agent
+                                type: string
+                              benchmarkExpectedOutcomes:
+                                description: Expected outcomes used when running benchmark scenarios
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    description:
+                                      type: string
+                                      description: Human-readable description of the expected outcome
+                                    criteria:
+                                      type: string
+                                      description: Pass/fail criteria used to evaluate the outcome
+                                  required:
+                                  - description
+                                  - criteria
+                              supervisedMode:
+                                description: 'Run the agent under Duvo''s permission classifier: every tool call is classified as allow/deny/ask, with ''ask'' routed to human-in-the-loop approval. Mutually exclusive with browsing and computer-use connections.'
+                                type: boolean
+                            additionalProperties: {}
+                        required:
+                        - models
+                        - input
+                        description: Agent configuration payload
+                    required:
+                    - version
+                    - data
+                  - type: object
+                    properties:
+                      version:
+                        type: string
+                        enum:
+                        - v1
+                        description: Schema version discriminator — must be "v1" for the current code-step schema
+                      data:
+                        type: object
+                        properties:
+                          language:
+                            type: string
+                            enum:
+                            - python
+                            description: Language the step's program is written in
+                          source:
+                            oneOf:
+                            - type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                  - inline
+                                code:
+                                  type: string
+                                  minLength: 1
+                                  description: Program held in the build config. Written to `main.py` and run with `python main.py`.
+                              required:
+                              - kind
+                              - code
+                            - type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                  - files
+                                startCommand:
+                                  type: string
+                                  minLength: 1
+                                  maxLength: 2000
+                                  description: Command run from the root of the step's file system, e.g. "python main.py".
+                                bundle:
+                                  description: The program's files, as a content-addressed manifest
+                                  type: object
+                                  properties:
+                                    bucket:
+                                      type: string
+                                      minLength: 1
+                                      description: GCS bucket the bundle's blobs are stored in
+                                    files:
+                                      maxItems: 200
+                                      type: array
+                                      items:
+                                        type: object
+                                        properties:
+                                          path:
+                                            type: string
+                                            minLength: 1
+                                            description: Path the file is materialised at, relative to the work dir
+                                          sha256:
+                                            type: string
+                                            minLength: 64
+                                            maxLength: 64
+                                            pattern: ^[0-9a-f]{64}$
+                                            description: Digest of the file's bytes, and the key its blob is stored at
+                                          sizeBytes:
+                                            type: integer
+                                            minimum: 0
+                                            maximum: 131072
+                                            description: UTF-8 byte length of the file's contents
+                                        required:
+                                        - path
+                                        - sha256
+                                        - sizeBytes
+                                      description: The program's files, one manifest entry each
+                                  required:
+                                  - bucket
+                                  - files
+                              required:
+                              - kind
+                              - startCommand
+                            description: Where the step's program comes from
+                          files:
+                            default: []
+                            description: Team file paths this step can read at run time
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: string
+                          timeoutMs:
+                            default: 600000
+                            description: Wall-clock budget for one execution of the step
+                            type: integer
+                            maximum: 3600000
+                          handoverRequired:
+                            default: false
+                            description: When the step declares handover options, whether a run that exits cleanly without requesting one fails. Ignored when the step declares no options.
+                            type: boolean
+                          maxConcurrency:
+                            description: Most runs of this step that may be in flight at once on one queue, on top of the queue's own concurrency. Absent means only the queue's limit applies. Every claim enforces it; only cases handed to the step (handover, postpone, reprocess) are also kept out of the queue's free slots while the step is full. Cases a trigger or a revision route sends straight to a capped step can still take queue slots and wait there, delaying other steps on the same queue.
+                            type: integer
+                            maximum: 1000
+                        required:
+                        - language
+                        - source
+                        description: Code step configuration payload
+                    required:
+                    - version
+                    - data
                 handover_target_ids:
-                  description: Agent IDs that this agent can hand work off to
+                  description: Agent IDs that this agent can hand work off to. Omit to inherit the source build's targets when the AOP has no agent mentions and handover_to is not sent; an empty list clears them.
                   type: array
                   items:
                     type: string
                     format: uuid
+                handover_to:
+                  description: The single agent or code step to run after this one completes ("Handover to"). Mutually exclusive with handover_target_ids.
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
+                handover_options:
+                  description: Code steps only. The targets the program may request, and whether it must. Null clears them; omit to inherit the source build's. Mutually exclusive with handover_to.
+                  type:
+                  - object
+                  - 'null'
+                  properties:
+                    target_agent_ids:
+                      minItems: 1
+                      type: array
+                      items:
+                        type: string
+                        format: uuid
+                      description: Steps in the same automation this code step's program may request
+                    required:
+                      type: boolean
+                      description: When true, a run that exits cleanly without requesting a handover fails
+                  required:
+                  - target_agent_ids
+                  - required
                 source_build_id:
-                  description: Build ID to copy integrations and queue links from
+                  description: Build ID to copy integrations and queue links from. A numbered revision copied this way is recorded as the new build's parent.
                   type: string
+                  format: uuid
+                selected_automation_revision_id:
+                  description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
+                  type:
+                  - string
+                  - 'null'
                   format: uuid
               required:
               - name
@@ -305,6 +486,125 @@ paths:
                         - 'null'
                       config:
                         anyOf:
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                              - v1
+                              description: Schema version discriminator — must be "v1" for the current code-step schema
+                            data:
+                              type: object
+                              properties:
+                                language:
+                                  type: string
+                                  enum:
+                                  - python
+                                  description: Language the step's program is written in
+                                source:
+                                  oneOf:
+                                  - type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                        enum:
+                                        - inline
+                                      code:
+                                        type: string
+                                        minLength: 1
+                                        description: Program held in the build config. Written to `main.py` and run with `python main.py`.
+                                    required:
+                                    - kind
+                                    - code
+                                    additionalProperties: false
+                                  - type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                        enum:
+                                        - files
+                                      startCommand:
+                                        type: string
+                                        minLength: 1
+                                        maxLength: 2000
+                                        description: Command run from the root of the step's file system, e.g. "python main.py".
+                                      bundle:
+                                        description: The program's files, as a content-addressed manifest
+                                        type: object
+                                        properties:
+                                          bucket:
+                                            type: string
+                                            minLength: 1
+                                            description: GCS bucket the bundle's blobs are stored in
+                                          files:
+                                            maxItems: 200
+                                            type: array
+                                            items:
+                                              type: object
+                                              properties:
+                                                path:
+                                                  type: string
+                                                  minLength: 1
+                                                  description: Path the file is materialised at, relative to the work dir
+                                                sha256:
+                                                  type: string
+                                                  minLength: 64
+                                                  maxLength: 64
+                                                  pattern: ^[0-9a-f]{64}$
+                                                  description: Digest of the file's bytes, and the key its blob is stored at
+                                                sizeBytes:
+                                                  type: integer
+                                                  minimum: 0
+                                                  maximum: 131072
+                                                  description: UTF-8 byte length of the file's contents
+                                              required:
+                                              - path
+                                              - sha256
+                                              - sizeBytes
+                                              additionalProperties: false
+                                            description: The program's files, one manifest entry each
+                                        required:
+                                        - bucket
+                                        - files
+                                        additionalProperties: false
+                                    required:
+                                    - kind
+                                    - startCommand
+                                    additionalProperties: false
+                                  description: Where the step's program comes from
+                                files:
+                                  default: []
+                                  description: Team file paths this step can read at run time
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                                timeoutMs:
+                                  default: 600000
+                                  description: Wall-clock budget for one execution of the step
+                                  type: integer
+                                  maximum: 3600000
+                                handoverRequired:
+                                  default: false
+                                  description: When the step declares handover options, whether a run that exits cleanly without requesting one fails. Ignored when the step declares no options.
+                                  type: boolean
+                                maxConcurrency:
+                                  description: Most runs of this step that may be in flight at once on one queue, on top of the queue's own concurrency. Absent means only the queue's limit applies. Every claim enforces it; only cases handed to the step (handover, postpone, reprocess) are also kept out of the queue's free slots while the step is full. Cases a trigger or a revision route sends straight to a capped step can still take queue slots and wait there, delaying other steps on the same queue.
+                                  type: integer
+                                  maximum: 1000
+                              required:
+                              - language
+                              - source
+                              - files
+                              - timeoutMs
+                              - handoverRequired
+                              additionalProperties: false
+                              description: Code step configuration payload
+                          required:
+                          - version
+                          - data
+                          additionalProperties: false
                         - type: object
                           properties:
                             version:
@@ -485,11 +785,23 @@ paths:
                                       properties:
                                         model:
                                           type: string
-                                          enum:
+                                          x-extensible-enum:
+                                          - claude-haiku-4-5-20251001
+                                          - claude-haiku-5-5
+                                          - claude-haiku-5-5[1m]
                                           - claude-sonnet-5
                                           - claude-sonnet-5[1m]
-                                          - claude-opus-4-8
-                                          - claude-opus-4-8[1m]
+                                          - claude-sonnet-5-5
+                                          - claude-sonnet-5-5[1m]
+                                          - claude-opus-5
+                                          - claude-opus-5[1m]
+                                          - claude-opus-5-5
+                                          - claude-opus-5-5[1m]
+                                          - kimi-k3
+                                          - kimi-k3-duvo
+                                          - glm-5.3-flash
+                                          - deepseek-v4.1-flash
+                                          - minimax-m3
                                           - d1-max
                                           - duvo-1-max
                                           - duvo-1-max-sonnet-1m
@@ -514,11 +826,17 @@ paths:
                                           - claude-opus-4-6[1m]
                                           - claude-opus-4-7
                                           - claude-opus-4-7[1m]
-                                          description: Claude model identifier used for the primary agent loop
+                                          - claude-opus-4-8
+                                          - claude-opus-4-8[1m]
+                                          - glm-5.2
+                                          - qwen3.6-27b
+                                          - qwen3.8-max
+                                          - deepseek-v4-flash
+                                          description: Model identifier used for the primary agent loop (Claude, or an OSS model when the team's oss_models flag — or oss_models_public for the public subset — is enabled)
                                       required:
                                       - model
                                       additionalProperties: false
-                                      description: Primary Claude agent model configuration
+                                      description: Primary agent model configuration
                                     browsing:
                                       type: object
                                       properties:
@@ -629,7 +947,7 @@ paths:
                                   description: Initial agent instructions — either a single system prompt string or a list of structured messages
                                 files:
                                   default: []
-                                  description: IDs of team files that should be available to the agent
+                                  description: Team files that should be available to the agent, each given as the relative file path returned in the `path` field of `GET /v2/teams/{teamId}/files` (for example `report.md` or `folder/doc.md`) — not the `id` field, which is a GCS object identifier.
                                   type:
                                   - array
                                   - 'null'
@@ -653,7 +971,7 @@ paths:
                                     type: string
                                 subAgents:
                                   default: []
-                                  description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
+                                  description: Retired — Sub-Assignments was removed. Accepted for backwards compatibility and ignored.
                                   type:
                                   - array
                                   - 'null'
@@ -689,6 +1007,9 @@ paths:
                                         - description
                                         - criteria
                                         additionalProperties: false
+                                    supervisedMode:
+                                      description: 'Run the agent under Duvo''s permission classifier: every tool call is classified as allow/deny/ask, with ''ask'' routed to human-in-the-loop approval. Mutually exclusive with browsing and computer-use connections.'
+                                      type: boolean
                                   additionalProperties: {}
                               required:
                               - models
@@ -819,6 +1140,56 @@ paths:
                               type:
                               - string
                               - 'null'
+                            pending_change:
+                              type:
+                              - object
+                              - 'null'
+                              properties:
+                                automation_revision_id:
+                                  type: string
+                                enabled:
+                                  type:
+                                  - boolean
+                                  - 'null'
+                                cron:
+                                  type:
+                                  - string
+                                  - 'null'
+                                frequency:
+                                  type:
+                                  - string
+                                  - 'null'
+                                time:
+                                  type:
+                                  - string
+                                  - 'null'
+                                timezone:
+                                  type:
+                                  - string
+                                  - 'null'
+                                day:
+                                  type:
+                                  - string
+                                  - 'null'
+                                day_of_month:
+                                  type:
+                                  - number
+                                  - 'null'
+                                task:
+                                  type:
+                                  - string
+                                  - 'null'
+                              required:
+                              - automation_revision_id
+                              - enabled
+                              - cron
+                              - frequency
+                              - time
+                              - timezone
+                              - day
+                              - day_of_month
+                              - task
+                              additionalProperties: false
                           required:
                           - id
                           - build_id
@@ -841,6 +1212,25 @@ paths:
                           - last_missing_connection_failure_at
                           - created_at
                           - updated_at
+                          additionalProperties: false
+                      handover_to:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      handover_options:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
                           additionalProperties: false
                     required:
                     - id
@@ -879,6 +1269,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -892,6 +1284,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -907,6 +1301,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -920,6 +1316,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -935,6 +1333,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -948,6 +1348,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -976,6 +1378,16 @@ paths:
         name: offset
         required: false
         description: Number of revisions to skip
+      - schema:
+          type: string
+          enum:
+          - draft
+          - live
+          - historic
+        in: query
+        name: status
+        required: false
+        description: Only revisions with this status. `live` returns the active revision, wherever it falls in the history.
       - schema:
           type: string
           format: uuid
@@ -1019,6 +1431,125 @@ paths:
                           - 'null'
                         config:
                           anyOf:
+                          - type: object
+                            properties:
+                              version:
+                                type: string
+                                enum:
+                                - v1
+                                description: Schema version discriminator — must be "v1" for the current code-step schema
+                              data:
+                                type: object
+                                properties:
+                                  language:
+                                    type: string
+                                    enum:
+                                    - python
+                                    description: Language the step's program is written in
+                                  source:
+                                    oneOf:
+                                    - type: object
+                                      properties:
+                                        kind:
+                                          type: string
+                                          enum:
+                                          - inline
+                                        code:
+                                          type: string
+                                          minLength: 1
+                                          description: Program held in the build config. Written to `main.py` and run with `python main.py`.
+                                      required:
+                                      - kind
+                                      - code
+                                      additionalProperties: false
+                                    - type: object
+                                      properties:
+                                        kind:
+                                          type: string
+                                          enum:
+                                          - files
+                                        startCommand:
+                                          type: string
+                                          minLength: 1
+                                          maxLength: 2000
+                                          description: Command run from the root of the step's file system, e.g. "python main.py".
+                                        bundle:
+                                          description: The program's files, as a content-addressed manifest
+                                          type: object
+                                          properties:
+                                            bucket:
+                                              type: string
+                                              minLength: 1
+                                              description: GCS bucket the bundle's blobs are stored in
+                                            files:
+                                              maxItems: 200
+                                              type: array
+                                              items:
+                                                type: object
+                                                properties:
+                                                  path:
+                                                    type: string
+                                                    minLength: 1
+                                                    description: Path the file is materialised at, relative to the work dir
+                                                  sha256:
+                                                    type: string
+                                                    minLength: 64
+                                                    maxLength: 64
+                                                    pattern: ^[0-9a-f]{64}$
+                                                    description: Digest of the file's bytes, and the key its blob is stored at
+                                                  sizeBytes:
+                                                    type: integer
+                                                    minimum: 0
+                                                    maximum: 131072
+                                                    description: UTF-8 byte length of the file's contents
+                                                required:
+                                                - path
+                                                - sha256
+                                                - sizeBytes
+                                                additionalProperties: false
+                                              description: The program's files, one manifest entry each
+                                          required:
+                                          - bucket
+                                          - files
+                                          additionalProperties: false
+                                      required:
+                                      - kind
+                                      - startCommand
+                                      additionalProperties: false
+                                    description: Where the step's program comes from
+                                  files:
+                                    default: []
+                                    description: Team file paths this step can read at run time
+                                    type:
+                                    - array
+                                    - 'null'
+                                    items:
+                                      type: string
+                                  timeoutMs:
+                                    default: 600000
+                                    description: Wall-clock budget for one execution of the step
+                                    type: integer
+                                    maximum: 3600000
+                                  handoverRequired:
+                                    default: false
+                                    description: When the step declares handover options, whether a run that exits cleanly without requesting one fails. Ignored when the step declares no options.
+                                    type: boolean
+                                  maxConcurrency:
+                                    description: Most runs of this step that may be in flight at once on one queue, on top of the queue's own concurrency. Absent means only the queue's limit applies. Every claim enforces it; only cases handed to the step (handover, postpone, reprocess) are also kept out of the queue's free slots while the step is full. Cases a trigger or a revision route sends straight to a capped step can still take queue slots and wait there, delaying other steps on the same queue.
+                                    type: integer
+                                    maximum: 1000
+                                required:
+                                - language
+                                - source
+                                - files
+                                - timeoutMs
+                                - handoverRequired
+                                additionalProperties: false
+                                description: Code step configuration payload
+                            required:
+                            - version
+                            - data
+                            additionalProperties: false
                           - type: object
                             properties:
                               version:
@@ -1199,11 +1730,23 @@ paths:
                                         properties:
                                           model:
                                             type: string
-                                            enum:
+                                            x-extensible-enum:
+                                            - claude-haiku-4-5-20251001
+                                            - claude-haiku-5-5
+                                            - claude-haiku-5-5[1m]
                                             - claude-sonnet-5
                                             - claude-sonnet-5[1m]
-                                            - claude-opus-4-8
-                                            - claude-opus-4-8[1m]
+                                            - claude-sonnet-5-5
+                                            - claude-sonnet-5-5[1m]
+                                            - claude-opus-5
+                                            - claude-opus-5[1m]
+                                            - claude-opus-5-5
+                                            - claude-opus-5-5[1m]
+                                            - kimi-k3
+                                            - kimi-k3-duvo
+                                            - glm-5.3-flash
+                                            - deepseek-v4.1-flash
+                                            - minimax-m3
                                             - d1-max
                                             - duvo-1-max
                                             - duvo-1-max-sonnet-1m
@@ -1228,11 +1771,17 @@ paths:
                                             - claude-opus-4-6[1m]
                                             - claude-opus-4-7
                                             - claude-opus-4-7[1m]
-                                            description: Claude model identifier used for the primary agent loop
+                                            - claude-opus-4-8
+                                            - claude-opus-4-8[1m]
+                                            - glm-5.2
+                                            - qwen3.6-27b
+                                            - qwen3.8-max
+                                            - deepseek-v4-flash
+                                            description: Model identifier used for the primary agent loop (Claude, or an OSS model when the team's oss_models flag — or oss_models_public for the public subset — is enabled)
                                         required:
                                         - model
                                         additionalProperties: false
-                                        description: Primary Claude agent model configuration
+                                        description: Primary agent model configuration
                                       browsing:
                                         type: object
                                         properties:
@@ -1343,7 +1892,7 @@ paths:
                                     description: Initial agent instructions — either a single system prompt string or a list of structured messages
                                   files:
                                     default: []
-                                    description: IDs of team files that should be available to the agent
+                                    description: Team files that should be available to the agent, each given as the relative file path returned in the `path` field of `GET /v2/teams/{teamId}/files` (for example `report.md` or `folder/doc.md`) — not the `id` field, which is a GCS object identifier.
                                     type:
                                     - array
                                     - 'null'
@@ -1367,7 +1916,7 @@ paths:
                                       type: string
                                   subAgents:
                                     default: []
-                                    description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
+                                    description: Retired — Sub-Assignments was removed. Accepted for backwards compatibility and ignored.
                                     type:
                                     - array
                                     - 'null'
@@ -1403,6 +1952,9 @@ paths:
                                           - description
                                           - criteria
                                           additionalProperties: false
+                                      supervisedMode:
+                                        description: 'Run the agent under Duvo''s permission classifier: every tool call is classified as allow/deny/ask, with ''ask'' routed to human-in-the-loop approval. Mutually exclusive with browsing and computer-use connections.'
+                                        type: boolean
                                     additionalProperties: {}
                                 required:
                                 - models
@@ -1533,6 +2085,56 @@ paths:
                                 type:
                                 - string
                                 - 'null'
+                              pending_change:
+                                type:
+                                - object
+                                - 'null'
+                                properties:
+                                  automation_revision_id:
+                                    type: string
+                                  enabled:
+                                    type:
+                                    - boolean
+                                    - 'null'
+                                  cron:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  frequency:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  time:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  timezone:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  day:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  day_of_month:
+                                    type:
+                                    - number
+                                    - 'null'
+                                  task:
+                                    type:
+                                    - string
+                                    - 'null'
+                                required:
+                                - automation_revision_id
+                                - enabled
+                                - cron
+                                - frequency
+                                - time
+                                - timezone
+                                - day
+                                - day_of_month
+                                - task
+                                additionalProperties: false
                             required:
                             - id
                             - build_id
@@ -1555,6 +2157,25 @@ paths:
                             - last_missing_connection_failure_at
                             - created_at
                             - updated_at
+                            additionalProperties: false
+                        handover_to:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        handover_options:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              name:
+                                type: string
+                            required:
+                            - id
+                            - name
                             additionalProperties: false
                       required:
                       - id
@@ -1598,6 +2219,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1611,6 +2234,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1626,6 +2251,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1639,6 +2266,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1705,688 +2334,119 @@ paths:
                               type: string
                               enum:
                               - v1
+                              description: Schema version discriminator — must be "v1" for the current code-step schema
                             data:
                               type: object
                               properties:
-                                model:
+                                language:
                                   type: string
-                                temperature:
-                                  type:
-                                  - number
-                                  - 'null'
-                                  minimum: 0
-                                  maximum: 2
-                                max_output_tokens:
-                                  type:
-                                  - number
-                                  - 'null'
-                                  exclusiveMinimum: 0
-                                top_p:
-                                  type:
-                                  - number
-                                  - 'null'
-                                  minimum: 0
-                                  maximum: 1
-                                store:
-                                  type:
-                                  - boolean
-                                  - 'null'
-                                tools: {}
-                                input:
-                                  anyOf:
-                                  - type: string
-                                  - type: array
-                                    items:
-                                      type: object
-                                      properties:
-                                        role:
-                                          type: string
-                                          enum:
-                                          - system
-                                          - user
-                                          - assistant
-                                        content:
-                                          anyOf:
-                                          - type: string
-                                          - type: array
-                                            items:
-                                              anyOf:
-                                              - type: object
-                                                properties:
-                                                  type:
-                                                    type: string
-                                                    enum:
-                                                    - input_text
-                                                  text:
-                                                    type: string
-                                                required:
-                                                - type
-                                                - text
-                                                additionalProperties: false
-                                              - type: object
-                                                properties:
-                                                  type:
-                                                    type: string
-                                                    enum:
-                                                    - input_image
-                                                  detail:
-                                                    type:
-                                                    - string
-                                                    - 'null'
-                                                    enum:
-                                                    - low
-                                                    - high
-                                                    - auto
-                                                  file_id:
-                                                    type:
-                                                    - string
-                                                    - 'null'
-                                                  url:
-                                                    type:
-                                                    - string
-                                                    - 'null'
-                                                required:
-                                                - type
-                                                additionalProperties: false
-                                              - type: object
-                                                properties:
-                                                  type:
-                                                    type: string
-                                                    enum:
-                                                    - input_file
-                                                  file_id:
-                                                    type: string
-                                                required:
-                                                - type
-                                                - file_id
-                                                additionalProperties: false
-                                        type:
-                                          type:
-                                          - string
-                                          - 'null'
-                                          enum:
-                                          - message
-                                      required:
-                                      - role
-                                      - content
-                                      additionalProperties: false
-                                text:
-                                  type:
-                                  - object
-                                  - 'null'
-                                  properties:
-                                    format:
-                                      anyOf:
-                                      - type: object
-                                        properties:
-                                          type:
-                                            type: string
-                                            enum:
-                                            - text
-                                        required:
-                                        - type
-                                        additionalProperties: false
-                                      - type: object
-                                        properties:
-                                          type:
-                                            type: string
-                                            enum:
-                                            - json_object
-                                        required:
-                                        - type
-                                        additionalProperties: false
-                                  additionalProperties: false
-                                files:
-                                  default: []
-                                  type:
-                                  - array
-                                  - 'null'
-                                  items:
-                                    type: string
-                                skills:
-                                  default: []
-                                  type:
-                                  - array
-                                  - 'null'
-                                  items:
-                                    type: string
-                              required:
-                              - model
-                              - tools
-                              - input
-                              - files
-                              - skills
-                              additionalProperties: false
-                          required:
-                          - version
-                          - data
-                          additionalProperties: false
-                        - type: object
-                          properties:
-                            version:
-                              type: string
-                              enum:
-                              - v2
-                              description: Schema version discriminator — must be "v2" for the current schema
-                            data:
-                              type: object
-                              properties:
-                                models:
-                                  type: object
-                                  properties:
-                                    agent:
-                                      type: object
-                                      properties:
-                                        model:
-                                          type: string
-                                          enum:
-                                          - claude-sonnet-5
-                                          - claude-sonnet-5[1m]
-                                          - claude-opus-4-8
-                                          - claude-opus-4-8[1m]
-                                          - d1-max
-                                          - duvo-1-max
-                                          - duvo-1-max-sonnet-1m
-                                          - duvo-1-max-sonnet-4.5
-                                          - duvo-1-max-sonnet-4.5-1m
-                                          - duvo-1-max-opus
-                                          - duvo-1-max-opus-4.5
-                                          - gpt-4.1
-                                          - gpt-4o
-                                          - gpt-4o-mini
-                                          - gpt-5
-                                          - gpt-5.1
-                                          - claude-sonnet-4-20250514
-                                          - claude-sonnet-4-20250514[1m]
-                                          - claude-sonnet-4-5-20250929
-                                          - claude-sonnet-4-5-20250929[1m]
-                                          - claude-sonnet-4-6
-                                          - claude-sonnet-4-6[1m]
-                                          - claude-opus-4-1-20250805
-                                          - claude-opus-4-5-20251101
-                                          - claude-opus-4-6
-                                          - claude-opus-4-6[1m]
-                                          - claude-opus-4-7
-                                          - claude-opus-4-7[1m]
-                                          description: Claude model identifier used for the primary agent loop
-                                      required:
-                                      - model
-                                      additionalProperties: false
-                                      description: Primary Claude agent model configuration
-                                    browsing:
-                                      type: object
-                                      properties:
-                                        provider:
-                                          type: string
-                                          enum:
-                                          - google
-                                          - anthropic
-                                          description: Provider backing the browsing/computer-use model
-                                        model:
-                                          type: string
-                                          enum:
-                                          - gemini-2.5-pro
-                                          - gemini-2.5-flash
-                                          - gemini-3-pro-preview
-                                          - claude-haiku-4-5
-                                          - claude-sonnet-4-5
-                                          - claude-opus-4-1
-                                          description: Model identifier for the browsing provider
-                                      required:
-                                      - provider
-                                      - model
-                                      additionalProperties: false
-                                      description: Browsing/computer-use model configuration
-                                  required:
-                                  - agent
-                                  - browsing
-                                  additionalProperties: false
-                                  description: Model configuration for each capability the agent uses
-                                input:
-                                  anyOf:
-                                  - type: string
-                                  - type: array
-                                    items:
-                                      type: object
-                                      properties:
-                                        role:
-                                          type: string
-                                          enum:
-                                          - system
-                                          - user
-                                          - assistant
-                                        content:
-                                          anyOf:
-                                          - type: string
-                                          - type: array
-                                            items:
-                                              anyOf:
-                                              - type: object
-                                                properties:
-                                                  type:
-                                                    type: string
-                                                    enum:
-                                                    - input_text
-                                                  text:
-                                                    type: string
-                                                required:
-                                                - type
-                                                - text
-                                                additionalProperties: false
-                                              - type: object
-                                                properties:
-                                                  type:
-                                                    type: string
-                                                    enum:
-                                                    - input_image
-                                                  detail:
-                                                    type:
-                                                    - string
-                                                    - 'null'
-                                                    enum:
-                                                    - low
-                                                    - high
-                                                    - auto
-                                                  file_id:
-                                                    type:
-                                                    - string
-                                                    - 'null'
-                                                  url:
-                                                    type:
-                                                    - string
-                                                    - 'null'
-                                                required:
-                                                - type
-                                                additionalProperties: false
-                                              - type: object
-                                                properties:
-                                                  type:
-                                                    type: string
-                                                    enum:
-                                                    - input_file
-                                                  file_id:
-                                                    type: string
-                                                required:
-                                                - type
-                                                - file_id
-                                                additionalProperties: false
-                                        type:
-                                          type:
-                                          - string
-                                          - 'null'
-                                          enum:
-                                          - message
-                                      required:
-                                      - role
-                                      - content
-                                      additionalProperties: false
-                                  description: Initial agent instructions — either a single system prompt string or a list of structured messages
-                                files:
-                                  default: []
-                                  description: IDs of team files that should be available to the agent
-                                  type:
-                                  - array
-                                  - 'null'
-                                  items:
-                                    type: string
-                                skills:
-                                  default: []
-                                  description: IDs of skills (team or system) that should be available to the agent
-                                  type:
-                                  - array
-                                  - 'null'
-                                  items:
-                                    type: string
-                                plugins:
-                                  default: []
-                                  description: Plugins to load — either a built-in plugin name (e.g. "code-review") or a GitHub URL (e.g. "https://github.com/owner/repo")
-                                  type:
-                                  - array
-                                  - 'null'
-                                  items:
-                                    type: string
-                                subAgents:
-                                  default: []
-                                  description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
-                                  type:
-                                  - array
-                                  - 'null'
-                                  items:
-                                    type: string
-                                    format: uuid
-                                options:
-                                  description: Optional runtime options controlling how the agent executes
-                                  type: object
-                                  properties:
-                                    browserProvider:
-                                      description: Browser infrastructure provider
-                                      type: string
-                                      enum:
-                                      - browserbase
-                                      - browser-use
-                                    evaluationSchemaId:
-                                      description: ID of the evaluation schema to apply to runs of this agent
-                                      type: string
-                                    benchmarkExpectedOutcomes:
-                                      description: Expected outcomes used when running benchmark scenarios
-                                      type: array
-                                      items:
+                                  enum:
+                                  - python
+                                  description: Language the step's program is written in
+                                source:
+                                  oneOf:
+                                  - type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                        enum:
+                                        - inline
+                                      code:
+                                        type: string
+                                        minLength: 1
+                                        description: Program held in the build config. Written to `main.py` and run with `python main.py`.
+                                    required:
+                                    - kind
+                                    - code
+                                    additionalProperties: false
+                                  - type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                        enum:
+                                        - files
+                                      startCommand:
+                                        type: string
+                                        minLength: 1
+                                        maxLength: 2000
+                                        description: Command run from the root of the step's file system, e.g. "python main.py".
+                                      bundle:
+                                        description: The program's files, as a content-addressed manifest
                                         type: object
                                         properties:
-                                          description:
+                                          bucket:
                                             type: string
-                                            description: Human-readable description of the expected outcome
-                                          criteria:
-                                            type: string
-                                            description: Pass/fail criteria used to evaluate the outcome
+                                            minLength: 1
+                                            description: GCS bucket the bundle's blobs are stored in
+                                          files:
+                                            maxItems: 200
+                                            type: array
+                                            items:
+                                              type: object
+                                              properties:
+                                                path:
+                                                  type: string
+                                                  minLength: 1
+                                                  description: Path the file is materialised at, relative to the work dir
+                                                sha256:
+                                                  type: string
+                                                  minLength: 64
+                                                  maxLength: 64
+                                                  pattern: ^[0-9a-f]{64}$
+                                                  description: Digest of the file's bytes, and the key its blob is stored at
+                                                sizeBytes:
+                                                  type: integer
+                                                  minimum: 0
+                                                  maximum: 131072
+                                                  description: UTF-8 byte length of the file's contents
+                                              required:
+                                              - path
+                                              - sha256
+                                              - sizeBytes
+                                              additionalProperties: false
+                                            description: The program's files, one manifest entry each
                                         required:
-                                        - description
-                                        - criteria
+                                        - bucket
+                                        - files
                                         additionalProperties: false
-                                  additionalProperties: {}
+                                    required:
+                                    - kind
+                                    - startCommand
+                                    additionalProperties: false
+                                  description: Where the step's program comes from
+                                files:
+                                  default: []
+                                  description: Team file paths this step can read at run time
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                                timeoutMs:
+                                  default: 600000
+                                  description: Wall-clock budget for one execution of the step
+                                  type: integer
+                                  maximum: 3600000
+                                handoverRequired:
+                                  default: false
+                                  description: When the step declares handover options, whether a run that exits cleanly without requesting one fails. Ignored when the step declares no options.
+                                  type: boolean
+                                maxConcurrency:
+                                  description: Most runs of this step that may be in flight at once on one queue, on top of the queue's own concurrency. Absent means only the queue's limit applies. Every claim enforces it; only cases handed to the step (handover, postpone, reprocess) are also kept out of the queue's free slots while the step is full. Cases a trigger or a revision route sends straight to a capped step can still take queue slots and wait there, delaying other steps on the same queue.
+                                  type: integer
+                                  maximum: 1000
                               required:
-                              - models
-                              - input
+                              - language
+                              - source
                               - files
-                              - skills
-                              - plugins
-                              - subAgents
+                              - timeoutMs
+                              - handoverRequired
                               additionalProperties: false
-                              description: Agent configuration payload
+                              description: Code step configuration payload
                           required:
                           - version
                           - data
                           additionalProperties: false
-                      status:
-                        type:
-                        - string
-                        - 'null'
-                      revision_number:
-                        type:
-                        - number
-                        - 'null'
-                      parent_build_id:
-                        type:
-                        - string
-                        - 'null'
-                      created_by:
-                        type:
-                        - string
-                        - 'null'
-                      created_by_name:
-                        type:
-                        - string
-                        - 'null'
-                      created_at:
-                        type:
-                        - string
-                        - 'null'
-                      updated_at:
-                        type:
-                        - string
-                        - 'null'
-                      schedules:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                            build_id:
-                              type: string
-                            agent_id:
-                              type: string
-                            user_id:
-                              type: string
-                            enabled:
-                              type: boolean
-                            frequency:
-                              type: string
-                              enum:
-                              - every_5_minutes
-                              - every_15_minutes
-                              - hourly
-                              - daily
-                              - workday
-                              - weekly
-                              - monthly
-                              - custom
-                            time:
-                              type:
-                              - string
-                              - 'null'
-                            timezone:
-                              type: string
-                            day:
-                              type:
-                              - string
-                              - 'null'
-                            day_of_month:
-                              type:
-                              - number
-                              - 'null'
-                            cron:
-                              type:
-                              - string
-                              - 'null'
-                            source:
-                              type:
-                              - string
-                              - 'null'
-                            task:
-                              type:
-                              - string
-                              - 'null'
-                            recurring:
-                              type:
-                              - boolean
-                              - 'null'
-                            auto_disabled_at:
-                              type:
-                              - string
-                              - 'null'
-                            auto_disabled_reason:
-                              type:
-                              - string
-                              - 'null'
-                            consecutive_missing_connection_failures:
-                              type: integer
-                              minimum: 0
-                              maximum: 9007199254740991
-                            first_missing_connection_failure_at:
-                              type:
-                              - string
-                              - 'null'
-                            last_missing_connection_failure_at:
-                              type:
-                              - string
-                              - 'null'
-                            created_at:
-                              type: string
-                            updated_at:
-                              type: string
-                            user_name:
-                              type:
-                              - string
-                              - 'null'
-                            user_email:
-                              type:
-                              - string
-                              - 'null'
-                          required:
-                          - id
-                          - build_id
-                          - agent_id
-                          - user_id
-                          - enabled
-                          - frequency
-                          - time
-                          - timezone
-                          - day
-                          - day_of_month
-                          - cron
-                          - source
-                          - task
-                          - recurring
-                          - auto_disabled_at
-                          - auto_disabled_reason
-                          - consecutive_missing_connection_failures
-                          - first_missing_connection_failure_at
-                          - last_missing_connection_failure_at
-                          - created_at
-                          - updated_at
-                          additionalProperties: false
-                    required:
-                    - id
-                    - copilot_id
-                    - agent_id
-                    - name
-                    - config
-                    - status
-                    - revision_number
-                    - parent_build_id
-                    - created_by
-                    - created_at
-                    - updated_at
-                    additionalProperties: false
-                required:
-                - build
-                additionalProperties: false
-        '400':
-          description: Default Response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                  message:
-                    type: string
-                required:
-                - error
-                additionalProperties: false
-        '401':
-          description: Default Response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                  message:
-                    type: string
-                required:
-                - error
-                additionalProperties: false
-        '404':
-          description: Default Response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                  message:
-                    type: string
-                required:
-                - error
-                additionalProperties: false
-        '500':
-          description: Default Response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                  message:
-                    type: string
-                required:
-                - error
-                additionalProperties: false
-      summary: Get Revision
-  /v2/revisions/{build_id}:
-    patch:
-      operationId: updateRevision
-      tags:
-      - Revisions
-      description: Update a revision's configuration, name, description, or handover targets. Returns the updated revision.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                config:
-                  description: Build configuration object
-                  type: object
-                  additionalProperties: {}
-                handoverTargetIds:
-                  description: Agent IDs that this agent can hand over work to
-                  type: array
-                  items:
-                    type: string
-                    format: uuid
-                revision_name:
-                  description: Optional user-defined name for this revision. Pass null to clear.
-                  type:
-                  - string
-                  - 'null'
-                  minLength: 1
-                  maxLength: 80
-                revision_description:
-                  description: Optional user-defined description for this revision. Pass null to clear.
-                  type:
-                  - string
-                  - 'null'
-                  maxLength: 500
-      parameters:
-      - schema:
-          type: string
-          format: uuid
-        in: path
-        name: build_id
-        required: true
-        description: The build's unique identifier
-      security:
-      - bearerAuth: []
-      responses:
-        '200':
-          description: Default Response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  build:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      copilot_id:
-                        type: string
-                        format: uuid
-                      agent_id:
-                        type: string
-                        format: uuid
-                      name:
-                        type: string
-                      revision_name:
-                        type:
-                        - string
-                        - 'null'
-                      revision_description:
-                        type:
-                        - string
-                        - 'null'
-                      config:
-                        anyOf:
                         - type: object
                           properties:
                             version:
@@ -2567,11 +2627,23 @@ paths:
                                       properties:
                                         model:
                                           type: string
-                                          enum:
+                                          x-extensible-enum:
+                                          - claude-haiku-4-5-20251001
+                                          - claude-haiku-5-5
+                                          - claude-haiku-5-5[1m]
                                           - claude-sonnet-5
                                           - claude-sonnet-5[1m]
-                                          - claude-opus-4-8
-                                          - claude-opus-4-8[1m]
+                                          - claude-sonnet-5-5
+                                          - claude-sonnet-5-5[1m]
+                                          - claude-opus-5
+                                          - claude-opus-5[1m]
+                                          - claude-opus-5-5
+                                          - claude-opus-5-5[1m]
+                                          - kimi-k3
+                                          - kimi-k3-duvo
+                                          - glm-5.3-flash
+                                          - deepseek-v4.1-flash
+                                          - minimax-m3
                                           - d1-max
                                           - duvo-1-max
                                           - duvo-1-max-sonnet-1m
@@ -2596,11 +2668,17 @@ paths:
                                           - claude-opus-4-6[1m]
                                           - claude-opus-4-7
                                           - claude-opus-4-7[1m]
-                                          description: Claude model identifier used for the primary agent loop
+                                          - claude-opus-4-8
+                                          - claude-opus-4-8[1m]
+                                          - glm-5.2
+                                          - qwen3.6-27b
+                                          - qwen3.8-max
+                                          - deepseek-v4-flash
+                                          description: Model identifier used for the primary agent loop (Claude, or an OSS model when the team's oss_models flag — or oss_models_public for the public subset — is enabled)
                                       required:
                                       - model
                                       additionalProperties: false
-                                      description: Primary Claude agent model configuration
+                                      description: Primary agent model configuration
                                     browsing:
                                       type: object
                                       properties:
@@ -2711,7 +2789,7 @@ paths:
                                   description: Initial agent instructions — either a single system prompt string or a list of structured messages
                                 files:
                                   default: []
-                                  description: IDs of team files that should be available to the agent
+                                  description: Team files that should be available to the agent, each given as the relative file path returned in the `path` field of `GET /v2/teams/{teamId}/files` (for example `report.md` or `folder/doc.md`) — not the `id` field, which is a GCS object identifier.
                                   type:
                                   - array
                                   - 'null'
@@ -2735,7 +2813,7 @@ paths:
                                     type: string
                                 subAgents:
                                   default: []
-                                  description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
+                                  description: Retired — Sub-Assignments was removed. Accepted for backwards compatibility and ignored.
                                   type:
                                   - array
                                   - 'null'
@@ -2771,6 +2849,9 @@ paths:
                                         - description
                                         - criteria
                                         additionalProperties: false
+                                    supervisedMode:
+                                      description: 'Run the agent under Duvo''s permission classifier: every tool call is classified as allow/deny/ask, with ''ask'' routed to human-in-the-loop approval. Mutually exclusive with browsing and computer-use connections.'
+                                      type: boolean
                                   additionalProperties: {}
                               required:
                               - models
@@ -2901,6 +2982,56 @@ paths:
                               type:
                               - string
                               - 'null'
+                            pending_change:
+                              type:
+                              - object
+                              - 'null'
+                              properties:
+                                automation_revision_id:
+                                  type: string
+                                enabled:
+                                  type:
+                                  - boolean
+                                  - 'null'
+                                cron:
+                                  type:
+                                  - string
+                                  - 'null'
+                                frequency:
+                                  type:
+                                  - string
+                                  - 'null'
+                                time:
+                                  type:
+                                  - string
+                                  - 'null'
+                                timezone:
+                                  type:
+                                  - string
+                                  - 'null'
+                                day:
+                                  type:
+                                  - string
+                                  - 'null'
+                                day_of_month:
+                                  type:
+                                  - number
+                                  - 'null'
+                                task:
+                                  type:
+                                  - string
+                                  - 'null'
+                              required:
+                              - automation_revision_id
+                              - enabled
+                              - cron
+                              - frequency
+                              - time
+                              - timezone
+                              - day
+                              - day_of_month
+                              - task
+                              additionalProperties: false
                           required:
                           - id
                           - build_id
@@ -2923,6 +3054,961 @@ paths:
                           - last_missing_connection_failure_at
                           - created_at
                           - updated_at
+                          additionalProperties: false
+                      handover_to:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      handover_options:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
+                          additionalProperties: false
+                    required:
+                    - id
+                    - copilot_id
+                    - agent_id
+                    - name
+                    - config
+                    - status
+                    - revision_number
+                    - parent_build_id
+                    - created_by
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                required:
+                - build
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Revision
+  /v2/revisions/{build_id}:
+    patch:
+      operationId: updateRevision
+      tags:
+      - Revisions
+      description: Update a revision's configuration, name, description, or handover targets. Returns the updated revision.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                config:
+                  description: Build configuration object
+                  type: object
+                  additionalProperties: {}
+                handoverTargetIds:
+                  description: Agent IDs that this agent can hand over work to
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                handoverTo:
+                  description: The single agent or code step to run after this one completes ("Handover to"). Null clears it; omit to leave it unchanged. Mutually exclusive with @-mention handovers in the AOP.
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
+                handoverOptions:
+                  description: Code steps only. The targets the program may request, and whether it must. Null clears them; omit to leave unchanged. Mutually exclusive with handoverTo in one request.
+                  type:
+                  - object
+                  - 'null'
+                  properties:
+                    targetAgentIds:
+                      minItems: 1
+                      type: array
+                      items:
+                        type: string
+                        format: uuid
+                      description: Steps in the same automation this code step's program may request
+                    required:
+                      type: boolean
+                      description: When true, a run that exits cleanly without requesting a handover fails
+                  required:
+                  - targetAgentIds
+                  - required
+                revision_name:
+                  description: Optional user-defined name for this revision. Pass null to clear.
+                  type:
+                  - string
+                  - 'null'
+                  minLength: 1
+                  maxLength: 80
+                revision_description:
+                  description: Optional user-defined description for this revision. Pass null to clear.
+                  type:
+                  - string
+                  - 'null'
+                  maxLength: 500
+                selected_automation_revision_id:
+                  description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: The build's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  build:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      copilot_id:
+                        type: string
+                        format: uuid
+                      agent_id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      revision_name:
+                        type:
+                        - string
+                        - 'null'
+                      revision_description:
+                        type:
+                        - string
+                        - 'null'
+                      config:
+                        anyOf:
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                              - v1
+                              description: Schema version discriminator — must be "v1" for the current code-step schema
+                            data:
+                              type: object
+                              properties:
+                                language:
+                                  type: string
+                                  enum:
+                                  - python
+                                  description: Language the step's program is written in
+                                source:
+                                  oneOf:
+                                  - type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                        enum:
+                                        - inline
+                                      code:
+                                        type: string
+                                        minLength: 1
+                                        description: Program held in the build config. Written to `main.py` and run with `python main.py`.
+                                    required:
+                                    - kind
+                                    - code
+                                    additionalProperties: false
+                                  - type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                        enum:
+                                        - files
+                                      startCommand:
+                                        type: string
+                                        minLength: 1
+                                        maxLength: 2000
+                                        description: Command run from the root of the step's file system, e.g. "python main.py".
+                                      bundle:
+                                        description: The program's files, as a content-addressed manifest
+                                        type: object
+                                        properties:
+                                          bucket:
+                                            type: string
+                                            minLength: 1
+                                            description: GCS bucket the bundle's blobs are stored in
+                                          files:
+                                            maxItems: 200
+                                            type: array
+                                            items:
+                                              type: object
+                                              properties:
+                                                path:
+                                                  type: string
+                                                  minLength: 1
+                                                  description: Path the file is materialised at, relative to the work dir
+                                                sha256:
+                                                  type: string
+                                                  minLength: 64
+                                                  maxLength: 64
+                                                  pattern: ^[0-9a-f]{64}$
+                                                  description: Digest of the file's bytes, and the key its blob is stored at
+                                                sizeBytes:
+                                                  type: integer
+                                                  minimum: 0
+                                                  maximum: 131072
+                                                  description: UTF-8 byte length of the file's contents
+                                              required:
+                                              - path
+                                              - sha256
+                                              - sizeBytes
+                                              additionalProperties: false
+                                            description: The program's files, one manifest entry each
+                                        required:
+                                        - bucket
+                                        - files
+                                        additionalProperties: false
+                                    required:
+                                    - kind
+                                    - startCommand
+                                    additionalProperties: false
+                                  description: Where the step's program comes from
+                                files:
+                                  default: []
+                                  description: Team file paths this step can read at run time
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                                timeoutMs:
+                                  default: 600000
+                                  description: Wall-clock budget for one execution of the step
+                                  type: integer
+                                  maximum: 3600000
+                                handoverRequired:
+                                  default: false
+                                  description: When the step declares handover options, whether a run that exits cleanly without requesting one fails. Ignored when the step declares no options.
+                                  type: boolean
+                                maxConcurrency:
+                                  description: Most runs of this step that may be in flight at once on one queue, on top of the queue's own concurrency. Absent means only the queue's limit applies. Every claim enforces it; only cases handed to the step (handover, postpone, reprocess) are also kept out of the queue's free slots while the step is full. Cases a trigger or a revision route sends straight to a capped step can still take queue slots and wait there, delaying other steps on the same queue.
+                                  type: integer
+                                  maximum: 1000
+                              required:
+                              - language
+                              - source
+                              - files
+                              - timeoutMs
+                              - handoverRequired
+                              additionalProperties: false
+                              description: Code step configuration payload
+                          required:
+                          - version
+                          - data
+                          additionalProperties: false
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                              - v1
+                            data:
+                              type: object
+                              properties:
+                                model:
+                                  type: string
+                                temperature:
+                                  type:
+                                  - number
+                                  - 'null'
+                                  minimum: 0
+                                  maximum: 2
+                                max_output_tokens:
+                                  type:
+                                  - number
+                                  - 'null'
+                                  exclusiveMinimum: 0
+                                top_p:
+                                  type:
+                                  - number
+                                  - 'null'
+                                  minimum: 0
+                                  maximum: 1
+                                store:
+                                  type:
+                                  - boolean
+                                  - 'null'
+                                tools: {}
+                                input:
+                                  anyOf:
+                                  - type: string
+                                  - type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        role:
+                                          type: string
+                                          enum:
+                                          - system
+                                          - user
+                                          - assistant
+                                        content:
+                                          anyOf:
+                                          - type: string
+                                          - type: array
+                                            items:
+                                              anyOf:
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_text
+                                                  text:
+                                                    type: string
+                                                required:
+                                                - type
+                                                - text
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_image
+                                                  detail:
+                                                    type:
+                                                    - string
+                                                    - 'null'
+                                                    enum:
+                                                    - low
+                                                    - high
+                                                    - auto
+                                                  file_id:
+                                                    type:
+                                                    - string
+                                                    - 'null'
+                                                  url:
+                                                    type:
+                                                    - string
+                                                    - 'null'
+                                                required:
+                                                - type
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_file
+                                                  file_id:
+                                                    type: string
+                                                required:
+                                                - type
+                                                - file_id
+                                                additionalProperties: false
+                                        type:
+                                          type:
+                                          - string
+                                          - 'null'
+                                          enum:
+                                          - message
+                                      required:
+                                      - role
+                                      - content
+                                      additionalProperties: false
+                                text:
+                                  type:
+                                  - object
+                                  - 'null'
+                                  properties:
+                                    format:
+                                      anyOf:
+                                      - type: object
+                                        properties:
+                                          type:
+                                            type: string
+                                            enum:
+                                            - text
+                                        required:
+                                        - type
+                                        additionalProperties: false
+                                      - type: object
+                                        properties:
+                                          type:
+                                            type: string
+                                            enum:
+                                            - json_object
+                                        required:
+                                        - type
+                                        additionalProperties: false
+                                  additionalProperties: false
+                                files:
+                                  default: []
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                                skills:
+                                  default: []
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                              required:
+                              - model
+                              - tools
+                              - input
+                              - files
+                              - skills
+                              additionalProperties: false
+                          required:
+                          - version
+                          - data
+                          additionalProperties: false
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                              - v2
+                              description: Schema version discriminator — must be "v2" for the current schema
+                            data:
+                              type: object
+                              properties:
+                                models:
+                                  type: object
+                                  properties:
+                                    agent:
+                                      type: object
+                                      properties:
+                                        model:
+                                          type: string
+                                          x-extensible-enum:
+                                          - claude-haiku-4-5-20251001
+                                          - claude-haiku-5-5
+                                          - claude-haiku-5-5[1m]
+                                          - claude-sonnet-5
+                                          - claude-sonnet-5[1m]
+                                          - claude-sonnet-5-5
+                                          - claude-sonnet-5-5[1m]
+                                          - claude-opus-5
+                                          - claude-opus-5[1m]
+                                          - claude-opus-5-5
+                                          - claude-opus-5-5[1m]
+                                          - kimi-k3
+                                          - kimi-k3-duvo
+                                          - glm-5.3-flash
+                                          - deepseek-v4.1-flash
+                                          - minimax-m3
+                                          - d1-max
+                                          - duvo-1-max
+                                          - duvo-1-max-sonnet-1m
+                                          - duvo-1-max-sonnet-4.5
+                                          - duvo-1-max-sonnet-4.5-1m
+                                          - duvo-1-max-opus
+                                          - duvo-1-max-opus-4.5
+                                          - gpt-4.1
+                                          - gpt-4o
+                                          - gpt-4o-mini
+                                          - gpt-5
+                                          - gpt-5.1
+                                          - claude-sonnet-4-20250514
+                                          - claude-sonnet-4-20250514[1m]
+                                          - claude-sonnet-4-5-20250929
+                                          - claude-sonnet-4-5-20250929[1m]
+                                          - claude-sonnet-4-6
+                                          - claude-sonnet-4-6[1m]
+                                          - claude-opus-4-1-20250805
+                                          - claude-opus-4-5-20251101
+                                          - claude-opus-4-6
+                                          - claude-opus-4-6[1m]
+                                          - claude-opus-4-7
+                                          - claude-opus-4-7[1m]
+                                          - claude-opus-4-8
+                                          - claude-opus-4-8[1m]
+                                          - glm-5.2
+                                          - qwen3.6-27b
+                                          - qwen3.8-max
+                                          - deepseek-v4-flash
+                                          description: Model identifier used for the primary agent loop (Claude, or an OSS model when the team's oss_models flag — or oss_models_public for the public subset — is enabled)
+                                      required:
+                                      - model
+                                      additionalProperties: false
+                                      description: Primary agent model configuration
+                                    browsing:
+                                      type: object
+                                      properties:
+                                        provider:
+                                          type: string
+                                          enum:
+                                          - google
+                                          - anthropic
+                                          description: Provider backing the browsing/computer-use model
+                                        model:
+                                          type: string
+                                          enum:
+                                          - gemini-2.5-pro
+                                          - gemini-2.5-flash
+                                          - gemini-3-pro-preview
+                                          - claude-haiku-4-5
+                                          - claude-sonnet-4-5
+                                          - claude-opus-4-1
+                                          description: Model identifier for the browsing provider
+                                      required:
+                                      - provider
+                                      - model
+                                      additionalProperties: false
+                                      description: Browsing/computer-use model configuration
+                                  required:
+                                  - agent
+                                  - browsing
+                                  additionalProperties: false
+                                  description: Model configuration for each capability the agent uses
+                                input:
+                                  anyOf:
+                                  - type: string
+                                  - type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        role:
+                                          type: string
+                                          enum:
+                                          - system
+                                          - user
+                                          - assistant
+                                        content:
+                                          anyOf:
+                                          - type: string
+                                          - type: array
+                                            items:
+                                              anyOf:
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_text
+                                                  text:
+                                                    type: string
+                                                required:
+                                                - type
+                                                - text
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_image
+                                                  detail:
+                                                    type:
+                                                    - string
+                                                    - 'null'
+                                                    enum:
+                                                    - low
+                                                    - high
+                                                    - auto
+                                                  file_id:
+                                                    type:
+                                                    - string
+                                                    - 'null'
+                                                  url:
+                                                    type:
+                                                    - string
+                                                    - 'null'
+                                                required:
+                                                - type
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                    - input_file
+                                                  file_id:
+                                                    type: string
+                                                required:
+                                                - type
+                                                - file_id
+                                                additionalProperties: false
+                                        type:
+                                          type:
+                                          - string
+                                          - 'null'
+                                          enum:
+                                          - message
+                                      required:
+                                      - role
+                                      - content
+                                      additionalProperties: false
+                                  description: Initial agent instructions — either a single system prompt string or a list of structured messages
+                                files:
+                                  default: []
+                                  description: Team files that should be available to the agent, each given as the relative file path returned in the `path` field of `GET /v2/teams/{teamId}/files` (for example `report.md` or `folder/doc.md`) — not the `id` field, which is a GCS object identifier.
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                                skills:
+                                  default: []
+                                  description: IDs of skills (team or system) that should be available to the agent
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                                plugins:
+                                  default: []
+                                  description: Plugins to load — either a built-in plugin name (e.g. "code-review") or a GitHub URL (e.g. "https://github.com/owner/repo")
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                                subAgents:
+                                  default: []
+                                  description: Retired — Sub-Assignments was removed. Accepted for backwards compatibility and ignored.
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                                    format: uuid
+                                options:
+                                  description: Optional runtime options controlling how the agent executes
+                                  type: object
+                                  properties:
+                                    browserProvider:
+                                      description: Browser infrastructure provider
+                                      type: string
+                                      enum:
+                                      - browserbase
+                                      - browser-use
+                                    evaluationSchemaId:
+                                      description: ID of the evaluation schema to apply to runs of this agent
+                                      type: string
+                                    benchmarkExpectedOutcomes:
+                                      description: Expected outcomes used when running benchmark scenarios
+                                      type: array
+                                      items:
+                                        type: object
+                                        properties:
+                                          description:
+                                            type: string
+                                            description: Human-readable description of the expected outcome
+                                          criteria:
+                                            type: string
+                                            description: Pass/fail criteria used to evaluate the outcome
+                                        required:
+                                        - description
+                                        - criteria
+                                        additionalProperties: false
+                                    supervisedMode:
+                                      description: 'Run the agent under Duvo''s permission classifier: every tool call is classified as allow/deny/ask, with ''ask'' routed to human-in-the-loop approval. Mutually exclusive with browsing and computer-use connections.'
+                                      type: boolean
+                                  additionalProperties: {}
+                              required:
+                              - models
+                              - input
+                              - files
+                              - skills
+                              - plugins
+                              - subAgents
+                              additionalProperties: false
+                              description: Agent configuration payload
+                          required:
+                          - version
+                          - data
+                          additionalProperties: false
+                      status:
+                        type:
+                        - string
+                        - 'null'
+                      revision_number:
+                        type:
+                        - number
+                        - 'null'
+                      parent_build_id:
+                        type:
+                        - string
+                        - 'null'
+                      created_by:
+                        type:
+                        - string
+                        - 'null'
+                      created_by_name:
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type:
+                        - string
+                        - 'null'
+                      updated_at:
+                        type:
+                        - string
+                        - 'null'
+                      schedules:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            build_id:
+                              type: string
+                            agent_id:
+                              type: string
+                            user_id:
+                              type: string
+                            enabled:
+                              type: boolean
+                            frequency:
+                              type: string
+                              enum:
+                              - every_5_minutes
+                              - every_15_minutes
+                              - hourly
+                              - daily
+                              - workday
+                              - weekly
+                              - monthly
+                              - custom
+                            time:
+                              type:
+                              - string
+                              - 'null'
+                            timezone:
+                              type: string
+                            day:
+                              type:
+                              - string
+                              - 'null'
+                            day_of_month:
+                              type:
+                              - number
+                              - 'null'
+                            cron:
+                              type:
+                              - string
+                              - 'null'
+                            source:
+                              type:
+                              - string
+                              - 'null'
+                            task:
+                              type:
+                              - string
+                              - 'null'
+                            recurring:
+                              type:
+                              - boolean
+                              - 'null'
+                            auto_disabled_at:
+                              type:
+                              - string
+                              - 'null'
+                            auto_disabled_reason:
+                              type:
+                              - string
+                              - 'null'
+                            consecutive_missing_connection_failures:
+                              type: integer
+                              minimum: 0
+                              maximum: 9007199254740991
+                            first_missing_connection_failure_at:
+                              type:
+                              - string
+                              - 'null'
+                            last_missing_connection_failure_at:
+                              type:
+                              - string
+                              - 'null'
+                            created_at:
+                              type: string
+                            updated_at:
+                              type: string
+                            user_name:
+                              type:
+                              - string
+                              - 'null'
+                            user_email:
+                              type:
+                              - string
+                              - 'null'
+                            pending_change:
+                              type:
+                              - object
+                              - 'null'
+                              properties:
+                                automation_revision_id:
+                                  type: string
+                                enabled:
+                                  type:
+                                  - boolean
+                                  - 'null'
+                                cron:
+                                  type:
+                                  - string
+                                  - 'null'
+                                frequency:
+                                  type:
+                                  - string
+                                  - 'null'
+                                time:
+                                  type:
+                                  - string
+                                  - 'null'
+                                timezone:
+                                  type:
+                                  - string
+                                  - 'null'
+                                day:
+                                  type:
+                                  - string
+                                  - 'null'
+                                day_of_month:
+                                  type:
+                                  - number
+                                  - 'null'
+                                task:
+                                  type:
+                                  - string
+                                  - 'null'
+                              required:
+                              - automation_revision_id
+                              - enabled
+                              - cron
+                              - frequency
+                              - time
+                              - timezone
+                              - day
+                              - day_of_month
+                              - task
+                              additionalProperties: false
+                          required:
+                          - id
+                          - build_id
+                          - agent_id
+                          - user_id
+                          - enabled
+                          - frequency
+                          - time
+                          - timezone
+                          - day
+                          - day_of_month
+                          - cron
+                          - source
+                          - task
+                          - recurring
+                          - auto_disabled_at
+                          - auto_disabled_reason
+                          - consecutive_missing_connection_failures
+                          - first_missing_connection_failure_at
+                          - last_missing_connection_failure_at
+                          - created_at
+                          - updated_at
+                          additionalProperties: false
+                      handover_to:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      handover_options:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
                           additionalProperties: false
                     required:
                     - id
@@ -2952,6 +4038,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2965,6 +4053,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -2980,6 +4070,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2993,6 +4085,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -3008,6 +4102,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -3021,6 +4117,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -3084,6 +4182,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -3097,6 +4197,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -3112,6 +4214,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -3125,6 +4229,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -3140,6 +4246,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -3153,6 +4261,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Duvo Pulse API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -15,7 +33,7 @@ paths:
       operationId: listPulseDashboards
       tags:
       - Duvo Pulse
-      description: List your Duvo Pulse dashboards (live, agent-generated visualizations of your Duvo data), most recently updated first.
+      description: List your Duvo Pulse dashboards (live, agent-generated visualizations of your Duvo data). Ordered most recently updated first, except scope=automation, which is ordered by creation time (then id) so the whole scope can be read with the after_id cursor without a concurrent change shifting a page boundary.
       parameters:
       - schema:
           default: 20
@@ -42,10 +60,18 @@ paths:
           - created
           - shared
           - team
+          - automation
         in: query
         name: scope
         required: false
-        description: 'Which dashboards to return: ''created'' (yours, the default), ''team'' (published to your whole team by a teammate), or ''shared'' (shared with you individually by a teammate).'
+        description: 'Which dashboards to return: ''created'' (yours, the default), ''team'' (published to your whole team by a teammate), ''shared'' (shared with you individually by a teammate), or ''automation'' (owned by one of your team''s automations, each carrying its automation''s name).'
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: after_id
+        required: false
+        description: 'Keyset cursor for reading the whole ''automation'' scope: the id of the last dashboard you received; returns the page after it in (created_at, id) order. Use this instead of ''offset'' when reading every page, so a dashboard created, updated or deleted between requests cannot shift a page boundary you have already passed. 400 when the id no longer names a dashboard (restart from the first page). Only valid with scope=automation.'
       security:
       - bearerAuth: []
       responses:
@@ -65,8 +91,25 @@ paths:
                           type: string
                           format: uuid
                         team_id:
-                          type: string
+                          type:
+                          - string
+                          - 'null'
                           format: uuid
+                        organization_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        automation_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        automation_name:
+                          description: Name of the owning automation, resolved only on the `automation` list scope — the one surface that renders the composite `<Automation> / <Title>` label. Absent elsewhere; a client reads absence and null the same way.
+                          type:
+                          - string
+                          - 'null'
                         created_by_user_id:
                           type: string
                           format: uuid
@@ -74,8 +117,22 @@ paths:
                           type:
                           - string
                           - 'null'
+                        icon:
+                          type:
+                          - string
+                          - 'null'
+                          minLength: 1
+                          maxLength: 64
+                          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
                         html_code_present:
                           type: boolean
+                        content_format:
+                          type: string
+                          description: The substrate the dashboard is written in. New substrates are added over time.
+                          x-extensible-enum:
+                          - html
+                          - openui
+                          - react
                         status:
                           type: string
                           enum:
@@ -97,26 +154,13 @@ paths:
                           enum:
                           - view
                           - edit
+                        has_live_connector_data:
+                          type: boolean
                         thumbnail_url:
                           type:
                           - string
                           - 'null'
-                        refresh_frequency:
-                          type:
-                          - string
-                          - 'null'
-                          enum:
-                          - every_15_minutes
-                          - every_30_minutes
-                          - hourly
-                          - every_6_hours
-                          - daily
-                          - weekly
                         last_refresh_at:
-                          type:
-                          - string
-                          - 'null'
-                        next_refresh_at:
                           type:
                           - string
                           - 'null'
@@ -127,6 +171,7 @@ paths:
                       required:
                       - id
                       - team_id
+                      - organization_id
                       - created_by_user_id
                       - title
                       - html_code_present
@@ -147,6 +192,18 @@ paths:
                 - total
                 - limit
                 - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
                 additionalProperties: false
         '401':
           description: Default Response
@@ -177,7 +234,7 @@ paths:
       operationId: createPulseDashboard
       tags:
       - Duvo Pulse
-      description: Create a new Duvo Pulse dashboard from a natural-language prompt (e.g. 'open cases by queue this week') and dispatch the first generation turn. Generation is asynchronous — poll GET /artifacts/{artifactId} until status is completed.
+      description: Create a new Duvo Pulse dashboard from a natural-language prompt (e.g. 'open cases by queue this week') and dispatch the first generation turn. Generation is asynchronous — poll GET /artifacts/{artifactId} until status is completed. The dashboard is private to you unless you set visibility to 'team', which shares it with your whole team straight away — with permission 'view' (teammates see the dashboard) or 'edit' (teammates can also iterate on it).
       requestBody:
         required: true
         content:
@@ -188,13 +245,23 @@ paths:
                 message:
                   type: string
                   minLength: 1
-                  maxLength: 10000
+                  maxLength: 15000
                 connection_ids:
                   maxItems: 10
                   type: array
                   items:
                     type: string
                     format: uuid
+                visibility:
+                  type: string
+                  enum:
+                  - private
+                  - team
+                permission:
+                  type: string
+                  enum:
+                  - view
+                  - edit
               required:
               - message
       responses:
@@ -261,12 +328,76 @@ paths:
                             type: string
                             minLength: 1
                             maxLength: 4000
+                          point:
+                            type: object
+                            properties:
+                              x_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                              y_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                            required:
+                            - x_ratio
+                            - y_ratio
+                            additionalProperties: false
+                          openui_node:
+                            type: object
+                            properties:
+                              statement:
+                                type: string
+                                minLength: 1
+                                maxLength: 200
+                              component:
+                                type: string
+                                minLength: 1
+                                maxLength: 100
+                              source:
+                                type: string
+                                maxLength: 2000
+                            required:
+                            - statement
+                            - component
+                            additionalProperties: false
                         required:
                         - selector
                         - label
                         - tag_name
                         - outer_html
                         additionalProperties: false
+                      attachments:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            attachment_id:
+                              type: string
+                              format: uuid
+                            filename:
+                              type: string
+                              minLength: 1
+                              maxLength: 255
+                            size_bytes:
+                              type: integer
+                              minimum: 0
+                              maximum: 26214400
+                            mime_type:
+                              type: string
+                              minLength: 1
+                              maxLength: 127
+                            sandbox_path:
+                              type: string
+                              minLength: 1
+                              maxLength: 512
+                          required:
+                          - attachment_id
+                          - filename
+                          - size_bytes
+                          - mime_type
+                          - sandbox_path
+                          additionalProperties: false
                     required:
                     - id
                     - artifact_id
@@ -355,8 +486,25 @@ paths:
                         type: string
                         format: uuid
                       team_id:
-                        type: string
+                        type:
+                        - string
+                        - 'null'
                         format: uuid
+                      organization_id:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      automation_id:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      automation_name:
+                        description: Name of the owning automation, resolved only on the `automation` list scope — the one surface that renders the composite `<Automation> / <Title>` label. Absent elsewhere; a client reads absence and null the same way.
+                        type:
+                        - string
+                        - 'null'
                       created_by_user_id:
                         type: string
                         format: uuid
@@ -364,8 +512,22 @@ paths:
                         type:
                         - string
                         - 'null'
+                      icon:
+                        type:
+                        - string
+                        - 'null'
+                        minLength: 1
+                        maxLength: 64
+                        pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
                       html_code_present:
                         type: boolean
+                      content_format:
+                        type: string
+                        description: The substrate the dashboard is written in. New substrates are added over time.
+                        x-extensible-enum:
+                        - html
+                        - openui
+                        - react
                       status:
                         type: string
                         enum:
@@ -387,26 +549,13 @@ paths:
                         enum:
                         - view
                         - edit
+                      has_live_connector_data:
+                        type: boolean
                       thumbnail_url:
                         type:
                         - string
                         - 'null'
-                      refresh_frequency:
-                        type:
-                        - string
-                        - 'null'
-                        enum:
-                        - every_15_minutes
-                        - every_30_minutes
-                        - hourly
-                        - every_6_hours
-                        - daily
-                        - weekly
                       last_refresh_at:
-                        type:
-                        - string
-                        - 'null'
-                      next_refresh_at:
                         type:
                         - string
                         - 'null'
@@ -417,6 +566,7 @@ paths:
                     required:
                     - id
                     - team_id
+                    - organization_id
                     - created_by_user_id
                     - title
                     - html_code_present
@@ -430,6 +580,27 @@ paths:
                     type: boolean
                   can_edit:
                     type: boolean
+                  render_enabled:
+                    type: boolean
+                  pending_question:
+                    description: The question an update of this dashboard is paused on, waiting for the user's answer, or null when no update is waiting or the caller cannot edit the dashboard. The status stays running while it waits.
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      tool_call_id:
+                        type: string
+                        description: The question's toolCallId, which POST /artifacts/{artifactId}/answer takes.
+                      questions:
+                        minItems: 1
+                        type: array
+                        items:
+                          type: string
+                        description: The text of each question the update is waiting on.
+                    required:
+                    - tool_call_id
+                    - questions
+                    additionalProperties: false
                 required:
                 - artifact
                 - is_creator
@@ -476,7 +647,7 @@ paths:
       operationId: updatePulseDashboard
       tags:
       - Duvo Pulse
-      description: Update a Duvo Pulse dashboard's settings — rename it or change its auto-refresh frequency. Only the creator can update it.
+      description: Update a Duvo Pulse dashboard's settings — rename it. Only the creator can update it.
       requestBody:
         required: true
         content:
@@ -488,17 +659,8 @@ paths:
                   type: string
                   minLength: 1
                   maxLength: 120
-                refresh_frequency:
-                  type:
-                  - string
-                  - 'null'
-                  enum:
-                  - every_15_minutes
-                  - every_30_minutes
-                  - hourly
-                  - every_6_hours
-                  - daily
-                  - weekly
+              required:
+              - title
               additionalProperties: false
       parameters:
       - schema:
@@ -521,8 +683,25 @@ paths:
                     type: string
                     format: uuid
                   team_id:
-                    type: string
+                    type:
+                    - string
+                    - 'null'
                     format: uuid
+                  organization_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  automation_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  automation_name:
+                    description: Name of the owning automation, resolved only on the `automation` list scope — the one surface that renders the composite `<Automation> / <Title>` label. Absent elsewhere; a client reads absence and null the same way.
+                    type:
+                    - string
+                    - 'null'
                   created_by_user_id:
                     type: string
                     format: uuid
@@ -530,8 +709,22 @@ paths:
                     type:
                     - string
                     - 'null'
+                  icon:
+                    type:
+                    - string
+                    - 'null'
+                    minLength: 1
+                    maxLength: 64
+                    pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
                   html_code_present:
                     type: boolean
+                  content_format:
+                    type: string
+                    description: The substrate the dashboard is written in. New substrates are added over time.
+                    x-extensible-enum:
+                    - html
+                    - openui
+                    - react
                   status:
                     type: string
                     enum:
@@ -553,26 +746,13 @@ paths:
                     enum:
                     - view
                     - edit
+                  has_live_connector_data:
+                    type: boolean
                   thumbnail_url:
                     type:
                     - string
                     - 'null'
-                  refresh_frequency:
-                    type:
-                    - string
-                    - 'null'
-                    enum:
-                    - every_15_minutes
-                    - every_30_minutes
-                    - hourly
-                    - every_6_hours
-                    - daily
-                    - weekly
                   last_refresh_at:
-                    type:
-                    - string
-                    - 'null'
-                  next_refresh_at:
                     type:
                     - string
                     - 'null'
@@ -583,6 +763,7 @@ paths:
                 required:
                 - id
                 - team_id
+                - organization_id
                 - created_by_user_id
                 - title
                 - html_code_present
@@ -591,6 +772,18 @@ paths:
                 - publish_permission
                 - created_at
                 - updated_at
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
                 additionalProperties: false
         '401':
           description: Default Response
@@ -693,6 +886,402 @@ paths:
                 - error
                 additionalProperties: false
       summary: Delete Pulse Dashboard
+  /v2/artifacts/{artifact_id}/data-sources:
+    get:
+      operationId: listPulseDataSources
+      tags:
+      - Duvo Pulse
+      description: Discover queues the current editor may connect to this team-created Pulse before sampling data. Requires live dashboard edit permission and ordinary team data access. Module sources are installed with the Module. A queue ID in generated code does not grant access.
+      parameters:
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+      - schema:
+          default: 0
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifact_id
+        required: true
+        description: Current Pulse artifact ID, supplied by the builder or viewer context.
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sources:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        description:
+                          type:
+                          - string
+                          - 'null'
+                        connected:
+                          type: boolean
+                      required:
+                      - id
+                      - name
+                      - description
+                      - connected
+                      additionalProperties: false
+                  total:
+                    type: number
+                  limit:
+                    type: number
+                  offset:
+                    type: number
+                required:
+                - sources
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '429':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Pulse Data Sources
+  /v2/artifacts/{artifact_id}/data-sources/{queue_id}:
+    put:
+      operationId: connectPulseDataSource
+      tags:
+      - Duvo Pulse
+      description: Connect an authorized same-team queue to a team-created Pulse before sampling it. Idempotent. This bounds dashboard data access; it never grants Process membership or case-action authority. Requires both edit permission and ordinary team source access.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifact_id
+        required: true
+        description: Current Pulse artifact ID, supplied by the builder or viewer context.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connected:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - connected
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '429':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Connect Pulse Data Source
+    delete:
+      operationId: disconnectPulseDataSource
+      tags:
+      - Duvo Pulse
+      description: Disconnect a source from a team-created dashboard. Subsequent dashboard reads and writes immediately lose access. Idempotent; does not delete the queue or cases.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifact_id
+        required: true
+        description: Current Pulse artifact ID, supplied by the builder or viewer context.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: queue_id
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connected:
+                    type: boolean
+                    enum:
+                    - false
+                required:
+                - connected
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '429':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Disconnect Pulse Data Source
   /v2/artifacts/{artifactId}/render:
     get:
       operationId: getPulseDashboardHtml
@@ -755,7 +1344,7 @@ paths:
       operationId: getPulseDashboardPdf
       tags:
       - Duvo Pulse
-      description: Render a Duvo Pulse dashboard to a PDF document (application/pdf, not JSON). 404 until the first generation turn has produced HTML.
+      description: Render a Duvo Pulse dashboard to a PDF document (application/pdf, not JSON). 404 until the first generation turn has produced HTML; 409 for an openui dashboard, whose substrate this exporter cannot render.
       parameters:
       - schema:
           default: light
@@ -814,13 +1403,37 @@ paths:
                 required:
                 - error
                 additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '429':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
       summary: Get Pulse Dashboard Pdf
   /v2/artifacts/{artifactId}/export/html:
     get:
       operationId: exportPulseDashboardHtml
       tags:
       - Duvo Pulse
-      description: Render a Duvo Pulse dashboard to a self-contained static HTML snapshot (text/html, data baked in). 404 until the first generation turn has produced HTML.
+      description: Render a Duvo Pulse dashboard to a self-contained static HTML snapshot (text/html, data baked in). 404 until the first generation turn has produced HTML; 409 for an openui dashboard, whose substrate this exporter cannot render.
       parameters:
       - schema:
           default: light
@@ -869,6 +1482,30 @@ paths:
                 - error
                 additionalProperties: false
         '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '429':
           description: Default Response
           content:
             application/json:
@@ -929,8 +1566,25 @@ paths:
                     type: string
                     format: uuid
                   team_id:
-                    type: string
+                    type:
+                    - string
+                    - 'null'
                     format: uuid
+                  organization_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  automation_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  automation_name:
+                    description: Name of the owning automation, resolved only on the `automation` list scope — the one surface that renders the composite `<Automation> / <Title>` label. Absent elsewhere; a client reads absence and null the same way.
+                    type:
+                    - string
+                    - 'null'
                   created_by_user_id:
                     type: string
                     format: uuid
@@ -938,8 +1592,22 @@ paths:
                     type:
                     - string
                     - 'null'
+                  icon:
+                    type:
+                    - string
+                    - 'null'
+                    minLength: 1
+                    maxLength: 64
+                    pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
                   html_code_present:
                     type: boolean
+                  content_format:
+                    type: string
+                    description: The substrate the dashboard is written in. New substrates are added over time.
+                    x-extensible-enum:
+                    - html
+                    - openui
+                    - react
                   status:
                     type: string
                     enum:
@@ -961,26 +1629,13 @@ paths:
                     enum:
                     - view
                     - edit
+                  has_live_connector_data:
+                    type: boolean
                   thumbnail_url:
                     type:
                     - string
                     - 'null'
-                  refresh_frequency:
-                    type:
-                    - string
-                    - 'null'
-                    enum:
-                    - every_15_minutes
-                    - every_30_minutes
-                    - hourly
-                    - every_6_hours
-                    - daily
-                    - weekly
                   last_refresh_at:
-                    type:
-                    - string
-                    - 'null'
-                  next_refresh_at:
                     type:
                     - string
                     - 'null'
@@ -991,6 +1646,7 @@ paths:
                 required:
                 - id
                 - team_id
+                - organization_id
                 - created_by_user_id
                 - title
                 - html_code_present
@@ -1048,6 +1704,18 @@ paths:
                 required:
                 - error
                 additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
       summary: Publish Pulse Dashboard
   /v2/artifacts/{artifactId}/duplicate:
     post:
@@ -1076,8 +1744,25 @@ paths:
                     type: string
                     format: uuid
                   team_id:
-                    type: string
+                    type:
+                    - string
+                    - 'null'
                     format: uuid
+                  organization_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  automation_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  automation_name:
+                    description: Name of the owning automation, resolved only on the `automation` list scope — the one surface that renders the composite `<Automation> / <Title>` label. Absent elsewhere; a client reads absence and null the same way.
+                    type:
+                    - string
+                    - 'null'
                   created_by_user_id:
                     type: string
                     format: uuid
@@ -1085,8 +1770,22 @@ paths:
                     type:
                     - string
                     - 'null'
+                  icon:
+                    type:
+                    - string
+                    - 'null'
+                    minLength: 1
+                    maxLength: 64
+                    pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
                   html_code_present:
                     type: boolean
+                  content_format:
+                    type: string
+                    description: The substrate the dashboard is written in. New substrates are added over time.
+                    x-extensible-enum:
+                    - html
+                    - openui
+                    - react
                   status:
                     type: string
                     enum:
@@ -1108,26 +1807,13 @@ paths:
                     enum:
                     - view
                     - edit
+                  has_live_connector_data:
+                    type: boolean
                   thumbnail_url:
                     type:
                     - string
                     - 'null'
-                  refresh_frequency:
-                    type:
-                    - string
-                    - 'null'
-                    enum:
-                    - every_15_minutes
-                    - every_30_minutes
-                    - hourly
-                    - every_6_hours
-                    - daily
-                    - weekly
                   last_refresh_at:
-                    type:
-                    - string
-                    - 'null'
-                  next_refresh_at:
                     type:
                     - string
                     - 'null'
@@ -1138,6 +1824,7 @@ paths:
                 required:
                 - id
                 - team_id
+                - organization_id
                 - created_by_user_id
                 - title
                 - html_code_present
@@ -1224,7 +1911,7 @@ paths:
                 message:
                   type: string
                   minLength: 1
-                  maxLength: 10000
+                  maxLength: 15000
                 from_revision_id:
                   type: string
                   format: uuid
@@ -1250,11 +1937,55 @@ paths:
                       type: string
                       minLength: 1
                       maxLength: 4000
+                    point:
+                      type: object
+                      properties:
+                        x_ratio:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                        y_ratio:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                      required:
+                      - x_ratio
+                      - y_ratio
+                    openui_node:
+                      type: object
+                      properties:
+                        statement:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                        component:
+                          type: string
+                          minLength: 1
+                          maxLength: 100
+                        source:
+                          type: string
+                          maxLength: 2000
+                      required:
+                      - statement
+                      - component
                   required:
                   - selector
                   - label
                   - tag_name
                   - outer_html
+                attachments:
+                  description: Attachments to hand the agent, uploaded beforehand via the upload-urls endpoint (max 5)
+                  maxItems: 5
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      attachment_id:
+                        type: string
+                        format: uuid
+                        description: An attachment_id returned by upload-urls
+                    required:
+                    - attachment_id
               required:
               - message
       parameters:
@@ -1325,12 +2056,76 @@ paths:
                             type: string
                             minLength: 1
                             maxLength: 4000
+                          point:
+                            type: object
+                            properties:
+                              x_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                              y_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                            required:
+                            - x_ratio
+                            - y_ratio
+                            additionalProperties: false
+                          openui_node:
+                            type: object
+                            properties:
+                              statement:
+                                type: string
+                                minLength: 1
+                                maxLength: 200
+                              component:
+                                type: string
+                                minLength: 1
+                                maxLength: 100
+                              source:
+                                type: string
+                                maxLength: 2000
+                            required:
+                            - statement
+                            - component
+                            additionalProperties: false
                         required:
                         - selector
                         - label
                         - tag_name
                         - outer_html
                         additionalProperties: false
+                      attachments:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            attachment_id:
+                              type: string
+                              format: uuid
+                            filename:
+                              type: string
+                              minLength: 1
+                              maxLength: 255
+                            size_bytes:
+                              type: integer
+                              minimum: 0
+                              maximum: 26214400
+                            mime_type:
+                              type: string
+                              minLength: 1
+                              maxLength: 127
+                            sandbox_path:
+                              type: string
+                              minLength: 1
+                              maxLength: 512
+                          required:
+                          - attachment_id
+                          - filename
+                          - size_bytes
+                          - mime_type
+                          - sandbox_path
+                          additionalProperties: false
                     required:
                     - id
                     - artifact_id
@@ -1398,6 +2193,11 @@ paths:
                 properties:
                   error:
                     type: string
+                  missingAttachmentIds:
+                    description: Attachment ids that are no longer usable and must be re-uploaded. Present only when the conflict was caused by attachments.
+                    type: array
+                    items:
+                      type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1505,12 +2305,76 @@ paths:
                               type: string
                               minLength: 1
                               maxLength: 4000
+                            point:
+                              type: object
+                              properties:
+                                x_ratio:
+                                  type: number
+                                  minimum: 0
+                                  maximum: 1
+                                y_ratio:
+                                  type: number
+                                  minimum: 0
+                                  maximum: 1
+                              required:
+                              - x_ratio
+                              - y_ratio
+                              additionalProperties: false
+                            openui_node:
+                              type: object
+                              properties:
+                                statement:
+                                  type: string
+                                  minLength: 1
+                                  maxLength: 200
+                                component:
+                                  type: string
+                                  minLength: 1
+                                  maxLength: 100
+                                source:
+                                  type: string
+                                  maxLength: 2000
+                              required:
+                              - statement
+                              - component
+                              additionalProperties: false
                           required:
                           - selector
                           - label
                           - tag_name
                           - outer_html
                           additionalProperties: false
+                        attachments:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              attachment_id:
+                                type: string
+                                format: uuid
+                              filename:
+                                type: string
+                                minLength: 1
+                                maxLength: 255
+                              size_bytes:
+                                type: integer
+                                minimum: 0
+                                maximum: 26214400
+                              mime_type:
+                                type: string
+                                minLength: 1
+                                maxLength: 127
+                              sandbox_path:
+                                type: string
+                                minLength: 1
+                                maxLength: 512
+                            required:
+                            - attachment_id
+                            - filename
+                            - size_bytes
+                            - mime_type
+                            - sandbox_path
+                            additionalProperties: false
                       required:
                       - id
                       - artifact_id
@@ -1566,6 +2430,230 @@ paths:
                 - error
                 additionalProperties: false
       summary: List Pulse Dashboard Messages
+  /v2/artifacts/{artifactId}/attachments/upload-urls:
+    post:
+      operationId: createPulseDashboardAttachmentUploadUrl
+      tags:
+      - Duvo Pulse
+      description: Issue a presigned upload URL for a file to attach to a Duvo Pulse dashboard message (e.g. an HTML dashboard to copy, or a screenshot to match). POST the file bytes to the returned upload_url as multipart form data under the field name 'file', then pass the returned attachment_id in the attachments array of POST /artifacts/{artifactId}/messages. The agent reads the file directly from its sandbox. Files live as long as the dashboard's sandbox (about 12 hours), so upload shortly before sending.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                filename:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                  description: Name of the file being attached, without any path segments
+                mime_type:
+                  type: string
+                  minLength: 1
+                  maxLength: 127
+                  description: MIME type of the file, e.g. text/html or image/png
+                size_bytes:
+                  type: integer
+                  minimum: 0
+                  maximum: 26214400
+                  description: Size of the file in bytes (max 25MB)
+              required:
+              - filename
+              - mime_type
+              - size_bytes
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attachment_id:
+                    type: string
+                    format: uuid
+                    description: Echo this back in the message body's attachments array
+                  sandbox_id:
+                    type: string
+                    description: Sandbox the file will be uploaded into
+                  sandbox_path:
+                    type: string
+                    description: Absolute path the file will occupy inside the sandbox
+                  upload_url:
+                    type: string
+                    maxLength: 2048
+                    format: uri
+                    description: Presigned URL to POST the file bytes to as multipart form data
+                  expires_in_seconds:
+                    type: integer
+                    maximum: 9007199254740991
+                    description: Seconds until upload_url stops being accepted
+                required:
+                - attachment_id
+                - sandbox_id
+                - sandbox_path
+                - upload_url
+                - expires_in_seconds
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Pulse Dashboard Attachment Upload URL
+  /v2/artifacts/{artifactId}/attachments/{attachmentId}/download-url:
+    get:
+      operationId: getPulseDashboardAttachmentDownloadUrl
+      tags:
+      - Duvo Pulse
+      description: Mint a short-lived presigned URL to download or preview a file attached to a Duvo Pulse dashboard message. Returns 404 once the dashboard's sandbox has expired and the file is gone (about 12 hours).
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: attachmentId
+        required: true
+        description: The attachment to mint a download URL for
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                    maxLength: 2048
+                    format: uri
+                    description: Presigned URL to GET the file bytes from
+                  expires_in_seconds:
+                    type: integer
+                    maximum: 9007199254740991
+                    description: Seconds until download_url stops being accepted
+                required:
+                - download_url
+                - expires_in_seconds
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Pulse Dashboard Attachment Download URL
   /v2/artifacts/{artifactId}/refresh:
     post:
       operationId: refreshPulseDashboard
@@ -1593,8 +2681,25 @@ paths:
                     type: string
                     format: uuid
                   team_id:
-                    type: string
+                    type:
+                    - string
+                    - 'null'
                     format: uuid
+                  organization_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  automation_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  automation_name:
+                    description: Name of the owning automation, resolved only on the `automation` list scope — the one surface that renders the composite `<Automation> / <Title>` label. Absent elsewhere; a client reads absence and null the same way.
+                    type:
+                    - string
+                    - 'null'
                   created_by_user_id:
                     type: string
                     format: uuid
@@ -1602,8 +2707,22 @@ paths:
                     type:
                     - string
                     - 'null'
+                  icon:
+                    type:
+                    - string
+                    - 'null'
+                    minLength: 1
+                    maxLength: 64
+                    pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
                   html_code_present:
                     type: boolean
+                  content_format:
+                    type: string
+                    description: The substrate the dashboard is written in. New substrates are added over time.
+                    x-extensible-enum:
+                    - html
+                    - openui
+                    - react
                   status:
                     type: string
                     enum:
@@ -1625,26 +2744,13 @@ paths:
                     enum:
                     - view
                     - edit
+                  has_live_connector_data:
+                    type: boolean
                   thumbnail_url:
                     type:
                     - string
                     - 'null'
-                  refresh_frequency:
-                    type:
-                    - string
-                    - 'null'
-                    enum:
-                    - every_15_minutes
-                    - every_30_minutes
-                    - hourly
-                    - every_6_hours
-                    - daily
-                    - weekly
                   last_refresh_at:
-                    type:
-                    - string
-                    - 'null'
-                  next_refresh_at:
                     type:
                     - string
                     - 'null'
@@ -1655,6 +2761,7 @@ paths:
                 required:
                 - id
                 - team_id
+                - organization_id
                 - created_by_user_id
                 - title
                 - html_code_present
@@ -1730,7 +2837,7 @@ paths:
       operationId: stopPulseDashboardMessage
       tags:
       - Duvo Pulse
-      description: Stop an in-flight Duvo Pulse generation turn. Only the creator can stop. Flips the dashboard to 'interrupted' and keeps any streamed-so-far reply; stopping when nothing is generating is a successful no-op.
+      description: Stop an in-flight Duvo Pulse generation turn. Requires edit access to the dashboard. Flips the dashboard to 'interrupted' and keeps any streamed-so-far reply; stopping when nothing is generating is a successful no-op.
       requestBody:
         required: true
         content:
@@ -1763,8 +2870,25 @@ paths:
                         type: string
                         format: uuid
                       team_id:
-                        type: string
+                        type:
+                        - string
+                        - 'null'
                         format: uuid
+                      organization_id:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      automation_id:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      automation_name:
+                        description: Name of the owning automation, resolved only on the `automation` list scope — the one surface that renders the composite `<Automation> / <Title>` label. Absent elsewhere; a client reads absence and null the same way.
+                        type:
+                        - string
+                        - 'null'
                       created_by_user_id:
                         type: string
                         format: uuid
@@ -1772,8 +2896,22 @@ paths:
                         type:
                         - string
                         - 'null'
+                      icon:
+                        type:
+                        - string
+                        - 'null'
+                        minLength: 1
+                        maxLength: 64
+                        pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
                       html_code_present:
                         type: boolean
+                      content_format:
+                        type: string
+                        description: The substrate the dashboard is written in. New substrates are added over time.
+                        x-extensible-enum:
+                        - html
+                        - openui
+                        - react
                       status:
                         type: string
                         enum:
@@ -1795,26 +2933,13 @@ paths:
                         enum:
                         - view
                         - edit
+                      has_live_connector_data:
+                        type: boolean
                       thumbnail_url:
                         type:
                         - string
                         - 'null'
-                      refresh_frequency:
-                        type:
-                        - string
-                        - 'null'
-                        enum:
-                        - every_15_minutes
-                        - every_30_minutes
-                        - hourly
-                        - every_6_hours
-                        - daily
-                        - weekly
                       last_refresh_at:
-                        type:
-                        - string
-                        - 'null'
-                      next_refresh_at:
                         type:
                         - string
                         - 'null'
@@ -1825,6 +2950,7 @@ paths:
                     required:
                     - id
                     - team_id
+                    - organization_id
                     - created_by_user_id
                     - title
                     - html_code_present
@@ -1891,7 +3017,7 @@ paths:
       operationId: listPulseDashboardConnections
       tags:
       - Duvo Pulse
-      description: List the connections (data sources) attached to a Duvo Pulse dashboard (creator only).
+      description: List the connections (data sources) attached to a Duvo Pulse dashboard (requires edit access).
       parameters:
       - schema:
           type: string
@@ -1932,15 +3058,49 @@ paths:
                         created_at:
                           type: string
                           format: date-time
+                        resolved_via:
+                          default: attachment
+                          type: string
+                          enum:
+                          - attachment
+                          - slot
                       required:
                       - connection_id
                       - integration_id
                       - custom_integration_id
                       - type
                       - created_at
+                      - resolved_via
+                      additionalProperties: false
+                  missing_connections:
+                    default: []
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        integration_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        custom_integration_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        type:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - integration_id
+                      - custom_integration_id
+                      - type
+                      - name
                       additionalProperties: false
                 required:
                 - connections
+                - missing_connections
                 additionalProperties: false
         '401':
           description: Default Response
@@ -1971,7 +3131,7 @@ paths:
       operationId: attachPulseDashboardConnection
       tags:
       - Duvo Pulse
-      description: Attach one of your connections (data sources) to a Duvo Pulse dashboard so the agent can use its tools (creator only).
+      description: Attach one of your connections (data sources) to a Duvo Pulse dashboard so the agent can use its tools (requires edit access).
       requestBody:
         required: true
         content:
@@ -2072,7 +3232,7 @@ paths:
       operationId: detachPulseDashboardConnection
       tags:
       - Duvo Pulse
-      description: Detach a connection (data source) from a Duvo Pulse dashboard (creator only).
+      description: Detach a connection (data source) from a Duvo Pulse dashboard (requires edit access).
       parameters:
       - schema:
           type: string
@@ -2222,6 +3382,1146 @@ paths:
                 - error
                 additionalProperties: false
       summary: Answer Pulse Dashboard Question
+  /v2/artifacts/{artifactId}/comments:
+    get:
+      operationId: listPulseDashboardComments
+      tags:
+      - Duvo Pulse
+      description: List the comment threads on a Duvo Pulse dashboard (requires view access). Each thread carries its author, the dashboard element it is pinned to, its replies oldest-first, and whether it has been marked complete.
+      parameters:
+      - schema:
+          type: integer
+          maximum: 200
+        in: query
+        name: limit
+        required: false
+        description: Maximum number of comment threads to return (1-200, default 50).
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of comment threads to skip, for paging.
+      - schema:
+          type: string
+          enum:
+          - open
+          - complete
+        in: query
+        name: status
+        required: false
+        description: 'Return only threads in this state: `open` for threads not yet marked complete, `complete` for those that are. Omit for both. `total` and `open_total` always count the whole set, so a filtered page still reports how many threads exist.'
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        artifact_id:
+                          type: string
+                          format: uuid
+                        author:
+                          type: object
+                          properties:
+                            user_id:
+                              type: string
+                              format: uuid
+                            name:
+                              type:
+                              - string
+                              - 'null'
+                            email:
+                              type: string
+                              format: email
+                          required:
+                          - user_id
+                          - name
+                          - email
+                          additionalProperties: false
+                        body:
+                          type: string
+                        element:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            selector:
+                              type: string
+                              minLength: 1
+                              maxLength: 2000
+                            label:
+                              type: string
+                              minLength: 1
+                              maxLength: 200
+                            tag_name:
+                              type: string
+                              minLength: 1
+                              maxLength: 50
+                            text:
+                              type: string
+                              maxLength: 500
+                            outer_html:
+                              type: string
+                              minLength: 1
+                              maxLength: 4000
+                            point:
+                              type: object
+                              properties:
+                                x_ratio:
+                                  type: number
+                                  minimum: 0
+                                  maximum: 1
+                                y_ratio:
+                                  type: number
+                                  minimum: 0
+                                  maximum: 1
+                              required:
+                              - x_ratio
+                              - y_ratio
+                              additionalProperties: false
+                            openui_node:
+                              type: object
+                              properties:
+                                statement:
+                                  type: string
+                                  minLength: 1
+                                  maxLength: 200
+                                component:
+                                  type: string
+                                  minLength: 1
+                                  maxLength: 100
+                                source:
+                                  type: string
+                                  maxLength: 2000
+                              required:
+                              - statement
+                              - component
+                              additionalProperties: false
+                          required:
+                          - selector
+                          - label
+                          - tag_name
+                          - outer_html
+                          additionalProperties: false
+                        revision_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_by:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            user_id:
+                              type: string
+                              format: uuid
+                            name:
+                              type:
+                              - string
+                              - 'null'
+                            email:
+                              type: string
+                              format: email
+                          required:
+                          - user_id
+                          - name
+                          - email
+                          additionalProperties: false
+                        deleted_at:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        replies:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              artifact_id:
+                                type: string
+                                format: uuid
+                              parent_comment_id:
+                                type: string
+                                format: uuid
+                              author:
+                                type: object
+                                properties:
+                                  user_id:
+                                    type: string
+                                    format: uuid
+                                  name:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  email:
+                                    type: string
+                                    format: email
+                                required:
+                                - user_id
+                                - name
+                                - email
+                                additionalProperties: false
+                              body:
+                                type: string
+                              deleted_at:
+                                type:
+                                - string
+                                - 'null'
+                              created_at:
+                                type: string
+                              updated_at:
+                                type: string
+                            required:
+                            - id
+                            - artifact_id
+                            - parent_comment_id
+                            - author
+                            - body
+                            - deleted_at
+                            - created_at
+                            - updated_at
+                            additionalProperties: false
+                      required:
+                      - id
+                      - artifact_id
+                      - author
+                      - body
+                      - element
+                      - revision_id
+                      - resolved_at
+                      - resolved_by
+                      - deleted_at
+                      - created_at
+                      - updated_at
+                      - replies
+                      additionalProperties: false
+                  total:
+                    type: number
+                  open_total:
+                    type: number
+                required:
+                - comments
+                - total
+                - open_total
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Pulse Dashboard Comments
+    post:
+      operationId: createPulseDashboardComment
+      tags:
+      - Duvo Pulse
+      description: Start a comment thread on a Duvo Pulse dashboard (requires view access). Pass `element` — captured from the dashboard canvas — to pin the thread to one element; omit it for a comment on the dashboard as a whole.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+                element:
+                  type: object
+                  properties:
+                    selector:
+                      type: string
+                      minLength: 1
+                      maxLength: 2000
+                    label:
+                      type: string
+                      minLength: 1
+                      maxLength: 200
+                    tag_name:
+                      type: string
+                      minLength: 1
+                      maxLength: 50
+                    text:
+                      type: string
+                      maxLength: 500
+                    outer_html:
+                      type: string
+                      minLength: 1
+                      maxLength: 4000
+                    point:
+                      type: object
+                      properties:
+                        x_ratio:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                        y_ratio:
+                          type: number
+                          minimum: 0
+                          maximum: 1
+                      required:
+                      - x_ratio
+                      - y_ratio
+                    openui_node:
+                      type: object
+                      properties:
+                        statement:
+                          type: string
+                          minLength: 1
+                          maxLength: 200
+                        component:
+                          type: string
+                          minLength: 1
+                          maxLength: 100
+                        source:
+                          type: string
+                          maxLength: 2000
+                      required:
+                      - statement
+                      - component
+                  required:
+                  - selector
+                  - label
+                  - tag_name
+                  - outer_html
+                revision_id:
+                  type: string
+                  format: uuid
+              required:
+              - body
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comment:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      artifact_id:
+                        type: string
+                        format: uuid
+                      author:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          name:
+                            type:
+                            - string
+                            - 'null'
+                          email:
+                            type: string
+                            format: email
+                        required:
+                        - user_id
+                        - name
+                        - email
+                        additionalProperties: false
+                      body:
+                        type: string
+                      element:
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          selector:
+                            type: string
+                            minLength: 1
+                            maxLength: 2000
+                          label:
+                            type: string
+                            minLength: 1
+                            maxLength: 200
+                          tag_name:
+                            type: string
+                            minLength: 1
+                            maxLength: 50
+                          text:
+                            type: string
+                            maxLength: 500
+                          outer_html:
+                            type: string
+                            minLength: 1
+                            maxLength: 4000
+                          point:
+                            type: object
+                            properties:
+                              x_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                              y_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                            required:
+                            - x_ratio
+                            - y_ratio
+                            additionalProperties: false
+                          openui_node:
+                            type: object
+                            properties:
+                              statement:
+                                type: string
+                                minLength: 1
+                                maxLength: 200
+                              component:
+                                type: string
+                                minLength: 1
+                                maxLength: 100
+                              source:
+                                type: string
+                                maxLength: 2000
+                            required:
+                            - statement
+                            - component
+                            additionalProperties: false
+                        required:
+                        - selector
+                        - label
+                        - tag_name
+                        - outer_html
+                        additionalProperties: false
+                      revision_id:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      resolved_at:
+                        type:
+                        - string
+                        - 'null'
+                      resolved_by:
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          name:
+                            type:
+                            - string
+                            - 'null'
+                          email:
+                            type: string
+                            format: email
+                        required:
+                        - user_id
+                        - name
+                        - email
+                        additionalProperties: false
+                      deleted_at:
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                      replies:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            artifact_id:
+                              type: string
+                              format: uuid
+                            parent_comment_id:
+                              type: string
+                              format: uuid
+                            author:
+                              type: object
+                              properties:
+                                user_id:
+                                  type: string
+                                  format: uuid
+                                name:
+                                  type:
+                                  - string
+                                  - 'null'
+                                email:
+                                  type: string
+                                  format: email
+                              required:
+                              - user_id
+                              - name
+                              - email
+                              additionalProperties: false
+                            body:
+                              type: string
+                            deleted_at:
+                              type:
+                              - string
+                              - 'null'
+                            created_at:
+                              type: string
+                            updated_at:
+                              type: string
+                          required:
+                          - id
+                          - artifact_id
+                          - parent_comment_id
+                          - author
+                          - body
+                          - deleted_at
+                          - created_at
+                          - updated_at
+                          additionalProperties: false
+                    required:
+                    - id
+                    - artifact_id
+                    - author
+                    - body
+                    - element
+                    - revision_id
+                    - resolved_at
+                    - resolved_by
+                    - deleted_at
+                    - created_at
+                    - updated_at
+                    - replies
+                    additionalProperties: false
+                required:
+                - comment
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Pulse Dashboard Comment
+  /v2/artifacts/{artifactId}/comments/{commentId}/replies:
+    post:
+      operationId: createPulseDashboardCommentReply
+      tags:
+      - Duvo Pulse
+      description: Reply to a comment thread on a Duvo Pulse dashboard (requires view access). `commentId` must be a thread root; threads are one level deep. A thread already marked complete still accepts replies and stays complete.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  minLength: 1
+                  maxLength: 5000
+              required:
+              - body
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: commentId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reply:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      artifact_id:
+                        type: string
+                        format: uuid
+                      parent_comment_id:
+                        type: string
+                        format: uuid
+                      author:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          name:
+                            type:
+                            - string
+                            - 'null'
+                          email:
+                            type: string
+                            format: email
+                        required:
+                        - user_id
+                        - name
+                        - email
+                        additionalProperties: false
+                      body:
+                        type: string
+                      deleted_at:
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                    required:
+                    - id
+                    - artifact_id
+                    - parent_comment_id
+                    - author
+                    - body
+                    - deleted_at
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                required:
+                - reply
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Pulse Dashboard Comment Reply
+  /v2/artifacts/{artifactId}/comments/{commentId}/resolution:
+    post:
+      operationId: setPulseDashboardCommentResolution
+      tags:
+      - Duvo Pulse
+      description: Mark a Duvo Pulse dashboard comment thread complete, or reopen it (requires view access). Pass the target state in `resolved`; the call is idempotent, and the response carries the thread with `resolved_at` and `resolved_by` set or cleared.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolved:
+                  type: boolean
+              required:
+              - resolved
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: commentId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comment:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      artifact_id:
+                        type: string
+                        format: uuid
+                      author:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          name:
+                            type:
+                            - string
+                            - 'null'
+                          email:
+                            type: string
+                            format: email
+                        required:
+                        - user_id
+                        - name
+                        - email
+                        additionalProperties: false
+                      body:
+                        type: string
+                      element:
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          selector:
+                            type: string
+                            minLength: 1
+                            maxLength: 2000
+                          label:
+                            type: string
+                            minLength: 1
+                            maxLength: 200
+                          tag_name:
+                            type: string
+                            minLength: 1
+                            maxLength: 50
+                          text:
+                            type: string
+                            maxLength: 500
+                          outer_html:
+                            type: string
+                            minLength: 1
+                            maxLength: 4000
+                          point:
+                            type: object
+                            properties:
+                              x_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                              y_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                            required:
+                            - x_ratio
+                            - y_ratio
+                            additionalProperties: false
+                          openui_node:
+                            type: object
+                            properties:
+                              statement:
+                                type: string
+                                minLength: 1
+                                maxLength: 200
+                              component:
+                                type: string
+                                minLength: 1
+                                maxLength: 100
+                              source:
+                                type: string
+                                maxLength: 2000
+                            required:
+                            - statement
+                            - component
+                            additionalProperties: false
+                        required:
+                        - selector
+                        - label
+                        - tag_name
+                        - outer_html
+                        additionalProperties: false
+                      revision_id:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      resolved_at:
+                        type:
+                        - string
+                        - 'null'
+                      resolved_by:
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          name:
+                            type:
+                            - string
+                            - 'null'
+                          email:
+                            type: string
+                            format: email
+                        required:
+                        - user_id
+                        - name
+                        - email
+                        additionalProperties: false
+                      deleted_at:
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                      replies:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            artifact_id:
+                              type: string
+                              format: uuid
+                            parent_comment_id:
+                              type: string
+                              format: uuid
+                            author:
+                              type: object
+                              properties:
+                                user_id:
+                                  type: string
+                                  format: uuid
+                                name:
+                                  type:
+                                  - string
+                                  - 'null'
+                                email:
+                                  type: string
+                                  format: email
+                              required:
+                              - user_id
+                              - name
+                              - email
+                              additionalProperties: false
+                            body:
+                              type: string
+                            deleted_at:
+                              type:
+                              - string
+                              - 'null'
+                            created_at:
+                              type: string
+                            updated_at:
+                              type: string
+                          required:
+                          - id
+                          - artifact_id
+                          - parent_comment_id
+                          - author
+                          - body
+                          - deleted_at
+                          - created_at
+                          - updated_at
+                          additionalProperties: false
+                    required:
+                    - id
+                    - artifact_id
+                    - author
+                    - body
+                    - element
+                    - revision_id
+                    - resolved_at
+                    - resolved_by
+                    - deleted_at
+                    - created_at
+                    - updated_at
+                    - replies
+                    additionalProperties: false
+                required:
+                - comment
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Set Pulse Dashboard Comment Resolution
+  /v2/artifacts/{artifactId}/comments/{commentId}:
+    delete:
+      operationId: deletePulseDashboardComment
+      tags:
+      - Duvo Pulse
+      description: Delete a comment or reply on a Duvo Pulse dashboard. Allowed for the comment's author and for the dashboard's creator. Deleting a thread root keeps its replies, rendered under a deleted opening comment.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: artifactId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: commentId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - success
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Pulse Dashboard Comment
   /v2/artifacts/{artifactId}/revisions:
     get:
       operationId: listPulseDashboardVersions
@@ -2269,6 +4569,33 @@ paths:
                           - integer
                           - 'null'
                           maximum: 9007199254740991
+                        content_format:
+                          type: string
+                          description: The substrate the dashboard is written in. New substrates are added over time.
+                          x-extensible-enum:
+                          - html
+                          - openui
+                          - react
+                        author:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type:
+                              - string
+                              - 'null'
+                          required:
+                          - id
+                          - name
+                          additionalProperties: false
+                        change_summary:
+                          type:
+                          - string
+                          - 'null'
                         created_at:
                           type: string
                       required:
@@ -2492,6 +4819,482 @@ paths:
                 - error
                 additionalProperties: false
       summary: Restore Pulse Dashboard Version
+  /v2/teams/{teamId}/artifacts:
+    get:
+      operationId: listTeamPulseDashboards
+      tags:
+      - Duvo Pulse
+      description: List your Duvo Pulse dashboards for the team in the URL. Ordered most recently updated first, except scope=automation, which is ordered by creation time (then id) so the whole scope can be read with the after_id cursor without a concurrent change shifting a page boundary.
+      parameters:
+      - schema:
+          default: 20
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of results per page (1-100, default 20)
+      - schema:
+          default: 0
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of results to skip
+      - schema:
+          default: created
+          type: string
+          enum:
+          - created
+          - shared
+          - team
+          - automation
+        in: query
+        name: scope
+        required: false
+        description: 'Which dashboards to return: ''created'' (yours, the default), ''team'' (published to your whole team by a teammate), ''shared'' (shared with you individually by a teammate), or ''automation'' (owned by one of your team''s automations, each carrying its automation''s name).'
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: after_id
+        required: false
+        description: 'Keyset cursor for reading the whole ''automation'' scope: the id of the last dashboard you received; returns the page after it in (created_at, id) order. Use this instead of ''offset'' when reading every page, so a dashboard created, updated or deleted between requests cannot shift a page boundary you have already passed. 400 when the id no longer names a dashboard (restart from the first page). Only valid with scope=automation.'
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        team_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        organization_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        automation_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        automation_name:
+                          description: Name of the owning automation, resolved only on the `automation` list scope — the one surface that renders the composite `<Automation> / <Title>` label. Absent elsewhere; a client reads absence and null the same way.
+                          type:
+                          - string
+                          - 'null'
+                        created_by_user_id:
+                          type: string
+                          format: uuid
+                        title:
+                          type:
+                          - string
+                          - 'null'
+                        icon:
+                          type:
+                          - string
+                          - 'null'
+                          minLength: 1
+                          maxLength: 64
+                          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+                        html_code_present:
+                          type: boolean
+                        content_format:
+                          type: string
+                          description: The substrate the dashboard is written in. New substrates are added over time.
+                          x-extensible-enum:
+                          - html
+                          - openui
+                          - react
+                        status:
+                          type: string
+                          enum:
+                          - not_started
+                          - pending
+                          - running
+                          - completed
+                          - failed
+                          - interrupted
+                        visibility:
+                          type: string
+                          enum:
+                          - private
+                          - team
+                          - organization
+                          - teams
+                        publish_permission:
+                          type: string
+                          enum:
+                          - view
+                          - edit
+                        has_live_connector_data:
+                          type: boolean
+                        thumbnail_url:
+                          type:
+                          - string
+                          - 'null'
+                        last_refresh_at:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                      required:
+                      - id
+                      - team_id
+                      - organization_id
+                      - created_by_user_id
+                      - title
+                      - html_code_present
+                      - status
+                      - visibility
+                      - publish_permission
+                      - created_at
+                      - updated_at
+                      additionalProperties: false
+                  total:
+                    type: number
+                  limit:
+                    type: number
+                  offset:
+                    type: number
+                required:
+                - artifacts
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Team Pulse Dashboards
+    post:
+      operationId: createTeamPulseDashboard
+      tags:
+      - Duvo Pulse
+      description: Create a new Duvo Pulse dashboard for the team in the URL from a natural-language prompt and dispatch the first generation turn. Optionally born shared with the whole team via visibility, or scoped to an automation as one of its Pulse tabs via automation_id.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 15000
+                connection_ids:
+                  maxItems: 10
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                visibility:
+                  type: string
+                  enum:
+                  - private
+                  - team
+                permission:
+                  type: string
+                  enum:
+                  - view
+                  - edit
+                automation_id:
+                  type: string
+                  format: uuid
+                content_format:
+                  type: string
+                  enum:
+                  - html
+                  - openui
+                  - react
+              required:
+              - message
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifact_id:
+                    type: string
+                    format: uuid
+                  user_message:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      artifact_id:
+                        type: string
+                        format: uuid
+                      author_user_id:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      role:
+                        type: string
+                        enum:
+                        - user
+                        - assistant
+                      content:
+                        type: string
+                      created_at:
+                        type: string
+                      revision_id:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      message: {}
+                      selected_element:
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          selector:
+                            type: string
+                            minLength: 1
+                            maxLength: 2000
+                          label:
+                            type: string
+                            minLength: 1
+                            maxLength: 200
+                          tag_name:
+                            type: string
+                            minLength: 1
+                            maxLength: 50
+                          text:
+                            type: string
+                            maxLength: 500
+                          outer_html:
+                            type: string
+                            minLength: 1
+                            maxLength: 4000
+                          point:
+                            type: object
+                            properties:
+                              x_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                              y_ratio:
+                                type: number
+                                minimum: 0
+                                maximum: 1
+                            required:
+                            - x_ratio
+                            - y_ratio
+                            additionalProperties: false
+                          openui_node:
+                            type: object
+                            properties:
+                              statement:
+                                type: string
+                                minLength: 1
+                                maxLength: 200
+                              component:
+                                type: string
+                                minLength: 1
+                                maxLength: 100
+                              source:
+                                type: string
+                                maxLength: 2000
+                            required:
+                            - statement
+                            - component
+                            additionalProperties: false
+                        required:
+                        - selector
+                        - label
+                        - tag_name
+                        - outer_html
+                        additionalProperties: false
+                      attachments:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            attachment_id:
+                              type: string
+                              format: uuid
+                            filename:
+                              type: string
+                              minLength: 1
+                              maxLength: 255
+                            size_bytes:
+                              type: integer
+                              minimum: 0
+                              maximum: 26214400
+                            mime_type:
+                              type: string
+                              minLength: 1
+                              maxLength: 127
+                            sandbox_path:
+                              type: string
+                              minLength: 1
+                              maxLength: 512
+                          required:
+                          - attachment_id
+                          - filename
+                          - size_bytes
+                          - mime_type
+                          - sandbox_path
+                          additionalProperties: false
+                    required:
+                    - id
+                    - artifact_id
+                    - role
+                    - content
+                    - created_at
+                    additionalProperties: false
+                required:
+                - artifact_id
+                - user_message
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Team Pulse Dashboard
   /v2/teams/{teamId}/artifacts/{artifactId}/move:
     post:
       operationId: movePulseDashboard

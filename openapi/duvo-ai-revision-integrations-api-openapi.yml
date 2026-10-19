@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Revision Integrations API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -87,6 +105,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -100,6 +120,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -115,6 +137,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -128,6 +152,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -152,6 +178,12 @@ paths:
                     type: string
                     format: uuid
                   description: Integration IDs (or custom integration IDs) to attach to the revision
+                selected_automation_revision_id:
+                  description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
               required:
               - integration_ids
       parameters:
@@ -185,9 +217,14 @@ paths:
                   count:
                     type: number
                     description: Number of new integrations attached to the revision
+                  build_id:
+                    type: string
+                    format: uuid
+                    description: The revision the integrations were attached to. On a migrated team the edit is staged onto the agent's draft revision, so this may differ from the requested build_id — pin connections against this value.
                 required:
                 - success
                 - count
+                - build_id
                 additionalProperties: false
         '400':
           description: Default Response
@@ -199,6 +236,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -214,6 +253,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -227,6 +268,24 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -242,6 +301,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -256,6 +317,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -267,6 +330,15 @@ paths:
       - Revision Integrations
       description: Remove an integration from an agent revision. Removes the slot for everyone on the revision, including all per-user connection pins. Requires edit permission on the agent.
       parameters:
+      - schema:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        in: query
+        name: selected_automation_revision_id
+        required: false
+        description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
       - schema:
           type: string
           format: uuid
@@ -301,8 +373,13 @@ paths:
                   success:
                     type: boolean
                     description: True if the integration was removed
+                  build_id:
+                    type: string
+                    format: uuid
+                    description: The revision the integration was removed from. On a migrated team the edit is staged onto the agent's draft revision, so this may differ from the requested build_id.
                 required:
                 - success
+                - build_id
                 additionalProperties: false
         '400':
           description: Default Response
@@ -314,6 +391,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -329,6 +408,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -342,6 +423,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -357,6 +440,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -370,6 +455,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -444,6 +531,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -458,6 +547,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -471,6 +562,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -543,6 +636,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -556,6 +651,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -571,6 +668,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -584,6 +683,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -599,6 +700,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -612,6 +715,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -679,6 +784,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -692,6 +799,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -707,6 +816,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -721,19 +832,7 @@ paths:
                     type: string
                   message:
                     type: string
-                required:
-                - error
-                additionalProperties: false
-        '409':
-          description: Default Response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                  message:
+                  code:
                     type: string
                 required:
                 - error
@@ -749,6 +848,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -758,7 +859,7 @@ paths:
       operationId: getRevisionCaseQueueSetup
       tags:
       - Revision Integrations
-      description: Check that this build's case-queue integration slots are wired up correctly. Returns, per case-queue-producer/consumer slot, how many queues are linked, plus whether your team owns any case queues. A slot with linked_queue_count of 0 is attached but points at no queue and will fail at runtime — link a queue with replaceRevisionIntegrationQueues before starting work.
+      description: Check that this build's case-queue integration slots are wired up correctly. Returns, per case-queue-producer/consumer slot, how many queues are linked, plus whether any queue is available to bind (scoped to the agent's automation on a migrated team, team-wide otherwise). A slot with linked_queue_count of 0 is attached but points at no queue and will fail at runtime — link a queue with replaceRevisionIntegrationQueues before starting work.
       parameters:
       - schema:
           type: string
@@ -807,7 +908,7 @@ paths:
                     description: Per-slot queue link summary for the build
                   has_available_queues:
                     type: boolean
-                    description: True if the current team owns at least one queue
+                    description: True if at least one queue is available to bind. Scoped to the agent's automation on a migrated team; team-wide for a standalone agent.
                 required:
                 - configs
                 - has_available_queues
@@ -823,6 +924,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -836,6 +939,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -851,6 +956,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -865,6 +972,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -878,6 +987,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -949,6 +1060,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -962,6 +1075,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -977,6 +1092,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -991,6 +1108,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1004,6 +1123,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1027,6 +1148,12 @@ paths:
                     type: string
                     format: uuid
                   description: Full set of queue IDs to link to this slot. Replaces any existing links.
+                selected_automation_revision_id:
+                  description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
               required:
               - queue_ids
       parameters:
@@ -1075,8 +1202,13 @@ paths:
                       - id
                       - name
                       additionalProperties: false
+                  build_id:
+                    type: string
+                    format: uuid
+                    description: The revision the queue links were replaced on. On a migrated team the edit is staged onto the agent's draft revision, so this may differ from the requested build_id.
                 required:
                 - queues
+                - build_id
                 additionalProperties: false
         '400':
           description: Default Response
@@ -1088,6 +1220,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1103,6 +1237,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1116,6 +1252,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1131,6 +1269,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1145,6 +1285,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1158,6 +1300,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

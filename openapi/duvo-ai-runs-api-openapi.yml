@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Runs API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -79,6 +97,23 @@ paths:
                         required:
                         - data
                         additionalProperties: false
+                      rubrics:
+                        description: The Agent-specific rubrics this evaluation scored, as they were when the Run was judged.
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            slug:
+                              type: string
+                            title:
+                              type: string
+                            description:
+                              type: string
+                          required:
+                          - slug
+                          - title
+                          - description
+                          additionalProperties: false
                     required:
                     - id
                     - created_at
@@ -100,6 +135,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -113,6 +150,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -128,6 +167,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -141,6 +182,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -314,6 +357,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -327,6 +372,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -342,6 +389,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -356,6 +405,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -369,6 +420,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -451,6 +504,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -464,6 +519,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -479,6 +536,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -493,6 +552,24 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -506,6 +583,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -570,6 +649,9 @@ paths:
                           description: ISO 8601 timestamp when the message was sent
                         text_content:
                           description: Plain text content of the message
+                          type: string
+                        error:
+                          description: Why the execution failed, on session_error messages
                           type: string
                         tool_call:
                           description: Tool invocation details when role is assistant
@@ -637,6 +719,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -650,6 +734,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -665,6 +751,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -679,6 +767,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -692,6 +782,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -711,7 +803,7 @@ paths:
               type: object
               properties:
                 answers:
-                  description: 'For question-type requests: a map of question text to answer. Multi-select answers should be comma-separated.'
+                  description: 'For question-type requests: a map of question text to answer. Multi-select answers should be comma-separated. Each answer is at most 10240 UTF-8 bytes.'
                   type: object
                   additionalProperties:
                     type: string
@@ -798,6 +890,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -811,6 +905,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -826,6 +922,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -840,6 +938,40 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '413':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -853,6 +985,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -902,6 +1036,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -915,6 +1051,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -930,6 +1068,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -943,6 +1083,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -958,6 +1100,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -972,6 +1116,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -981,11 +1127,11 @@ paths:
       operationId: listRuns
       tags:
       - Runs
-      description: List runs for the current team. Supports filtering by agent, user, queue, status, etc. Messages, evaluation data, and queue metadata are included where available.
+      description: 'List runs for the current team. Supports filtering by agent, user, queue, status, etc. Messages, evaluation data, and queue metadata are included where available. Set count_only=true to skip Run row selection and enrichment. The normal response shape is returned with data: [] and the matching total. To sweep a whole team, follow `next_cursor` rather than raising `offset`.'
       parameters:
       - schema:
           default: 20
-          type: number
+          type: integer
           minimum: 1
           maximum: 100
         in: query
@@ -993,12 +1139,29 @@ paths:
         required: false
         description: Number of runs per page (1-100, default 20)
       - schema:
-          type: number
+          type: integer
           minimum: 0
+          maximum: 9007199254740991
         in: query
         name: offset
         required: false
-        description: Number of runs to skip
+        description: Number of runs to skip. Every skipped run is still read by the database, so deep offsets get slower page by page; to walk a whole team's history, page with `cursor` instead.
+      - schema:
+          type: string
+          minLength: 1
+        in: query
+        name: cursor
+        required: false
+        description: 'Resume after the run a previous page ended on: pass the `next_cursor` that page returned, with the same filters and sort_order. Unlike offset, a cursor page does not re-read the runs before it, so a sweep does not slow down as it goes deeper; send `include_total=false` on the first page to skip the full count too. Runs created in between cannot shift a boundary already passed, so pages do not repeat or skip runs the way offset pages do. A run created or completed while a sweep is in progress can still be missed by that sweep, so to export runs continuously, poll with `since` and a short overlap and deduplicate on run id. Cannot be combined with `offset`. 400 when the value is not a valid runs cursor.'
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: include_total
+        required: false
+        description: Whether to return `total`, the count of every matching run. Counting walks every match, so it costs far more than the page itself on a large team. Defaults to true on a first page and false on a `cursor` page, where `total` is null unless this is true. Implied by `count_only`.
       - schema:
           default: created_at
           type: string
@@ -1029,6 +1192,7 @@ paths:
           - completed
           - failed
           - interrupted
+          - expired
           - stopped
           - needs_attention
         in: query
@@ -1046,9 +1210,16 @@ paths:
           type: string
           format: uuid
         in: query
+        name: automation_id
+        required: false
+        description: Filter to runs that ran under this automation. A run keeps the automation it was created under, even after its agent moves to another automation
+      - schema:
+          type: string
+          format: uuid
+        in: query
         name: user_id
         required: false
-        description: Filter to runs owned by this user; non-superadmin callers are scoped to themselves regardless of this value
+        description: Filter to runs owned by this user. Callers below Administrator, other than Lead Builders, are scoped to themselves regardless of this value, unless the request comes from a dashboard
       - schema:
           type: string
           format: uuid
@@ -1076,7 +1247,7 @@ paths:
         in: query
         name: has_issues
         required: false
-        description: If true, only return runs that have evaluation issues
+        description: 'Filter on the run''s latest successful evaluation: true returns only runs it flagged, false only runs it did not. Only the latest evaluation counts — an older flag does not match — and a run whose latest evaluation errored, or that has none, counts as unflagged. Omit to return both.'
       - schema:
           type: string
           enum:
@@ -1093,12 +1264,30 @@ paths:
         in: query
         name: since
         required: false
+        description: Return runs completed at or after this ISO-8601 timestamp. Runs that have not completed are excluded.
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: until
+        required: false
+        description: Return runs completed before this ISO-8601 timestamp. The upper bound is exclusive. Runs that have not completed are excluded.
       - schema:
           type: string
           format: uuid
         in: query
         name: digest_id
         required: false
+      - schema:
+          default: 'false'
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: count_only
+        required: false
+        description: Skip row selection and enrichment. The normal list response shape is returned with an empty row array and the matching total.
       - schema:
           type: string
         in: path
@@ -1149,6 +1338,7 @@ paths:
                           - completed
                           - failed
                           - interrupted
+                          - expired
                         source:
                           type:
                           - string
@@ -1162,9 +1352,24 @@ paths:
                           format: uuid
                         agent_name:
                           type: string
+                        agent_type:
+                          type: string
+                          enum:
+                          - agent
+                          - code
+                          description: 'Flavour of the step: "agent" for an agentic step, "code" for a deterministic code step. Fixed at creation — a step''s builds all belong to the matching config family.'
                         build_id:
                           type: string
                           format: uuid
+                        automation_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        automation_name:
+                          type:
+                          - string
+                          - 'null'
                         user_id:
                           type:
                           - string
@@ -1202,6 +1407,9 @@ paths:
                           - object
                           - 'null'
                           properties:
+                            evaluationId:
+                              type: string
+                              format: uuid
                             passed:
                               type: number
                             total:
@@ -1252,6 +1460,8 @@ paths:
                       - agent_id
                       - agent_name
                       - build_id
+                      - automation_id
+                      - automation_name
                       - user_id
                       - case_queue_item_id
                       - case_queue_id
@@ -1261,10 +1471,25 @@ paths:
                       - submitted_prompt_count
                       additionalProperties: false
                   total:
-                    type: number
+                    description: Total runs matching the filters, ignoring pagination. Null when no count was requested (a `cursor` page without `include_total=true`, or `include_total=false`) — distinct from a count of 0.
+                    type:
+                    - number
+                    - 'null'
+                  has_more:
+                    default: false
+                    description: Whether another page exists past this one, determined by looking one row ahead. False on a count_only response.
+                    type: boolean
+                  next_cursor:
+                    default: null
+                    description: Pass as `cursor` (same filters, same sort_order) to fetch the next page. Null when `has_more` is false. Continues right after the last run on this page.
+                    type:
+                    - string
+                    - 'null'
                 required:
                 - data
                 - total
+                - has_more
+                - next_cursor
                 additionalProperties: false
         '400':
           description: Default Response
@@ -1276,6 +1501,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1291,6 +1518,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1304,6 +1533,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1332,7 +1563,7 @@ paths:
                   description: Optional sandbox ID with pre-uploaded files
                   type: string
                 webhook_url:
-                  description: Webhook URL to POST events to (human_request, run_completed, run_failed, run_interrupted)
+                  description: Webhook URL to POST events to (human_request, run_completed, run_failed, run_interrupted, run_expired)
                   type: string
                   format: uri
               required:
@@ -1428,6 +1659,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1441,6 +1674,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1456,6 +1691,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1470,6 +1707,40 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '429':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1483,6 +1754,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

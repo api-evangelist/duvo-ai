@@ -1,0 +1,2583 @@
+openapi: 3.2.0
+info:
+  title: Duvo Public Clarity Interview API
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: ClarityInterview
+paths:
+  /v2/organizations/{orgId}/clarity/hierarchy/nodes/{nodeId}/interviews:
+    get:
+      operationId: listClarityLandscapeNodeInterviews
+      tags:
+      - ClarityInterview
+      description: List Clarity interviews linked to a process folder
+      parameters:
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of interviews per page (1-100, default 50)
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of interviews to skip
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+        description: The organization ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: nodeId
+        required: true
+        description: The clarity process folder node ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interviews:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        userId:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        type:
+                          type: string
+                          enum:
+                          - interview
+                          - document
+                        status:
+                          type: string
+                          x-extensible-enum:
+                          - pending
+                          - recording
+                          - processing
+                          - complete
+                          - failed
+                        usabilityStatus:
+                          default: usable
+                          type: string
+                          enum:
+                          - usable
+                          - excluded
+                        usabilityReason:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                        usabilitySource:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - agent
+                          - interviewee
+                          - manager
+                        usabilityConfidence:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - high
+                          - medium
+                          - low
+                        hasTranscript:
+                          default: false
+                          type: boolean
+                        createdAt:
+                          type: string
+                        updatedAt:
+                          type: string
+                      required:
+                      - id
+                      - userId
+                      - title
+                      - type
+                      - status
+                      - usabilityStatus
+                      - usabilityReason
+                      - usabilitySource
+                      - usabilityConfidence
+                      - hasTranscript
+                      - createdAt
+                      - updatedAt
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - interviews
+                - total
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Clarity Landscape Node Interviews
+  /v2/organizations/{orgId}/clarity/hierarchy/nodes/{nodeId}/interviews/{interviewId}:
+    delete:
+      operationId: deleteClarityLandscapeNodeInterview
+      tags:
+      - ClarityInterview
+      description: Delete an organization-scoped folder interview
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+        description: The organization ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: nodeId
+        required: true
+        description: The clarity process folder node ID
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The folder interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type:
+                - string
+                - 'null'
+                enum:
+                - null
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Clarity Landscape Node Interview
+  /v2/organizations/{orgId}/clarity/interviews:
+    get:
+      operationId: listClarityOrganizationInterviews
+      tags:
+      - ClarityInterview
+      description: List Clarity interviews across an organization
+      parameters:
+      - schema:
+          type: string
+          enum:
+          - team
+          - organization
+        in: query
+        name: scope
+        required: false
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interviews:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        userId:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        type:
+                          type: string
+                          enum:
+                          - interview
+                          - document
+                        status:
+                          type: string
+                          x-extensible-enum:
+                          - pending
+                          - recording
+                          - processing
+                          - complete
+                          - failed
+                        usabilityStatus:
+                          default: usable
+                          type: string
+                          enum:
+                          - usable
+                          - excluded
+                        usabilityReason:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                        usabilitySource:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - agent
+                          - interviewee
+                          - manager
+                        usabilityConfidence:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - high
+                          - medium
+                          - low
+                        hasTranscript:
+                          default: false
+                          type: boolean
+                        createdAt:
+                          type: string
+                        updatedAt:
+                          type: string
+                        scope:
+                          type: string
+                          enum:
+                          - team
+                          - organization
+                        teamId:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        teamName:
+                          type:
+                          - string
+                          - 'null'
+                        organizationId:
+                          type: string
+                          format: uuid
+                      required:
+                      - id
+                      - userId
+                      - title
+                      - type
+                      - status
+                      - usabilityStatus
+                      - usabilityReason
+                      - usabilitySource
+                      - usabilityConfidence
+                      - hasTranscript
+                      - createdAt
+                      - updatedAt
+                      - scope
+                      - teamId
+                      - teamName
+                      - organizationId
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - interviews
+                - total
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Clarity Organization Interviews
+  /v2/organizations/{orgId}/clarity/interviews/{interviewId}:
+    get:
+      operationId: getClarityOrganizationInterview
+      tags:
+      - ClarityInterview
+      description: Load a single organization Clarity interview with transcript
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  scope:
+                    type: string
+                    enum:
+                    - organization
+                  type:
+                    type: string
+                    enum:
+                    - interview
+                    - document
+                  teamId:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - null
+                  organizationId:
+                    type: string
+                    format: uuid
+                  processId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  processNodeId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                    x-extensible-enum:
+                    - pending
+                    - recording
+                    - processing
+                    - complete
+                    - failed
+                  usabilityStatus:
+                    default: usable
+                    type: string
+                    enum:
+                    - usable
+                    - excluded
+                  usabilityReason:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  usabilitySource:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - interviewee
+                    - manager
+                  usabilityConfidence:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  recordingUrl:
+                    type:
+                    - string
+                    - 'null'
+                  transcript:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                          - ai
+                          - user
+                          - interviewer
+                        speakerName:
+                          type: string
+                        message:
+                          type: string
+                          minLength: 1
+                        timestamp:
+                          type: number
+                      required:
+                      - source
+                      - message
+                      additionalProperties: false
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                required:
+                - id
+                - scope
+                - type
+                - teamId
+                - organizationId
+                - processId
+                - processNodeId
+                - userId
+                - title
+                - status
+                - usabilityStatus
+                - usabilityReason
+                - usabilitySource
+                - usabilityConfidence
+                - recordingUrl
+                - transcript
+                - createdAt
+                - updatedAt
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Clarity Organization Interview
+    patch:
+      operationId: updateClarityOrganizationInterview
+      tags:
+      - ClarityInterview
+      description: Rename an organization landscape Clarity capture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+              required:
+              - title
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  type:
+                    type: string
+                    enum:
+                    - interview
+                    - document
+                  status:
+                    type: string
+                    x-extensible-enum:
+                    - pending
+                    - recording
+                    - processing
+                    - complete
+                    - failed
+                  usabilityStatus:
+                    default: usable
+                    type: string
+                    enum:
+                    - usable
+                    - excluded
+                  usabilityReason:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  usabilitySource:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - interviewee
+                    - manager
+                  usabilityConfidence:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  hasTranscript:
+                    default: false
+                    type: boolean
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                  scope:
+                    type: string
+                    enum:
+                    - team
+                    - organization
+                  teamId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  teamName:
+                    type:
+                    - string
+                    - 'null'
+                  organizationId:
+                    type: string
+                    format: uuid
+                required:
+                - id
+                - userId
+                - title
+                - type
+                - status
+                - usabilityStatus
+                - usabilityReason
+                - usabilitySource
+                - usabilityConfidence
+                - hasTranscript
+                - createdAt
+                - updatedAt
+                - scope
+                - teamId
+                - teamName
+                - organizationId
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Clarity Organization Interview
+    delete:
+      operationId: deleteClarityOrganizationInterview
+      tags:
+      - ClarityInterview
+      description: Delete an organization-level Clarity interview
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type:
+                - string
+                - 'null'
+                enum:
+                - null
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Clarity Organization Interview
+  /v2/organizations/{orgId}/clarity/interviews/notetaker:
+    post:
+      operationId: inviteClarityOrganizationNotetaker
+      tags:
+      - ClarityInterview
+      description: Invite the in-meeting notetaker bot (Recall.ai) to a live meeting; the recording lands as an organization Clarity interview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                meetingUrl:
+                  type: string
+                  maxLength: 2048
+                  format: uri
+                extraCaptureRequestId:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+              required:
+              - meetingUrl
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interviewId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - pending
+                required:
+                - interviewId
+                - status
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    enum:
+                    - CLARITY_ORG_INTERVIEWS_NOT_IN_PLAN
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Invite Clarity Organization Notetaker
+  /v2/organizations/{orgId}/clarity/interviews/{interviewId}/finalize:
+    post:
+      operationId: finalizeClarityOrganizationInterview
+      tags:
+      - ClarityInterview
+      description: Manually mark an in-progress organization interview as complete without requiring final media uploads
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  scope:
+                    type: string
+                    enum:
+                    - organization
+                  type:
+                    type: string
+                    enum:
+                    - interview
+                    - document
+                  teamId:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - null
+                  organizationId:
+                    type: string
+                    format: uuid
+                  processId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  processNodeId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                    x-extensible-enum:
+                    - pending
+                    - recording
+                    - processing
+                    - complete
+                    - failed
+                  usabilityStatus:
+                    default: usable
+                    type: string
+                    enum:
+                    - usable
+                    - excluded
+                  usabilityReason:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  usabilitySource:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - interviewee
+                    - manager
+                  usabilityConfidence:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  recordingUrl:
+                    type:
+                    - string
+                    - 'null'
+                  transcript:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                          - ai
+                          - user
+                          - interviewer
+                        speakerName:
+                          type: string
+                        message:
+                          type: string
+                          minLength: 1
+                        timestamp:
+                          type: number
+                      required:
+                      - source
+                      - message
+                      additionalProperties: false
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                required:
+                - id
+                - scope
+                - type
+                - teamId
+                - organizationId
+                - processId
+                - processNodeId
+                - userId
+                - title
+                - status
+                - usabilityStatus
+                - usabilityReason
+                - usabilitySource
+                - usabilityConfidence
+                - recordingUrl
+                - transcript
+                - createdAt
+                - updatedAt
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Finalize Clarity Organization Interview
+  /v2/organizations/{orgId}/clarity/interviews/document/create-upload-url:
+    post:
+      operationId: createClarityOrganizationDocumentUploadUrl
+      tags:
+      - ClarityInterview
+      description: Create a signed URL for uploading a PDF, Word (.docx), TXT, Markdown, or BPMN document as an organization-level Clarity capture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  minLength: 1
+                  description: Name of the document file
+                contentType:
+                  type: string
+                  enum:
+                  - application/pdf
+                  - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+                  - text/plain
+                  - text/markdown
+                  - application/xml
+                  description: MIME type of the document
+              required:
+              - fileName
+              - contentType
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signedUrl:
+                    type: string
+                    format: uri
+                    description: The signed URL for uploading
+                  captureId:
+                    type: string
+                    format: uuid
+                    description: The organization interview/capture ID
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    description: When the URL expires
+                  gcsPath:
+                    type: string
+                    description: The GCS path where the file will be stored
+                required:
+                - signedUrl
+                - captureId
+                - expiresAt
+                - gcsPath
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    enum:
+                    - CLARITY_ORG_INTERVIEWS_NOT_IN_PLAN
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Clarity Organization Document Upload URL
+  /v2/organizations/{orgId}/clarity/interviews/document/{interviewId}/complete:
+    post:
+      operationId: completeClarityOrganizationDocumentUpload
+      tags:
+      - ClarityInterview
+      description: Complete an organization document capture after uploading to GCS; extracts text and stores it as a transcript so it feeds Process Landscape generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  minLength: 1
+                  description: Name of the uploaded document file
+              required:
+              - fileName
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  scope:
+                    type: string
+                    enum:
+                    - organization
+                  type:
+                    type: string
+                    enum:
+                    - interview
+                    - document
+                  teamId:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - null
+                  organizationId:
+                    type: string
+                    format: uuid
+                  processId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  processNodeId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                    x-extensible-enum:
+                    - pending
+                    - recording
+                    - processing
+                    - complete
+                    - failed
+                  usabilityStatus:
+                    default: usable
+                    type: string
+                    enum:
+                    - usable
+                    - excluded
+                  usabilityReason:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  usabilitySource:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - interviewee
+                    - manager
+                  usabilityConfidence:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  recordingUrl:
+                    type:
+                    - string
+                    - 'null'
+                  transcript:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                          - ai
+                          - user
+                          - interviewer
+                        speakerName:
+                          type: string
+                        message:
+                          type: string
+                          minLength: 1
+                        timestamp:
+                          type: number
+                      required:
+                      - source
+                      - message
+                      additionalProperties: false
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                required:
+                - id
+                - scope
+                - type
+                - teamId
+                - organizationId
+                - processId
+                - processNodeId
+                - userId
+                - title
+                - status
+                - usabilityStatus
+                - usabilityReason
+                - usabilitySource
+                - usabilityConfidence
+                - recordingUrl
+                - transcript
+                - createdAt
+                - updatedAt
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Complete Clarity Organization Document Upload
+  /v2/teams/{teamId}/clarity/interviews:
+    get:
+      operationId: listClarityTeamInterviews
+      tags:
+      - ClarityInterview
+      description: List team-level Clarity interviews
+      parameters:
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of interviews per page (1-100, default 50)
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of interviews to skip
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interviews:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        userId:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        type:
+                          type: string
+                          enum:
+                          - interview
+                          - document
+                        status:
+                          type: string
+                          x-extensible-enum:
+                          - pending
+                          - recording
+                          - processing
+                          - complete
+                          - failed
+                        usabilityStatus:
+                          default: usable
+                          type: string
+                          enum:
+                          - usable
+                          - excluded
+                        usabilityReason:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                        usabilitySource:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - agent
+                          - interviewee
+                          - manager
+                        usabilityConfidence:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - high
+                          - medium
+                          - low
+                        hasTranscript:
+                          default: false
+                          type: boolean
+                        createdAt:
+                          type: string
+                        updatedAt:
+                          type: string
+                      required:
+                      - id
+                      - userId
+                      - title
+                      - type
+                      - status
+                      - usabilityStatus
+                      - usabilityReason
+                      - usabilitySource
+                      - usabilityConfidence
+                      - hasTranscript
+                      - createdAt
+                      - updatedAt
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - interviews
+                - total
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Clarity Team Interviews
+  /v2/teams/{teamId}/clarity/interviews/{interviewId}:
+    delete:
+      operationId: deleteClarityTeamInterview
+      tags:
+      - ClarityInterview
+      description: Delete a team-level Clarity interview
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The team interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type:
+                - string
+                - 'null'
+                enum:
+                - null
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Clarity Team Interview
+  /v2/teams/{teamId}/clarity/interviews/document/create-upload-url:
+    post:
+      operationId: createClarityTeamDocumentUploadUrl
+      tags:
+      - ClarityInterview
+      description: Create a signed URL for uploading a PDF, Word (.docx), TXT, Markdown, or BPMN document as a team-level Clarity capture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  minLength: 1
+                  description: Name of the document file
+                contentType:
+                  type: string
+                  enum:
+                  - application/pdf
+                  - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+                  - text/plain
+                  - text/markdown
+                  - application/xml
+                  description: MIME type of the document
+              required:
+              - fileName
+              - contentType
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signedUrl:
+                    type: string
+                    format: uri
+                    description: The signed URL for uploading
+                  captureId:
+                    type: string
+                    format: uuid
+                    description: The organization interview/capture ID
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    description: When the URL expires
+                  gcsPath:
+                    type: string
+                    description: The GCS path where the file will be stored
+                required:
+                - signedUrl
+                - captureId
+                - expiresAt
+                - gcsPath
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Clarity Team Document Upload URL
+  /v2/teams/{teamId}/clarity/interviews/document/{interviewId}/complete:
+    post:
+      operationId: completeClarityTeamDocumentUpload
+      tags:
+      - ClarityInterview
+      description: Complete a team document capture after uploading to GCS; extracts text and stores it as a transcript so it feeds Process Landscape generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  minLength: 1
+                  description: Name of the uploaded document file
+              required:
+              - fileName
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The team interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  scope:
+                    type: string
+                    enum:
+                    - team
+                  type:
+                    type: string
+                    enum:
+                    - interview
+                    - document
+                  teamId:
+                    type: string
+                    format: uuid
+                  organizationId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  processId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  processNodeId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                    x-extensible-enum:
+                    - pending
+                    - recording
+                    - processing
+                    - complete
+                    - failed
+                  usabilityStatus:
+                    default: usable
+                    type: string
+                    enum:
+                    - usable
+                    - excluded
+                  usabilityReason:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  usabilitySource:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - interviewee
+                    - manager
+                  usabilityConfidence:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  recordingUrl:
+                    type:
+                    - string
+                    - 'null'
+                  transcript:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                          - ai
+                          - user
+                          - interviewer
+                        speakerName:
+                          type: string
+                        message:
+                          type: string
+                          minLength: 1
+                        timestamp:
+                          type: number
+                      required:
+                      - source
+                      - message
+                      additionalProperties: false
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                required:
+                - id
+                - scope
+                - type
+                - teamId
+                - organizationId
+                - processId
+                - processNodeId
+                - userId
+                - title
+                - status
+                - usabilityStatus
+                - usabilityReason
+                - usabilitySource
+                - usabilityConfidence
+                - recordingUrl
+                - transcript
+                - createdAt
+                - updatedAt
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Complete Clarity Team Document Upload
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

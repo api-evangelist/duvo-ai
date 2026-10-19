@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Agents API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -100,6 +118,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -113,6 +133,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -128,6 +150,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -141,6 +165,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -239,6 +265,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -252,6 +280,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -267,6 +297,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -281,6 +313,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -289,7 +323,7 @@ paths:
       operationId: createEvalRubric
       tags:
       - Agents
-      description: Add one Agent-specific evaluation rubric to a build. A build may hold at most 5 custom rubrics; this fails with 409 once that ceiling is reached. Defaults to the Agent's live build; pass build_id to target a specific revision.
+      description: Add one Agent-specific evaluation rubric to a build. A build may hold at most 5 custom rubrics by default (25 on teams with the newer rubric generator enabled); this fails with 409 once the build's ceiling is reached, and the error message states it. Defaults to the Agent's live build; pass build_id to target a specific revision.
       requestBody:
         required: true
         content:
@@ -310,6 +344,12 @@ paths:
                 build_id:
                   description: Add the rubric to this build (revision). Defaults to the agent's live build when omitted.
                   type: string
+                  format: uuid
+                selected_automation_revision_id:
+                  description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
+                  type:
+                  - string
+                  - 'null'
                   format: uuid
               required:
               - title
@@ -373,6 +413,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -386,6 +428,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -401,6 +445,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -414,6 +460,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -429,6 +477,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -443,6 +493,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -451,7 +503,7 @@ paths:
       operationId: replaceEvalRubrics
       tags:
       - Agents
-      description: Replace a build's entire Agent-specific evaluation rubric set in one call (at most 5 rubrics). Existing custom rubrics are removed and the supplied list becomes the new set; pass an empty array to clear them. Defaults to the Agent's live build; pass build_id to target a specific revision.
+      description: Replace a build's entire Agent-specific evaluation rubric set in one call (at most 5 rubrics by default, 25 on teams with the newer rubric generator enabled). Existing custom rubrics are removed and the supplied list becomes the new set; pass an empty array to clear them. Defaults to the Agent's live build; pass build_id to target a specific revision.
       requestBody:
         required: true
         content:
@@ -460,7 +512,7 @@ paths:
               type: object
               properties:
                 rubrics:
-                  maxItems: 5
+                  maxItems: 25
                   type: array
                   items:
                     type: object
@@ -483,6 +535,12 @@ paths:
                 build_id:
                   description: Replace the custom rubrics on this build (revision). Defaults to the agent's live build when omitted.
                   type: string
+                  format: uuid
+                selected_automation_revision_id:
+                  description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
+                  type:
+                  - string
+                  - 'null'
                   format: uuid
               required:
               - rubrics
@@ -567,6 +625,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -580,6 +640,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -595,6 +657,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -609,6 +673,24 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -622,6 +704,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -650,6 +734,12 @@ paths:
                   minLength: 20
                   maxLength: 400
                   description: A 1-2 sentence Pass condition phrased as a question.
+                selected_automation_revision_id:
+                  description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
               additionalProperties: false
       parameters:
       - schema:
@@ -716,6 +806,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -729,6 +821,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -744,6 +838,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -757,6 +853,24 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -772,6 +886,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -782,6 +898,15 @@ paths:
       - Agents
       description: Remove a single Agent-specific evaluation rubric. Future Runs on the build are no longer scored against it.
       parameters:
+      - schema:
+          type:
+          - string
+          - 'null'
+          format: uuid
+        in: query
+        name: selected_automation_revision_id
+        required: false
+        description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
       - schema:
           type: string
           format: uuid
@@ -822,6 +947,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -835,6 +962,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -850,6 +979,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -863,6 +994,24 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -878,10 +1027,168 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: Delete Eval Rubric
+  /v2/agents/{agent_id}/duplicate:
+    post:
+      operationId: duplicateAgent
+      tags:
+      - Agents
+      description: Duplicate an existing agent into a new agent named "Copy of ", carrying over its configuration. Use the include_* flags in the (optional) body to control what is copied; all default on except memory. Requires the Lead Builder team role or above.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                include_connections:
+                  description: Copy connected accounts (Connections) and their selected tools. Defaults to true.
+                  type: boolean
+                include_queue:
+                  description: Copy the assigned Queue. Defaults to true.
+                  type: boolean
+                include_skills_files:
+                  description: Copy attached Skills and Files. Defaults to true.
+                  type: boolean
+                include_logins_secrets:
+                  description: Copy saved Logins and Secrets. Defaults to true.
+                  type: boolean
+                include_plugins:
+                  description: Copy installed plugins. Defaults to true.
+                  type: boolean
+                include_aop:
+                  description: Copy the agent's operating procedure (AOP) and its handover targets. Defaults to true.
+                  type: boolean
+                include_memory:
+                  description: Copy what the agent has learned so far (its Memory). Defaults to false. Memory can only be copied from the Duvo app — requesting it here returns an error.
+                  type: boolean
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The ID of the agent to duplicate
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agent_id:
+                    type: string
+                    format: uuid
+                    description: The ID of the newly created duplicate agent
+                required:
+                - agent_id
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Duplicate Agent
   /v2/agents/{agent_id}:
     get:
       operationId: getAgent
@@ -914,6 +1221,12 @@ paths:
                         format: uuid
                       name:
                         type: string
+                      type:
+                        description: 'Flavour of the step: "agent" for an agentic step, "code" for a deterministic code step. Fixed at creation.'
+                        type: string
+                        enum:
+                        - agent
+                        - code
                       slack_enabled:
                         type:
                         - boolean
@@ -926,6 +1239,16 @@ paths:
                         type:
                         - boolean
                         - 'null'
+                      computer_use_sandbox_template_id:
+                        type:
+                        - string
+                        - 'null'
+                        description: '"standard" when durably pinned to the standard Duvo desktop, a template UUID when pinned to a specific desktop, or null when following the team default.'
+                      computer_use_vpn_config_id:
+                        type:
+                        - string
+                        - 'null'
+                        description: '"direct" when durably pinned to direct internet, a VPN config UUID when pinned to a specific network, or null when following the team default.'
                       team_id:
                         type:
                         - string
@@ -1023,6 +1346,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1036,6 +1361,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1051,6 +1378,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1064,6 +1393,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1101,7 +1432,23 @@ paths:
                   format: uuid
                 pinned:
                   type: boolean
-                  description: Pin the agent to the top of your agents list (true) or unpin it (false). Per-user — each viewer has their own pin.
+                  description: Pin the agent to the top of your agents list (true) or unpin it (false). Per-user — each viewer has their own pin. A team on Automations has no agents list for a pin to order, so a pin or unpin there is refused with a 409.
+                computer_use_sandbox_template_id:
+                  description: '"standard" to durably pin the standard Duvo desktop (immune to future team-default changes), a template UUID to pin that desktop, or null to follow the team default.'
+                  anyOf:
+                  - type: string
+                    enum:
+                    - standard
+                  - type: string
+                    format: uuid
+                computer_use_vpn_config_id:
+                  description: '"direct" to durably pin direct internet (no VPN, immune to future team-default changes), a VPN config UUID to pin that network, or null to follow the team default.'
+                  anyOf:
+                  - type: string
+                    enum:
+                    - direct
+                  - type: string
+                    format: uuid
       parameters:
       - schema:
           type: string
@@ -1128,6 +1475,12 @@ paths:
                         format: uuid
                       name:
                         type: string
+                      type:
+                        description: 'Flavour of the step: "agent" for an agentic step, "code" for a deterministic code step. Fixed at creation.'
+                        type: string
+                        enum:
+                        - agent
+                        - code
                       slack_enabled:
                         type:
                         - boolean
@@ -1140,6 +1493,16 @@ paths:
                         type:
                         - boolean
                         - 'null'
+                      computer_use_sandbox_template_id:
+                        type:
+                        - string
+                        - 'null'
+                        description: '"standard" when durably pinned to the standard Duvo desktop, a template UUID when pinned to a specific desktop, or null when following the team default.'
+                      computer_use_vpn_config_id:
+                        type:
+                        - string
+                        - 'null'
+                        description: '"direct" when durably pinned to direct internet, a VPN config UUID when pinned to a specific network, or null when following the team default.'
                       team_id:
                         type:
                         - string
@@ -1237,6 +1600,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1250,6 +1615,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1265,6 +1632,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1278,6 +1647,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1293,6 +1664,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1306,6 +1679,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1352,6 +1727,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1365,6 +1742,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1380,6 +1759,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1394,6 +1775,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1407,6 +1790,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1429,10 +1814,6 @@ paths:
                   type: string
                   format: uuid
                   description: The ID of the team to move the agent into.
-                move_learnings:
-                  default: true
-                  description: Whether to carry the agent's accumulated learnings across. Defaults to true.
-                  type: boolean
                 bypass_standalone_gate:
                   default: false
                   description: When true, move the agent together with every connected queue, trigger, and handover peer instead of rejecting a non-standalone agent. Defaults to false.
@@ -1538,6 +1919,57 @@ paths:
                       outcome:
                         type: object
                         properties:
+                          resources:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                kind:
+                                  type: string
+                                  enum:
+                                  - connection
+                                  - browser_login
+                                  - credential
+                                  - event_trigger
+                                agent_id:
+                                  type: string
+                                agent_name:
+                                  type: string
+                                integration_type:
+                                  type: string
+                                integration_name:
+                                  type: string
+                                instance_name:
+                                  type: string
+                                owner_user_id:
+                                  type:
+                                  - string
+                                  - 'null'
+                                owner_name:
+                                  type: string
+                                decision:
+                                  type: string
+                                  enum:
+                                  - reuse
+                                  - copy
+                                  - shared_copy
+                                  - needs_reconnect
+                                  - unmatched_integration
+                                  - custom_to_rebuild
+                                  - drop
+                                target_member_count:
+                                  type: number
+                              required:
+                              - kind
+                              - agent_id
+                              - agent_name
+                              - integration_type
+                              - integration_name
+                              - instance_name
+                              - owner_user_id
+                              - owner_name
+                              - decision
+                              additionalProperties: false
                           instances_reconnected:
                             type: array
                             items:
@@ -1616,11 +2048,94 @@ paths:
                               additionalProperties: false
                           catalog_rows_created_on_target:
                             type: number
+                          event_triggers_dropped:
+                            type: number
+                          schedules_dropped:
+                            type: number
+                          case_triggers_dropped:
+                            type: number
+                          readiness:
+                            type: object
+                            properties:
+                              users_missing_on_target:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    user_id:
+                                      type: string
+                                    user_name:
+                                      type: string
+                                    source_role:
+                                      type: string
+                                    connections_dropped:
+                                      type: number
+                                    browser_logins_dropped:
+                                      type: number
+                                    credentials_dropped:
+                                      type: number
+                                    event_triggers_dropped:
+                                      type: number
+                                    schedules_dropped:
+                                      type: number
+                                    case_triggers_dropped:
+                                      type: number
+                                    runs_interrupted:
+                                      type: number
+                                    blocks_approvals:
+                                      type: boolean
+                                    runs_at_risk:
+                                      type: number
+                                  required:
+                                  - user_id
+                                  - user_name
+                                  - source_role
+                                  - connections_dropped
+                                  - browser_logins_dropped
+                                  - credentials_dropped
+                                  - event_triggers_dropped
+                                  - schedules_dropped
+                                  - case_triggers_dropped
+                                  - runs_interrupted
+                                  - blocks_approvals
+                                  - runs_at_risk
+                                  additionalProperties: false
+                            required:
+                            - users_missing_on_target
+                            additionalProperties: false
+                          in_flight_runs:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                agent_id:
+                                  type: string
+                                agent_name:
+                                  type: string
+                                count:
+                                  type: number
+                              required:
+                              - agent_id
+                              - agent_name
+                              - count
+                              additionalProperties: false
+                          runs_pinned:
+                            type: number
+                          runs_interrupted:
+                            type: number
                         required:
+                        - resources
                         - instances_reconnected
                         - instances_disconnected
                         - custom_integrations_to_rebuild
                         - catalog_rows_created_on_target
+                        - event_triggers_dropped
+                        - schedules_dropped
+                        - case_triggers_dropped
+                        - readiness
+                        - in_flight_runs
+                        - runs_pinned
+                        - runs_interrupted
                         additionalProperties: false
                       dropped_folders:
                         type: array
@@ -1650,14 +2165,6 @@ paths:
                     - files_copied_count
                     - files_skipped_conflict
                     additionalProperties: false
-                  options:
-                    type: object
-                    properties:
-                      move_learnings:
-                        type: boolean
-                    required:
-                    - move_learnings
-                    additionalProperties: false
                   applied:
                     type: boolean
                 required:
@@ -1671,7 +2178,6 @@ paths:
                 - skills_to_clone
                 - files_to_copy
                 - warnings
-                - options
                 - applied
                 additionalProperties: false
         '400':
@@ -1717,6 +2223,19 @@ paths:
                             - id
                             - name
                             additionalProperties: false
+                        event_triggers:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - id
+                            - name
+                            additionalProperties: false
                         handovers_outgoing:
                           type: array
                           items:
@@ -1746,6 +2265,7 @@ paths:
                       required:
                       - queues
                       - triggers
+                      - event_triggers
                       - handovers_outgoing
                       - handovers_incoming
                       additionalProperties: false
@@ -1759,6 +2279,8 @@ paths:
                     error:
                       type: string
                     message:
+                      type: string
+                    code:
                       type: string
                   required:
                   - error
@@ -1774,6 +2296,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1787,6 +2311,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1802,6 +2328,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1816,6 +2344,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1829,6 +2359,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1900,6 +2432,12 @@ paths:
                           format: uuid
                         name:
                           type: string
+                        type:
+                          description: 'Flavour of the step: "agent" for an agentic step, "code" for a deterministic code step. Fixed at creation.'
+                          type: string
+                          enum:
+                          - agent
+                          - code
                         slack_enabled:
                           type:
                           - boolean
@@ -1912,6 +2450,16 @@ paths:
                           type:
                           - boolean
                           - 'null'
+                        computer_use_sandbox_template_id:
+                          type:
+                          - string
+                          - 'null'
+                          description: '"standard" when durably pinned to the standard Duvo desktop, a template UUID when pinned to a specific desktop, or null when following the team default.'
+                        computer_use_vpn_config_id:
+                          type:
+                          - string
+                          - 'null'
+                          description: '"direct" when durably pinned to direct internet, a VPN config UUID when pinned to a specific network, or null when following the team default.'
                         team_id:
                           type:
                           - string
@@ -1981,6 +2529,7 @@ paths:
                           type:
                           - string
                           - 'null'
+                          description: When you last ran this agent. Scoped to the authenticated user, so it ignores runs started by teammates, schedules and case queues — read `team_last_run_at` for those.
                         latest_build:
                           type:
                           - object
@@ -2007,6 +2556,125 @@ paths:
                               - 'null'
                             config:
                               anyOf:
+                              - type: object
+                                properties:
+                                  version:
+                                    type: string
+                                    enum:
+                                    - v1
+                                    description: Schema version discriminator — must be "v1" for the current code-step schema
+                                  data:
+                                    type: object
+                                    properties:
+                                      language:
+                                        type: string
+                                        enum:
+                                        - python
+                                        description: Language the step's program is written in
+                                      source:
+                                        oneOf:
+                                        - type: object
+                                          properties:
+                                            kind:
+                                              type: string
+                                              enum:
+                                              - inline
+                                            code:
+                                              type: string
+                                              minLength: 1
+                                              description: Program held in the build config. Written to `main.py` and run with `python main.py`.
+                                          required:
+                                          - kind
+                                          - code
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            kind:
+                                              type: string
+                                              enum:
+                                              - files
+                                            startCommand:
+                                              type: string
+                                              minLength: 1
+                                              maxLength: 2000
+                                              description: Command run from the root of the step's file system, e.g. "python main.py".
+                                            bundle:
+                                              description: The program's files, as a content-addressed manifest
+                                              type: object
+                                              properties:
+                                                bucket:
+                                                  type: string
+                                                  minLength: 1
+                                                  description: GCS bucket the bundle's blobs are stored in
+                                                files:
+                                                  maxItems: 200
+                                                  type: array
+                                                  items:
+                                                    type: object
+                                                    properties:
+                                                      path:
+                                                        type: string
+                                                        minLength: 1
+                                                        description: Path the file is materialised at, relative to the work dir
+                                                      sha256:
+                                                        type: string
+                                                        minLength: 64
+                                                        maxLength: 64
+                                                        pattern: ^[0-9a-f]{64}$
+                                                        description: Digest of the file's bytes, and the key its blob is stored at
+                                                      sizeBytes:
+                                                        type: integer
+                                                        minimum: 0
+                                                        maximum: 131072
+                                                        description: UTF-8 byte length of the file's contents
+                                                    required:
+                                                    - path
+                                                    - sha256
+                                                    - sizeBytes
+                                                    additionalProperties: false
+                                                  description: The program's files, one manifest entry each
+                                              required:
+                                              - bucket
+                                              - files
+                                              additionalProperties: false
+                                          required:
+                                          - kind
+                                          - startCommand
+                                          additionalProperties: false
+                                        description: Where the step's program comes from
+                                      files:
+                                        default: []
+                                        description: Team file paths this step can read at run time
+                                        type:
+                                        - array
+                                        - 'null'
+                                        items:
+                                          type: string
+                                      timeoutMs:
+                                        default: 600000
+                                        description: Wall-clock budget for one execution of the step
+                                        type: integer
+                                        maximum: 3600000
+                                      handoverRequired:
+                                        default: false
+                                        description: When the step declares handover options, whether a run that exits cleanly without requesting one fails. Ignored when the step declares no options.
+                                        type: boolean
+                                      maxConcurrency:
+                                        description: Most runs of this step that may be in flight at once on one queue, on top of the queue's own concurrency. Absent means only the queue's limit applies. Every claim enforces it; only cases handed to the step (handover, postpone, reprocess) are also kept out of the queue's free slots while the step is full. Cases a trigger or a revision route sends straight to a capped step can still take queue slots and wait there, delaying other steps on the same queue.
+                                        type: integer
+                                        maximum: 1000
+                                    required:
+                                    - language
+                                    - source
+                                    - files
+                                    - timeoutMs
+                                    - handoverRequired
+                                    additionalProperties: false
+                                    description: Code step configuration payload
+                                required:
+                                - version
+                                - data
+                                additionalProperties: false
                               - type: object
                                 properties:
                                   version:
@@ -2187,11 +2855,23 @@ paths:
                                             properties:
                                               model:
                                                 type: string
-                                                enum:
+                                                x-extensible-enum:
+                                                - claude-haiku-4-5-20251001
+                                                - claude-haiku-5-5
+                                                - claude-haiku-5-5[1m]
                                                 - claude-sonnet-5
                                                 - claude-sonnet-5[1m]
-                                                - claude-opus-4-8
-                                                - claude-opus-4-8[1m]
+                                                - claude-sonnet-5-5
+                                                - claude-sonnet-5-5[1m]
+                                                - claude-opus-5
+                                                - claude-opus-5[1m]
+                                                - claude-opus-5-5
+                                                - claude-opus-5-5[1m]
+                                                - kimi-k3
+                                                - kimi-k3-duvo
+                                                - glm-5.3-flash
+                                                - deepseek-v4.1-flash
+                                                - minimax-m3
                                                 - d1-max
                                                 - duvo-1-max
                                                 - duvo-1-max-sonnet-1m
@@ -2216,11 +2896,17 @@ paths:
                                                 - claude-opus-4-6[1m]
                                                 - claude-opus-4-7
                                                 - claude-opus-4-7[1m]
-                                                description: Claude model identifier used for the primary agent loop
+                                                - claude-opus-4-8
+                                                - claude-opus-4-8[1m]
+                                                - glm-5.2
+                                                - qwen3.6-27b
+                                                - qwen3.8-max
+                                                - deepseek-v4-flash
+                                                description: Model identifier used for the primary agent loop (Claude, or an OSS model when the team's oss_models flag — or oss_models_public for the public subset — is enabled)
                                             required:
                                             - model
                                             additionalProperties: false
-                                            description: Primary Claude agent model configuration
+                                            description: Primary agent model configuration
                                           browsing:
                                             type: object
                                             properties:
@@ -2331,7 +3017,7 @@ paths:
                                         description: Initial agent instructions — either a single system prompt string or a list of structured messages
                                       files:
                                         default: []
-                                        description: IDs of team files that should be available to the agent
+                                        description: Team files that should be available to the agent, each given as the relative file path returned in the `path` field of `GET /v2/teams/{teamId}/files` (for example `report.md` or `folder/doc.md`) — not the `id` field, which is a GCS object identifier.
                                         type:
                                         - array
                                         - 'null'
@@ -2355,7 +3041,7 @@ paths:
                                           type: string
                                       subAgents:
                                         default: []
-                                        description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
+                                        description: Retired — Sub-Assignments was removed. Accepted for backwards compatibility and ignored.
                                         type:
                                         - array
                                         - 'null'
@@ -2391,6 +3077,9 @@ paths:
                                               - description
                                               - criteria
                                               additionalProperties: false
+                                          supervisedMode:
+                                            description: 'Run the agent under Duvo''s permission classifier: every tool call is classified as allow/deny/ask, with ''ask'' routed to human-in-the-loop approval. Mutually exclusive with browsing and computer-use connections.'
+                                            type: boolean
                                         additionalProperties: {}
                                     required:
                                     - models
@@ -2521,6 +3210,56 @@ paths:
                                     type:
                                     - string
                                     - 'null'
+                                  pending_change:
+                                    type:
+                                    - object
+                                    - 'null'
+                                    properties:
+                                      automation_revision_id:
+                                        type: string
+                                      enabled:
+                                        type:
+                                        - boolean
+                                        - 'null'
+                                      cron:
+                                        type:
+                                        - string
+                                        - 'null'
+                                      frequency:
+                                        type:
+                                        - string
+                                        - 'null'
+                                      time:
+                                        type:
+                                        - string
+                                        - 'null'
+                                      timezone:
+                                        type:
+                                        - string
+                                        - 'null'
+                                      day:
+                                        type:
+                                        - string
+                                        - 'null'
+                                      day_of_month:
+                                        type:
+                                        - number
+                                        - 'null'
+                                      task:
+                                        type:
+                                        - string
+                                        - 'null'
+                                    required:
+                                    - automation_revision_id
+                                    - enabled
+                                    - cron
+                                    - frequency
+                                    - time
+                                    - timezone
+                                    - day
+                                    - day_of_month
+                                    - task
+                                    additionalProperties: false
                                 required:
                                 - id
                                 - build_id
@@ -2543,6 +3282,25 @@ paths:
                                 - last_missing_connection_failure_at
                                 - created_at
                                 - updated_at
+                                additionalProperties: false
+                            handover_to:
+                              type:
+                              - string
+                              - 'null'
+                              format: uuid
+                            handover_options:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  name:
+                                    type: string
+                                required:
+                                - id
+                                - name
                                 additionalProperties: false
                           required:
                           - id
@@ -2626,6 +3384,11 @@ paths:
                           type:
                           - string
                           - 'null'
+                        team_last_run_at:
+                          type:
+                          - string
+                          - 'null'
+                          description: When this agent last ran for anyone on the team, including runs started by schedules and case queues. Not scoped to the authenticated user.
                       required:
                       - id
                       - name
@@ -2645,6 +3408,7 @@ paths:
                       - case_trigger_has_conflict
                       - case_trigger_conflicting_agents
                       - case_queue_name
+                      - team_last_run_at
                       additionalProperties: false
                   total:
                     type: integer
@@ -2675,6 +3439,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2688,6 +3454,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -2703,6 +3471,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2711,7 +3481,7 @@ paths:
       operationId: createAgent
       tags:
       - Agents
-      description: Create a new agent. Optionally include a build configuration to create the first build in the same request.
+      description: 'Create a new agent. Optionally include a build configuration to create the first build in the same request. On a team that versions its automations, an agent created inside an automation joins that automation''s draft revision: its first build is a draft and goes live when the draft is made active.'
       requestBody:
         required: true
         content:
@@ -2723,6 +3493,13 @@ paths:
                   type: string
                   minLength: 1
                   description: Human-readable agent name
+                type:
+                  default: agent
+                  description: Flavour of the step to create. Fixed at creation — it selects the config family every build of this step must use, and the two cannot be mixed.
+                  type: string
+                  enum:
+                  - agent
+                  - code
                 thread_id:
                   description: Existing thread ID to associate with the agent
                   type:
@@ -2730,7 +3507,7 @@ paths:
                   - 'null'
                   format: uuid
                 source_build_id:
-                  description: Build ID whose case-queue-consumer setup should be copied to the new agent
+                  description: Build ID whose case-queue-consumer setup should be copied to the new agent. When `automation_id` is omitted, the new agent also joins the automation of the agent this build belongs to.
                   type:
                   - string
                   - 'null'
@@ -2767,11 +3544,23 @@ paths:
                                   properties:
                                     model:
                                       type: string
-                                      enum:
+                                      x-extensible-enum:
+                                      - claude-haiku-4-5-20251001
+                                      - claude-haiku-5-5
+                                      - claude-haiku-5-5[1m]
                                       - claude-sonnet-5
                                       - claude-sonnet-5[1m]
-                                      - claude-opus-4-8
-                                      - claude-opus-4-8[1m]
+                                      - claude-sonnet-5-5
+                                      - claude-sonnet-5-5[1m]
+                                      - claude-opus-5
+                                      - claude-opus-5[1m]
+                                      - claude-opus-5-5
+                                      - claude-opus-5-5[1m]
+                                      - kimi-k3
+                                      - kimi-k3-duvo
+                                      - glm-5.3-flash
+                                      - deepseek-v4.1-flash
+                                      - minimax-m3
                                       - d1-max
                                       - duvo-1-max
                                       - duvo-1-max-sonnet-1m
@@ -2796,10 +3585,16 @@ paths:
                                       - claude-opus-4-6[1m]
                                       - claude-opus-4-7
                                       - claude-opus-4-7[1m]
-                                      description: Claude model identifier used for the primary agent loop
+                                      - claude-opus-4-8
+                                      - claude-opus-4-8[1m]
+                                      - glm-5.2
+                                      - qwen3.6-27b
+                                      - qwen3.8-max
+                                      - deepseek-v4-flash
+                                      description: Model identifier used for the primary agent loop (Claude, or an OSS model when the team's oss_models flag — or oss_models_public for the public subset — is enabled)
                                   required:
                                   - model
-                                  description: Primary Claude agent model configuration
+                                  description: Primary agent model configuration
                                 browsing:
                                   type: object
                                   properties:
@@ -2904,7 +3699,7 @@ paths:
                               description: Initial agent instructions — either a single system prompt string or a list of structured messages
                             files:
                               default: []
-                              description: IDs of team files that should be available to the agent
+                              description: Team files that should be available to the agent, each given as the relative file path returned in the `path` field of `GET /v2/teams/{teamId}/files` (for example `report.md` or `folder/doc.md`) — not the `id` field, which is a GCS object identifier.
                               type:
                               - array
                               - 'null'
@@ -2928,7 +3723,7 @@ paths:
                                 type: string
                             subAgents:
                               default: []
-                              description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
+                              description: Retired — Sub-Assignments was removed. Accepted for backwards compatibility and ignored.
                               type:
                               - array
                               - 'null'
@@ -2963,6 +3758,9 @@ paths:
                                     required:
                                     - description
                                     - criteria
+                                supervisedMode:
+                                  description: 'Run the agent under Duvo''s permission classifier: every tool call is classified as allow/deny/ask, with ''ask'' routed to human-in-the-loop approval. Mutually exclusive with browsing and computer-use connections.'
+                                  type: boolean
                               additionalProperties: {}
                           required:
                           - models
@@ -2971,11 +3769,11 @@ paths:
                       required:
                       - version
                       - data
-                      description: Build configuration (latest schema version only; legacy v1 configs are not accepted)
+                      description: Build configuration (latest schema version only; legacy v1 configs are not accepted). Agent steps only — a code step's first build is created via `POST /v2/agents/{agent_id}/revisions`, which accepts a code-step config.
                   required:
                   - name
                   - config
-                  description: Optional inline build. When present, a first build is created alongside the agent.
+                  description: Optional inline build. When present, a first build is created alongside the agent. Only valid for an agent step.
               required:
               - name
       security:
@@ -3002,6 +3800,12 @@ paths:
                         format: uuid
                       name:
                         type: string
+                      type:
+                        description: 'Flavour of the step: "agent" for an agentic step, "code" for a deterministic code step. Fixed at creation.'
+                        type: string
+                        enum:
+                        - agent
+                        - code
                       slack_enabled:
                         type:
                         - boolean
@@ -3014,6 +3818,16 @@ paths:
                         type:
                         - boolean
                         - 'null'
+                      computer_use_sandbox_template_id:
+                        type:
+                        - string
+                        - 'null'
+                        description: '"standard" when durably pinned to the standard Duvo desktop, a template UUID when pinned to a specific desktop, or null when following the team default.'
+                      computer_use_vpn_config_id:
+                        type:
+                        - string
+                        - 'null'
+                        description: '"direct" when durably pinned to direct internet, a VPN config UUID when pinned to a specific network, or null when following the team default.'
                       team_id:
                         type:
                         - string
@@ -3110,6 +3924,125 @@ paths:
                         - 'null'
                       config:
                         anyOf:
+                        - type: object
+                          properties:
+                            version:
+                              type: string
+                              enum:
+                              - v1
+                              description: Schema version discriminator — must be "v1" for the current code-step schema
+                            data:
+                              type: object
+                              properties:
+                                language:
+                                  type: string
+                                  enum:
+                                  - python
+                                  description: Language the step's program is written in
+                                source:
+                                  oneOf:
+                                  - type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                        enum:
+                                        - inline
+                                      code:
+                                        type: string
+                                        minLength: 1
+                                        description: Program held in the build config. Written to `main.py` and run with `python main.py`.
+                                    required:
+                                    - kind
+                                    - code
+                                    additionalProperties: false
+                                  - type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                        enum:
+                                        - files
+                                      startCommand:
+                                        type: string
+                                        minLength: 1
+                                        maxLength: 2000
+                                        description: Command run from the root of the step's file system, e.g. "python main.py".
+                                      bundle:
+                                        description: The program's files, as a content-addressed manifest
+                                        type: object
+                                        properties:
+                                          bucket:
+                                            type: string
+                                            minLength: 1
+                                            description: GCS bucket the bundle's blobs are stored in
+                                          files:
+                                            maxItems: 200
+                                            type: array
+                                            items:
+                                              type: object
+                                              properties:
+                                                path:
+                                                  type: string
+                                                  minLength: 1
+                                                  description: Path the file is materialised at, relative to the work dir
+                                                sha256:
+                                                  type: string
+                                                  minLength: 64
+                                                  maxLength: 64
+                                                  pattern: ^[0-9a-f]{64}$
+                                                  description: Digest of the file's bytes, and the key its blob is stored at
+                                                sizeBytes:
+                                                  type: integer
+                                                  minimum: 0
+                                                  maximum: 131072
+                                                  description: UTF-8 byte length of the file's contents
+                                              required:
+                                              - path
+                                              - sha256
+                                              - sizeBytes
+                                              additionalProperties: false
+                                            description: The program's files, one manifest entry each
+                                        required:
+                                        - bucket
+                                        - files
+                                        additionalProperties: false
+                                    required:
+                                    - kind
+                                    - startCommand
+                                    additionalProperties: false
+                                  description: Where the step's program comes from
+                                files:
+                                  default: []
+                                  description: Team file paths this step can read at run time
+                                  type:
+                                  - array
+                                  - 'null'
+                                  items:
+                                    type: string
+                                timeoutMs:
+                                  default: 600000
+                                  description: Wall-clock budget for one execution of the step
+                                  type: integer
+                                  maximum: 3600000
+                                handoverRequired:
+                                  default: false
+                                  description: When the step declares handover options, whether a run that exits cleanly without requesting one fails. Ignored when the step declares no options.
+                                  type: boolean
+                                maxConcurrency:
+                                  description: Most runs of this step that may be in flight at once on one queue, on top of the queue's own concurrency. Absent means only the queue's limit applies. Every claim enforces it; only cases handed to the step (handover, postpone, reprocess) are also kept out of the queue's free slots while the step is full. Cases a trigger or a revision route sends straight to a capped step can still take queue slots and wait there, delaying other steps on the same queue.
+                                  type: integer
+                                  maximum: 1000
+                              required:
+                              - language
+                              - source
+                              - files
+                              - timeoutMs
+                              - handoverRequired
+                              additionalProperties: false
+                              description: Code step configuration payload
+                          required:
+                          - version
+                          - data
+                          additionalProperties: false
                         - type: object
                           properties:
                             version:
@@ -3290,11 +4223,23 @@ paths:
                                       properties:
                                         model:
                                           type: string
-                                          enum:
+                                          x-extensible-enum:
+                                          - claude-haiku-4-5-20251001
+                                          - claude-haiku-5-5
+                                          - claude-haiku-5-5[1m]
                                           - claude-sonnet-5
                                           - claude-sonnet-5[1m]
-                                          - claude-opus-4-8
-                                          - claude-opus-4-8[1m]
+                                          - claude-sonnet-5-5
+                                          - claude-sonnet-5-5[1m]
+                                          - claude-opus-5
+                                          - claude-opus-5[1m]
+                                          - claude-opus-5-5
+                                          - claude-opus-5-5[1m]
+                                          - kimi-k3
+                                          - kimi-k3-duvo
+                                          - glm-5.3-flash
+                                          - deepseek-v4.1-flash
+                                          - minimax-m3
                                           - d1-max
                                           - duvo-1-max
                                           - duvo-1-max-sonnet-1m
@@ -3319,11 +4264,17 @@ paths:
                                           - claude-opus-4-6[1m]
                                           - claude-opus-4-7
                                           - claude-opus-4-7[1m]
-                                          description: Claude model identifier used for the primary agent loop
+                                          - claude-opus-4-8
+                                          - claude-opus-4-8[1m]
+                                          - glm-5.2
+                                          - qwen3.6-27b
+                                          - qwen3.8-max
+                                          - deepseek-v4-flash
+                                          description: Model identifier used for the primary agent loop (Claude, or an OSS model when the team's oss_models flag — or oss_models_public for the public subset — is enabled)
                                       required:
                                       - model
                                       additionalProperties: false
-                                      description: Primary Claude agent model configuration
+                                      description: Primary agent model configuration
                                     browsing:
                                       type: object
                                       properties:
@@ -3434,7 +4385,7 @@ paths:
                                   description: Initial agent instructions — either a single system prompt string or a list of structured messages
                                 files:
                                   default: []
-                                  description: IDs of team files that should be available to the agent
+                                  description: Team files that should be available to the agent, each given as the relative file path returned in the `path` field of `GET /v2/teams/{teamId}/files` (for example `report.md` or `folder/doc.md`) — not the `id` field, which is a GCS object identifier.
                                   type:
                                   - array
                                   - 'null'
@@ -3458,7 +4409,7 @@ paths:
                                     type: string
                                 subAgents:
                                   default: []
-                                  description: IDs of other agents (in the same team) to expose to this agent as Claude Code subagents. Each sub-agent runs with its own AOP and connections; the parent can delegate to them via the Agent tool.
+                                  description: Retired — Sub-Assignments was removed. Accepted for backwards compatibility and ignored.
                                   type:
                                   - array
                                   - 'null'
@@ -3494,6 +4445,9 @@ paths:
                                         - description
                                         - criteria
                                         additionalProperties: false
+                                    supervisedMode:
+                                      description: 'Run the agent under Duvo''s permission classifier: every tool call is classified as allow/deny/ask, with ''ask'' routed to human-in-the-loop approval. Mutually exclusive with browsing and computer-use connections.'
+                                      type: boolean
                                   additionalProperties: {}
                               required:
                               - models
@@ -3624,6 +4578,56 @@ paths:
                               type:
                               - string
                               - 'null'
+                            pending_change:
+                              type:
+                              - object
+                              - 'null'
+                              properties:
+                                automation_revision_id:
+                                  type: string
+                                enabled:
+                                  type:
+                                  - boolean
+                                  - 'null'
+                                cron:
+                                  type:
+                                  - string
+                                  - 'null'
+                                frequency:
+                                  type:
+                                  - string
+                                  - 'null'
+                                time:
+                                  type:
+                                  - string
+                                  - 'null'
+                                timezone:
+                                  type:
+                                  - string
+                                  - 'null'
+                                day:
+                                  type:
+                                  - string
+                                  - 'null'
+                                day_of_month:
+                                  type:
+                                  - number
+                                  - 'null'
+                                task:
+                                  type:
+                                  - string
+                                  - 'null'
+                              required:
+                              - automation_revision_id
+                              - enabled
+                              - cron
+                              - frequency
+                              - time
+                              - timezone
+                              - day
+                              - day_of_month
+                              - task
+                              additionalProperties: false
                           required:
                           - id
                           - build_id
@@ -3646,6 +4650,25 @@ paths:
                           - last_missing_connection_failure_at
                           - created_at
                           - updated_at
+                          additionalProperties: false
+                      handover_to:
+                        type:
+                        - string
+                        - 'null'
+                        format: uuid
+                      handover_options:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                          required:
+                          - id
+                          - name
                           additionalProperties: false
                     required:
                     - id
@@ -3674,6 +4697,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -3687,6 +4712,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -3702,6 +4729,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -3716,6 +4745,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -3729,6 +4760,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Organizations API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -45,6 +63,12 @@ paths:
                   - string
                   - 'null'
                   format: uuid
+                materializationMode:
+                  description: 'Use "proposal" to record a process the organization plausibly needs, owned by `teamId` for review, WITHOUT creating a real process record. `teamId` is then required. Chat-scoped discovery agents may use proposal mode for their pinned team; direct human and API callers require Manager-or-above authority for that team. A proposal is idempotent: an equivalent live proposal under the same parent is returned untouched rather than duplicated. Defaults to "auto", which materializes a real process when `teamId` is set — except in a landscape-onboarding chat, which may only propose, and so defaults to "proposal".'
+                  type: string
+                  enum:
+                  - auto
+                  - proposal
               required:
               - name
       parameters:
@@ -103,6 +127,22 @@ paths:
                     enum:
                     - ai
                     - human
+                  priority:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  priorityReasoning:
+                    type:
+                    - string
+                    - 'null'
+                  priorityAssessedAt:
+                    type:
+                    - string
+                    - 'null'
                   createdAt:
                     type: string
                   updatedAt:
@@ -121,6 +161,12 @@ paths:
                     - id
                     - name
                     additionalProperties: false
+                  outcome:
+                    type: string
+                    enum:
+                    - created
+                    - reused
+                    description: Whether this call inserted a new node or returned an equivalent one that already existed. Only "proposal" mode can report "reused".
                 required:
                 - id
                 - parentId
@@ -132,9 +178,13 @@ paths:
                 - contentConfirmedAt
                 - existenceConfirmedAt
                 - source
+                - priority
+                - priorityReasoning
+                - priorityAssessedAt
                 - createdAt
                 - updatedAt
                 - team
+                - outcome
                 additionalProperties: false
         '400':
           description: Default Response
@@ -146,6 +196,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -161,6 +213,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -174,6 +228,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -189,6 +245,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -202,6 +260,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -217,10 +277,158 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: Propose Clarity Landscape Process
+  /v2/workspaces:
+    post:
+      operationId: createWorkspace
+      tags:
+      - Organizations
+      description: 'Set up the user''s Duvo workspace, or return the one they already have (`created: false`, nothing created). Call it first when the user has no workspace: other tools fail with ''User has no current team'' until one exists. A new workspace is on the Free plan, with Clarity and Automation. `has_clarity_access` says whether the team''s plan includes Clarity, `interviews_remaining` counts interviews left on the plan without subtracting people invited but not yet interviewed, and `billing_url` is where the user upgrades. If the user''s organization or email domain is already on Duvo, the call is refused with a link the user must open.'
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organization_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  team_id:
+                    type: string
+                    format: uuid
+                  created:
+                    type: boolean
+                  has_clarity_access:
+                    type: boolean
+                  interviews_remaining:
+                    anyOf:
+                    - type: number
+                    - type: string
+                      enum:
+                      - unlimited
+                  billing_url:
+                    type: string
+                    format: uri
+                required:
+                - organization_id
+                - team_id
+                - created
+                - has_clarity_access
+                - interviews_remaining
+                - billing_url
+                additionalProperties: false
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organization_id:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  team_id:
+                    type: string
+                    format: uuid
+                  created:
+                    type: boolean
+                  has_clarity_access:
+                    type: boolean
+                  interviews_remaining:
+                    anyOf:
+                    - type: number
+                    - type: string
+                      enum:
+                      - unlimited
+                  billing_url:
+                    type: string
+                    format: uri
+                required:
+                - organization_id
+                - team_id
+                - created
+                - has_clarity_access
+                - interviews_remaining
+                - billing_url
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Workspace
   /v2/organizations/{orgId}/members:
     post:
       operationId: inviteOrgMember
@@ -245,8 +453,12 @@ paths:
                   - organization:admin
                   - organization:member
                 frontendUrl:
+                  description: Deprecated. Use `sendEmail` instead. Kept because its presence is the legacy opt-in for sending the invitation email; the value never sets the link host, which is always the server's configured frontend URL.
                   type: string
                   format: uri
+                sendEmail:
+                  description: 'Email the invitation to the recipient. `false` always suppresses the email. When omitted, the legacy opt-in applies instead: the email is sent only if the deprecated `frontendUrl` is present. Omit both to create the invitation without notifying anyone.'
+                  type: boolean
                 teamId:
                   type: string
                   format: uuid
@@ -294,6 +506,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -307,6 +521,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -322,6 +538,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -336,6 +554,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -349,6 +569,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -377,6 +599,23 @@ paths:
         name: offset
         required: false
         description: Number of teams to skip
+      - schema:
+          type: string
+          maxLength: 200
+        in: query
+        name: search
+        required: false
+        description: Filter teams by name (case-insensitive substring match)
+      - schema:
+          default: createdAt
+          type: string
+          enum:
+          - createdAt
+          - name
+        in: query
+        name: sortBy
+        required: false
+        description: 'Sort order: createdAt (newest first, default) or name (alphabetical)'
       - schema:
           type: string
           format: uuid
@@ -431,6 +670,8 @@ paths:
                           type: number
                         scheduledJobCount:
                           type: number
+                        processCount:
+                          type: number
                       required:
                       - id
                       - name
@@ -463,6 +704,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -476,6 +719,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -491,6 +736,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -505,6 +752,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -518,6 +767,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -578,6 +829,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -591,6 +844,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -606,6 +861,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -619,6 +876,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -634,10 +893,593 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: Create Org Team
+  /v2/organizations/{orgId}/agents:
+    get:
+      operationId: listOrgAgents
+      tags:
+      - Organizations
+      description: 'List every agent across all teams in an organization, with the team it belongs to, the state of its most recent run and the state of its schedules. Intended for external monitoring: it answers ''which agents have gone silent'' and ''which agents were switched off'' without a request per team or per agent. Requires an organization Admin, Executive, or Owner role, and an API key scoped to all teams you can access — a key pinned to a single team is rejected, because this endpoint spans every team in the organization.'
+      parameters:
+      - schema:
+          default: 20
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of agents per page (1-100, default 20)
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of agents to skip
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: team_id
+        required: false
+        description: Filter to agents on this team
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: schedule_enabled
+        required: false
+        description: If true, only agents with at least one enabled schedule; if false, only agents with none (including agents that are never scheduled)
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: auto_disabled
+        required: false
+        description: If true, only agents whose schedule was switched off automatically (e.g. after repeated missing-connection failures); if false, only agents with no auto-disabled schedule
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+        description: The organization's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Unique agent identifier
+                        name:
+                          type: string
+                          description: Human-readable agent name
+                        team_id:
+                          type: string
+                          format: uuid
+                          description: Identifier of the team the agent belongs to
+                        team_name:
+                          type: string
+                          description: Name of the team the agent belongs to
+                        created_at:
+                          description: ISO 8601 creation timestamp
+                          type:
+                          - string
+                          - 'null'
+                        updated_at:
+                          description: ISO 8601 last-update timestamp
+                          type:
+                          - string
+                          - 'null'
+                        last_run_at:
+                          description: ISO 8601 creation timestamp of the agent's most recent run, or null when it has never run
+                          type:
+                          - string
+                          - 'null'
+                        last_run_status:
+                          description: Status of the agent's most recent run, or null if it never ran
+                          type:
+                          - string
+                          - 'null'
+                        schedule_enabled:
+                          type: boolean
+                          description: Whether at least one of the agent's schedules is enabled
+                        auto_disabled_at:
+                          description: ISO 8601 timestamp at which a schedule was switched off automatically, or null when none was
+                          type:
+                          - string
+                          - 'null'
+                        auto_disabled_reason:
+                          description: Why a schedule was switched off automatically, when it was
+                          type:
+                          - string
+                          - 'null'
+                      required:
+                      - id
+                      - name
+                      - team_id
+                      - team_name
+                      - created_at
+                      - updated_at
+                      - last_run_at
+                      - last_run_status
+                      - schedule_enabled
+                      - auto_disabled_at
+                      - auto_disabled_reason
+                      additionalProperties: false
+                  total:
+                    type: number
+                    description: Total agents matching the filters, ignoring pagination
+                  limit:
+                    type: number
+                    description: The limit that was applied
+                  offset:
+                    type: number
+                    description: The offset that was applied
+                required:
+                - agents
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Org Agents
+  /v2/organizations/{orgId}/runs:
+    get:
+      operationId: listOrgRuns
+      tags:
+      - Organizations
+      description: 'List runs across every team in an organization, filtered by status, agent, team, source, evaluation issues and time. Intended for external monitoring: one call covers the whole org instead of one per team. Requires an organization Admin, Executive, or Owner role, and an API key scoped to all teams you can access — a key pinned to a single team is rejected, because this endpoint spans every team in the organization.'
+      parameters:
+      - schema:
+          default: 20
+          type: integer
+          minimum: 1
+          maximum: 500
+        in: query
+        name: limit
+        required: false
+        description: 'Number of runs per page (1-500, default 20). The cap is higher than the team runs endpoint''s because this route serves bulk export: at 100 requests a minute per key, page size is what bounds how fast a month of runs can be pulled.'
+      - schema:
+          type: string
+          minLength: 1
+        in: query
+        name: cursor
+        required: false
+        description: 'Resume after the run a previous page ended on: pass the `next_cursor` that page returned, with the same filters and sort_order. Runs created or resolved in between cannot shift a boundary you have already passed, so a sweep sees every run exactly once, and a sweep that started under the default 7-day window keeps that window on every page. This list has no offset parameter: skipping rows costs the database every skipped row, and a run created between two requests shifts every later offset by one, so an offset sweep can repeat or miss a run. 400 when the value is not a cursor this endpoint issued.'
+      - schema:
+          default: desc
+          type: string
+          enum:
+          - asc
+          - desc
+        in: query
+        name: sort_order
+        required: false
+        description: Sort direction on created_at (default desc)
+      - schema:
+          type: string
+          enum:
+          - not_started
+          - pending
+          - starting
+          - running
+          - waiting
+          - completed
+          - failed
+          - interrupted
+          - expired
+          - stopped
+          - needs_attention
+        in: query
+        name: status
+        required: false
+        description: 'Filter to runs with this status. `needs_attention` is the monitoring status: runs that are waiting on a human or failed, plus runs whose latest evaluation flagged a critical issue — a run can finish as `completed` and still have accomplished nothing.'
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: team_id
+        required: false
+        description: Filter to runs on this team
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: agent_id
+        required: false
+        description: Filter to runs for this agent
+      - schema:
+          type: string
+        in: query
+        name: source
+        required: false
+        description: Filter to runs created from this source (e.g. api, scheduling)
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: has_issues
+        required: false
+        description: 'Filter on the run''s latest successful evaluation: true returns only runs it flagged, false only runs it did not. Only the latest evaluation counts — an older flag does not match — and a run whose latest evaluation errored, or that has none, counts as unflagged. Omit to return both.'
+      - schema:
+          type: string
+          enum:
+          - critical
+          - medium
+          - low
+        in: query
+        name: issue_severity
+        required: false
+        description: Only runs whose latest successful evaluation has at least one failing rubric at this severity (critical | medium | low). Implies has_issues.
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: created_after
+        required: false
+        description: 'Return runs created at or after this ISO-8601 timestamp. Every run has a creation time, so this is the window that returns all runs in a period whatever state they reached — unlike the started and completed windows below, which exclude runs that never started and runs still in flight respectively. When the request carries no lower time bound (`created_after`, `started_after`, `completed_after` or `since`), this defaults to 7 days ago and `default_window_applied` is true in the response: an organization''s run history is unbounded, and a monitor wants what is recent. An upper bound alone keeps the default floor. Pass any lower bound to replace it.'
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: created_before
+        required: false
+        description: 'Return runs created before this ISO-8601 timestamp (exclusive). Pair with `created_after` for a period. A closed creation window is also the stable one to paginate: results are ordered by creation time, so runs arriving mid-sweep cannot shift a closed window''s pages.'
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: started_after
+        required: false
+        description: Return runs that started at or after this ISO-8601 timestamp. Runs that never started are excluded. Pair with `started_before` to bound a stuck-run query to a window — without a lower bound, `status=running` also counts every run left running months ago.
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: started_before
+        required: false
+        description: Return runs that started before this ISO-8601 timestamp. Combine with status=running to find stuck runs — `since`/`until` filter on completion, so they never match a run that is still going.
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: completed_after
+        required: false
+        description: Return runs completed at or after this ISO-8601 timestamp. Runs that have not completed are excluded, including every stuck one — reach for `started_after`/`started_before` to bound those. Alias of `since`; pass one or the other, not both.
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: completed_before
+        required: false
+        description: Return runs completed before this ISO-8601 timestamp (exclusive). Runs that have not completed are excluded. Alias of `until`; pass one or the other, not both.
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: since
+        required: false
+        description: 'Alias of `completed_after`, kept because it is the name the public team runs endpoint ships. Prefer `completed_after`: this endpoint carries a creation and a start window too, and only the column-named pair says which one this is.'
+      - schema:
+          type: string
+          format: date-time
+        in: query
+        name: until
+        required: false
+        description: Alias of `completed_before`, kept because it is the name the public team runs endpoint ships. Prefer `completed_before`.
+      - schema:
+          default: 'false'
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: count_only
+        required: false
+        description: Skip row selection and enrichment. The normal list response shape is returned with an empty row array and the matching total.
+      - schema:
+          default: 'false'
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: include_total
+        required: false
+        description: 'Return `total`, the count of every matching run ignoring pagination. Off by default: counting walks every match where the page stops at `limit`, so on a large organization it costs orders of magnitude more than the rows themselves. Ask for it when you are driving a pager, not when you are polling. Implied by `count_only`.'
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+        description: The organization's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: Unique run identifier
+                        status:
+                          type: string
+                          description: Current run status
+                        source:
+                          description: What triggered the run
+                          type:
+                          - string
+                          - 'null'
+                        team_id:
+                          type: string
+                          format: uuid
+                          description: Team that owns the run. This is the run's own team, which a cross-team transfer pins to the source team — so it is not always the team the agent belongs to now.
+                        team_name:
+                          description: Name of that team, or null when the team no longer exists — a run stays pinned to the team that owned it, and that team can since have been deleted.
+                          type:
+                          - string
+                          - 'null'
+                        agent_id:
+                          type: string
+                          format: uuid
+                          description: Agent that ran
+                        agent_name:
+                          type: string
+                          description: Name of that agent
+                        build_id:
+                          description: Revision the run executed
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        automation_id:
+                          description: Owning automation, if any
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        automation_name:
+                          description: Name of that automation
+                          type:
+                          - string
+                          - 'null'
+                        user_id:
+                          description: User the run belongs to, if any
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        created_at:
+                          type: string
+                          description: ISO 8601 creation timestamp
+                        updated_at:
+                          type: string
+                          description: ISO 8601 last-update timestamp
+                        started_at:
+                          description: ISO 8601 start timestamp
+                          type:
+                          - string
+                          - 'null'
+                        completed_at:
+                          description: ISO 8601 completion timestamp
+                          type:
+                          - string
+                          - 'null'
+                      required:
+                      - id
+                      - status
+                      - source
+                      - team_id
+                      - team_name
+                      - agent_id
+                      - agent_name
+                      - build_id
+                      - automation_id
+                      - automation_name
+                      - user_id
+                      - created_at
+                      - updated_at
+                      - started_at
+                      - completed_at
+                      additionalProperties: false
+                  total:
+                    description: Total runs matching the filters, ignoring pagination. Null unless `include_total=true` or `count_only=true` — null means not requested, distinct from a count of 0.
+                    type:
+                    - number
+                    - 'null'
+                  limit:
+                    type: number
+                    description: The limit that was applied
+                  has_more:
+                    type: boolean
+                    description: Whether another page exists past this one, determined by looking one row ahead rather than inferred from a full page. False on a count_only response.
+                  next_cursor:
+                    description: Pass as `cursor` (same filters, same sort_order) to fetch the next page. Null when `has_more` is false. Exact continuation from the last run on this page, unaffected by runs created or resolved in the meantime.
+                    type:
+                    - string
+                    - 'null'
+                  created_after:
+                    description: 'The creation lower bound the query ran with, as ISO 8601: the caller''s `created_after`, or 7 days ago when the request carried no time bound at all. Null when the caller bounded the query on another timestamp only.'
+                    type:
+                    - string
+                    - 'null'
+                  default_window_applied:
+                    type: boolean
+                    description: True when the request carried no time bound and the 7-day creation window was applied for it. A caller that meant "everything" should pass an explicit `created_after`.
+                required:
+                - runs
+                - total
+                - limit
+                - has_more
+                - next_cursor
+                - created_after
+                - default_window_applied
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Org Runs
   /v2/organizations/{orgId}/insights/headline:
     get:
       operationId: getOrgInsightsHeadline
@@ -681,7 +1523,7 @@ paths:
                     properties:
                       total_runs:
                         type: number
-                        description: Total runs started in the window across all org teams
+                        description: Billable runs started in the window across all org teams; excludes postpone re-checks, which still count towards completed_runs, failed_runs and the active counts
                       completed_runs:
                         type: number
                         description: Runs that finished with completed status
@@ -741,6 +1583,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -754,6 +1598,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -769,6 +1615,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -782,6 +1630,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -861,6 +1711,12 @@ paths:
                         total_runs:
                           type: number
                           description: All runs in the window across sources
+                        standard_runs:
+                          description: Runs using Standard models
+                          type: number
+                        preview_runs:
+                          description: Runs using a Preview model
+                          type: number
                       required:
                       - team_id
                       - team_name
@@ -908,6 +1764,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -921,6 +1779,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -936,6 +1796,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -949,6 +1811,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1064,6 +1928,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1077,6 +1943,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1092,6 +1960,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1106,22 +1976,152 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: Get Org Insights Usage Chart
+  /v2/organizations/{orgId}/clarity/hierarchy/organize:
+    post:
+      operationId: organizeClarityProcessLandscape
+      tags:
+      - Organizations
+      description: Start an asynchronous organization pass over the organization's unfiled processes, placing them into the Process Landscape where possible (organization admin+). Results appear progressively; started is false when there is nothing to organize.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                instructions:
+                  description: 'Deprecated: ignored. The organize pass takes no instructions.'
+                  type: string
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '202':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  started:
+                    type: boolean
+                  bagSize:
+                    type: number
+                required:
+                - started
+                - bagSize
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Organize Clarity Process Landscape
   /v2/organizations/{orgId}/clarity/hierarchy/landscape:
     get:
       operationId: getClarityProcessLandscape
       tags:
       - Organizations
-      description: 'Fetch the organization''s process landscape: hierarchy nodes joined to lean process summaries and team assignments, with page-level stats'
+      description: Fetch the organization's full process landscape with process summaries, team assignments, and page-level stats
       parameters:
       - schema:
           type: string
           format: uuid
         in: query
         name: rootId
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: teamId
         required: false
       - schema:
           type: string
@@ -1157,6 +2157,11 @@ paths:
                           - string
                           - 'null'
                           format: uuid
+                        nodeKind:
+                          type: string
+                          enum:
+                          - area
+                          - process
                         name:
                           type: string
                         ownerLabel:
@@ -1189,108 +2194,23 @@ paths:
                           type: string
                         updatedAt:
                           type: string
-                        process:
-                          type:
-                          - object
-                          - 'null'
-                          properties:
-                            id:
-                              type: string
-                              format: uuid
-                            name:
-                              type: string
-                            status:
-                              type: string
-                              enum:
-                              - draft
-                              - collecting
-                              - generating
-                              - generating-current-process
-                              - generating-transformation-proposal
-                              - review
-                              - complete
-                              - generation_failed
-                            version:
-                              anyOf:
-                              - type: number
-                                enum:
-                                - 1
-                              - type: number
-                                enum:
-                                - 2
-                            summary:
-                              type:
-                              - string
-                              - 'null'
-                            captureCount:
-                              type: number
-                            captureCounts:
-                              type: object
-                              properties:
-                                video:
-                                  type: number
-                                interview:
-                                  type: number
-                                document:
-                                  type: number
-                              required:
-                              - video
-                              - interview
-                              - document
-                              additionalProperties: false
-                            contributors:
-                              type: array
-                              items:
-                                type: object
-                                properties:
-                                  userId:
-                                    type: string
-                                  userName:
-                                    type: string
-                                required:
-                                - userId
-                                - userName
-                                additionalProperties: false
-                            people:
-                              default: []
-                              type: array
-                              items:
-                                type: object
-                                properties:
-                                  id:
-                                    type: string
-                                  userId:
-                                    type:
-                                    - string
-                                    - 'null'
-                                  email:
-                                    type:
-                                    - string
-                                    - 'null'
-                                  name:
-                                    type: string
-                                required:
-                                - id
-                                - userId
-                                - email
-                                - name
-                                additionalProperties: false
-                            updatedAt:
-                              type: string
-                              format: date-time
-                          required:
-                          - id
-                          - name
-                          - status
-                          - version
-                          - summary
-                          - captureCount
-                          - captureCounts
-                          - contributors
-                          - people
-                          - updatedAt
-                          additionalProperties: false
                         proposedSummary:
+                          type:
+                          - string
+                          - 'null'
+                        priority:
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - high
+                          - medium
+                          - low
+                        priorityReasoning:
+                          type:
+                          - string
+                          - 'null'
+                        priorityAssessedAt:
                           type:
                           - string
                           - 'null'
@@ -1303,6 +2223,8 @@ paths:
                           type:
                           - string
                           - 'null'
+                        team:
+                          not: {}
                         assignedTeam:
                           type:
                           - object
@@ -1502,6 +2424,107 @@ paths:
                             - colorHue
                             - source
                             additionalProperties: false
+                        process:
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                            status:
+                              type: string
+                              enum:
+                              - draft
+                              - collecting
+                              - generating
+                              - generating-current-process
+                              - generating-transformation-proposal
+                              - review
+                              - complete
+                              - generation_failed
+                            version:
+                              anyOf:
+                              - type: number
+                                enum:
+                                - 1
+                              - type: number
+                                enum:
+                                - 2
+                            summary:
+                              type:
+                              - string
+                              - 'null'
+                            captureCount:
+                              type: number
+                            captureCounts:
+                              type: object
+                              properties:
+                                video:
+                                  type: number
+                                interview:
+                                  type: number
+                                document:
+                                  type: number
+                              required:
+                              - video
+                              - interview
+                              - document
+                              additionalProperties: false
+                            updatedAt:
+                              type: string
+                              format: date-time
+                            contributors:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  userId:
+                                    type: string
+                                  userName:
+                                    type: string
+                                required:
+                                - userId
+                                - userName
+                                additionalProperties: false
+                            people:
+                              default: []
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  id:
+                                    type: string
+                                  userId:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  email:
+                                    type:
+                                    - string
+                                    - 'null'
+                                  name:
+                                    type: string
+                                required:
+                                - id
+                                - userId
+                                - email
+                                - name
+                                additionalProperties: false
+                          required:
+                          - id
+                          - name
+                          - status
+                          - version
+                          - summary
+                          - captureCount
+                          - captureCounts
+                          - updatedAt
+                          - contributors
+                          - people
+                          additionalProperties: false
                       required:
                       - id
                       - parentId
@@ -1516,9 +2539,9 @@ paths:
                       - source
                       - createdAt
                       - updatedAt
-                      - process
                       - proposedSummary
                       - labels
+                      - process
                       additionalProperties: false
                   links:
                     type: array
@@ -1612,6 +2635,9 @@ paths:
                           - interview
                           - document
                           additionalProperties: false
+                        updatedAt:
+                          type: string
+                          format: date-time
                         contributors:
                           type: array
                           items:
@@ -1649,9 +2675,6 @@ paths:
                             - email
                             - name
                             additionalProperties: false
-                        updatedAt:
-                          type: string
-                          format: date-time
                         teamId:
                           type: string
                           format: uuid
@@ -1693,9 +2716,9 @@ paths:
                       - summary
                       - captureCount
                       - captureCounts
+                      - updatedAt
                       - contributors
                       - people
-                      - updatedAt
                       - teamId
                       - teamName
                       - labels
@@ -1722,8 +2745,28 @@ paths:
                     - unsortedProcesses
                     - latestUpdatedAt
                     additionalProperties: false
+                  canGenerate:
+                    default: false
+                    type: boolean
+                  generationId:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  generationStatus:
+                    default: idle
+                    type: string
+                    enum:
+                    - idle
+                    - starting
+                    - running
+                    - completed
+                    - failed
                   generation:
-                    type: object
+                    type:
+                    - object
+                    - 'null'
                     properties:
                       eligibleCaptureCount:
                         type: integer
@@ -1741,10 +2784,25 @@ paths:
                         - running
                         - completed
                         - failed
+                      lastCompletedAt:
+                        type:
+                        - string
+                        - 'null'
+                      newCaptureCount:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      newProcessCount:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
                     required:
                     - eligibleCaptureCount
                     - eligibleProcessCount
                     - status
+                    - lastCompletedAt
+                    - newCaptureCount
+                    - newProcessCount
                     additionalProperties: false
                   truncated:
                     type: boolean
@@ -1753,16 +2811,248 @@ paths:
                 - links
                 - unlinkedProcesses
                 - stats
+                - canGenerate
+                - generationId
+                - generationStatus
                 - generation
                 - truncated
                 additionalProperties: false
       summary: Get Clarity Process Landscape
+  /v2/organizations/{orgId}/clarity/hierarchy/people:
+    get:
+      operationId: getClarityHierarchyPeople
+      tags:
+      - Organizations
+      description: List the people attached to every authorized linked process node in the organization's Process Landscape. Returns a flat list where each person carries `nodeId` and `processId`, plus their role, invite status, and capture count. Narrow it with `rootId` (one subtree), `ownerTeamId` (one owning team), and `userId` or `search` (one person) — an unfiltered organization roster is large enough to be refused by response-size caps. To find the processes where one person has not captured yet, filter to that person and read `captureCount` per row. `truncated` is true when the node subtree or any single process roster was capped.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: rootId
+        required: false
+        description: Only return rosters for nodes in the subtree under this node
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: ownerTeamId
+        required: false
+        description: Only return rosters for processes owned by this team. 404s when the team has no readable Process Landscape
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: userId
+        required: false
+        description: Only return rows for this platform user, matched on the same resolved identity the roster reports (an email-only row resolves through its organization profile)
+      - schema:
+          type: string
+          maxLength: 200
+        in: query
+        name: search
+        required: false
+        description: Only return rows whose person name or email contains this text, case-insensitively
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  people:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        userId:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        name:
+                          type:
+                          - string
+                          - 'null'
+                        email:
+                          type:
+                          - string
+                          - 'null'
+                          format: email
+                        role:
+                          type:
+                          - string
+                          - 'null'
+                        interviewRequested:
+                          default: true
+                          type: boolean
+                        status:
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - pending
+                        invitationId:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        captureCount:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        captureStatusCounts:
+                          default:
+                            completed: 0
+                            inProgress: 0
+                            failed: 0
+                          type: object
+                          properties:
+                            completed:
+                              type: integer
+                              minimum: 0
+                              maximum: 9007199254740991
+                            inProgress:
+                              type: integer
+                              minimum: 0
+                              maximum: 9007199254740991
+                            failed:
+                              type: integer
+                              minimum: 0
+                              maximum: 9007199254740991
+                          required:
+                          - completed
+                          - inProgress
+                          - failed
+                          additionalProperties: false
+                        createdAt:
+                          type: string
+                        nodeId:
+                          type: string
+                          format: uuid
+                        processId:
+                          type: string
+                          format: uuid
+                      required:
+                      - id
+                      - userId
+                      - name
+                      - email
+                      - role
+                      - interviewRequested
+                      - status
+                      - invitationId
+                      - captureCount
+                      - captureStatusCounts
+                      - createdAt
+                      - nodeId
+                      - processId
+                      additionalProperties: false
+                  truncated:
+                    type: boolean
+                required:
+                - people
+                - truncated
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Clarity Hierarchy People
   /v2/organizations/{orgId}/clarity/hierarchy/captures:
     get:
       operationId: listClarityLandscapeCaptures
       tags:
       - Organizations
-      description: List the organization's eligible Process Landscape captures (completed interview/document transcripts not yet tied to a process) so they can seed new process proposals.
+      description: List the organization's Process Landscape captures. By default, only captures eligible to seed new process proposals are returned; excluded captures can be included for inspection.
       parameters:
       - schema:
           default: 100
@@ -1783,6 +3073,16 @@ paths:
         name: includeTranscripts
         required: false
         description: Include full capture transcripts (large); off by default. Pass the literal string 'true' or 'false' (z.coerce.boolean treats any non-empty value, including 'false', as true).
+      - schema:
+          default: 'false'
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: include_excluded
+        required: false
+        description: Include captures excluded from Process Landscape analysis
       - schema:
           type: string
           format: uuid
@@ -1859,6 +3159,31 @@ paths:
                           minimum: -9007199254740991
                           maximum: 9007199254740991
                           description: Number of messages in the capture transcript
+                        usability_status:
+                          type: string
+                          enum:
+                          - usable
+                          - excluded
+                        usability_reason:
+                          type:
+                          - string
+                          - 'null'
+                        usability_source:
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - agent
+                          - interviewee
+                          - manager
+                        usability_confidence:
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - high
+                          - medium
+                          - low
                         transcript:
                           description: Full capture transcript, included only when requested
                           type: array
@@ -1893,13 +3218,17 @@ paths:
                       - processNodeId
                       - createdAt
                       - transcriptMessageCount
+                      - usability_status
+                      - usability_reason
+                      - usability_source
+                      - usability_confidence
                       additionalProperties: false
-                    description: Eligible Process Landscape captures, newest first
+                    description: Process Landscape captures matching the query, newest first
                   total:
                     type: integer
                     minimum: -9007199254740991
                     maximum: 9007199254740991
-                    description: Total eligible captures in the organization
+                    description: Total captures matching the requested inclusion filter
                   truncated:
                     type: boolean
                     description: True when more captures exist than were returned
@@ -1919,6 +3248,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1932,6 +3263,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1947,6 +3280,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1961,6 +3296,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1974,6 +3311,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -2034,6 +3373,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2047,6 +3388,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -2062,6 +3405,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2075,6 +3420,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -2090,10 +3437,1556 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: Generate Clarity Process Landscape
+  /v2/organizations/{orgId}/clarity/interviews:
+    get:
+      operationId: listClarityOrganizationInterviews
+      tags:
+      - Organizations
+      description: List Clarity interviews across an organization
+      parameters:
+      - schema:
+          type: string
+          enum:
+          - team
+          - organization
+        in: query
+        name: scope
+        required: false
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+      - schema:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interviews:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        userId:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        type:
+                          type: string
+                          enum:
+                          - interview
+                          - document
+                        status:
+                          type: string
+                          x-extensible-enum:
+                          - pending
+                          - recording
+                          - processing
+                          - complete
+                          - failed
+                        usabilityStatus:
+                          default: usable
+                          type: string
+                          enum:
+                          - usable
+                          - excluded
+                        usabilityReason:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                        usabilitySource:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - agent
+                          - interviewee
+                          - manager
+                        usabilityConfidence:
+                          default: null
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - high
+                          - medium
+                          - low
+                        hasTranscript:
+                          default: false
+                          type: boolean
+                        createdAt:
+                          type: string
+                        updatedAt:
+                          type: string
+                        scope:
+                          type: string
+                          enum:
+                          - team
+                          - organization
+                        teamId:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        teamName:
+                          type:
+                          - string
+                          - 'null'
+                        organizationId:
+                          type: string
+                          format: uuid
+                      required:
+                      - id
+                      - userId
+                      - title
+                      - type
+                      - status
+                      - usabilityStatus
+                      - usabilityReason
+                      - usabilitySource
+                      - usabilityConfidence
+                      - hasTranscript
+                      - createdAt
+                      - updatedAt
+                      - scope
+                      - teamId
+                      - teamName
+                      - organizationId
+                      additionalProperties: false
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - interviews
+                - total
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Clarity Organization Interviews
+  /v2/organizations/{orgId}/clarity/interviews/{interviewId}:
+    get:
+      operationId: getClarityOrganizationInterview
+      tags:
+      - Organizations
+      description: Load a single organization Clarity interview with transcript
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  scope:
+                    type: string
+                    enum:
+                    - organization
+                  type:
+                    type: string
+                    enum:
+                    - interview
+                    - document
+                  teamId:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - null
+                  organizationId:
+                    type: string
+                    format: uuid
+                  processId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  processNodeId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                    x-extensible-enum:
+                    - pending
+                    - recording
+                    - processing
+                    - complete
+                    - failed
+                  usabilityStatus:
+                    default: usable
+                    type: string
+                    enum:
+                    - usable
+                    - excluded
+                  usabilityReason:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  usabilitySource:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - interviewee
+                    - manager
+                  usabilityConfidence:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  recordingUrl:
+                    type:
+                    - string
+                    - 'null'
+                  transcript:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                          - ai
+                          - user
+                          - interviewer
+                        speakerName:
+                          type: string
+                        message:
+                          type: string
+                          minLength: 1
+                        timestamp:
+                          type: number
+                      required:
+                      - source
+                      - message
+                      additionalProperties: false
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                required:
+                - id
+                - scope
+                - type
+                - teamId
+                - organizationId
+                - processId
+                - processNodeId
+                - userId
+                - title
+                - status
+                - usabilityStatus
+                - usabilityReason
+                - usabilitySource
+                - usabilityConfidence
+                - recordingUrl
+                - transcript
+                - createdAt
+                - updatedAt
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Clarity Organization Interview
+    patch:
+      operationId: updateClarityOrganizationInterview
+      tags:
+      - Organizations
+      description: Rename an organization landscape Clarity capture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+              required:
+              - title
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  type:
+                    type: string
+                    enum:
+                    - interview
+                    - document
+                  status:
+                    type: string
+                    x-extensible-enum:
+                    - pending
+                    - recording
+                    - processing
+                    - complete
+                    - failed
+                  usabilityStatus:
+                    default: usable
+                    type: string
+                    enum:
+                    - usable
+                    - excluded
+                  usabilityReason:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  usabilitySource:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - interviewee
+                    - manager
+                  usabilityConfidence:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  hasTranscript:
+                    default: false
+                    type: boolean
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                  scope:
+                    type: string
+                    enum:
+                    - team
+                    - organization
+                  teamId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  teamName:
+                    type:
+                    - string
+                    - 'null'
+                  organizationId:
+                    type: string
+                    format: uuid
+                required:
+                - id
+                - userId
+                - title
+                - type
+                - status
+                - usabilityStatus
+                - usabilityReason
+                - usabilitySource
+                - usabilityConfidence
+                - hasTranscript
+                - createdAt
+                - updatedAt
+                - scope
+                - teamId
+                - teamName
+                - organizationId
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Update Clarity Organization Interview
+    delete:
+      operationId: deleteClarityOrganizationInterview
+      tags:
+      - Organizations
+      description: Delete an organization-level Clarity interview
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '204':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type:
+                - string
+                - 'null'
+                enum:
+                - null
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Clarity Organization Interview
+  /v2/organizations/{orgId}/clarity/interviews/notetaker:
+    post:
+      operationId: inviteClarityOrganizationNotetaker
+      tags:
+      - Organizations
+      description: Invite the in-meeting notetaker bot (Recall.ai) to a live meeting; the recording lands as an organization Clarity interview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                meetingUrl:
+                  type: string
+                  maxLength: 2048
+                  format: uri
+                extraCaptureRequestId:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 160
+              required:
+              - meetingUrl
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interviewId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - pending
+                required:
+                - interviewId
+                - status
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    enum:
+                    - CLARITY_ORG_INTERVIEWS_NOT_IN_PLAN
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Invite Clarity Organization Notetaker
+  /v2/organizations/{orgId}/clarity/interviews/{interviewId}/finalize:
+    post:
+      operationId: finalizeClarityOrganizationInterview
+      tags:
+      - Organizations
+      description: Manually mark an in-progress organization interview as complete without requiring final media uploads
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+              additionalProperties: false
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  scope:
+                    type: string
+                    enum:
+                    - organization
+                  type:
+                    type: string
+                    enum:
+                    - interview
+                    - document
+                  teamId:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - null
+                  organizationId:
+                    type: string
+                    format: uuid
+                  processId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  processNodeId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                    x-extensible-enum:
+                    - pending
+                    - recording
+                    - processing
+                    - complete
+                    - failed
+                  usabilityStatus:
+                    default: usable
+                    type: string
+                    enum:
+                    - usable
+                    - excluded
+                  usabilityReason:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  usabilitySource:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - interviewee
+                    - manager
+                  usabilityConfidence:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  recordingUrl:
+                    type:
+                    - string
+                    - 'null'
+                  transcript:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                          - ai
+                          - user
+                          - interviewer
+                        speakerName:
+                          type: string
+                        message:
+                          type: string
+                          minLength: 1
+                        timestamp:
+                          type: number
+                      required:
+                      - source
+                      - message
+                      additionalProperties: false
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                required:
+                - id
+                - scope
+                - type
+                - teamId
+                - organizationId
+                - processId
+                - processNodeId
+                - userId
+                - title
+                - status
+                - usabilityStatus
+                - usabilityReason
+                - usabilitySource
+                - usabilityConfidence
+                - recordingUrl
+                - transcript
+                - createdAt
+                - updatedAt
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Finalize Clarity Organization Interview
+  /v2/organizations/{orgId}/clarity/interviews/document/create-upload-url:
+    post:
+      operationId: createClarityOrganizationDocumentUploadUrl
+      tags:
+      - Organizations
+      description: Create a signed URL for uploading a PDF, Word (.docx), TXT, Markdown, or BPMN document as an organization-level Clarity capture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  minLength: 1
+                  description: Name of the document file
+                contentType:
+                  type: string
+                  enum:
+                  - application/pdf
+                  - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+                  - text/plain
+                  - text/markdown
+                  - application/xml
+                  description: MIME type of the document
+              required:
+              - fileName
+              - contentType
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signedUrl:
+                    type: string
+                    format: uri
+                    description: The signed URL for uploading
+                  captureId:
+                    type: string
+                    format: uuid
+                    description: The organization interview/capture ID
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    description: When the URL expires
+                  gcsPath:
+                    type: string
+                    description: The GCS path where the file will be stored
+                required:
+                - signedUrl
+                - captureId
+                - expiresAt
+                - gcsPath
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                    enum:
+                    - CLARITY_ORG_INTERVIEWS_NOT_IN_PLAN
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Create Clarity Organization Document Upload URL
+  /v2/organizations/{orgId}/clarity/interviews/document/{interviewId}/complete:
+    post:
+      operationId: completeClarityOrganizationDocumentUpload
+      tags:
+      - Organizations
+      description: Complete an organization document capture after uploading to GCS; extracts text and stores it as a transcript so it feeds Process Landscape generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                  minLength: 1
+                  description: Name of the uploaded document file
+              required:
+              - fileName
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: orgId
+        required: true
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: interviewId
+        required: true
+        description: The organization interview ID
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  scope:
+                    type: string
+                    enum:
+                    - organization
+                  type:
+                    type: string
+                    enum:
+                    - interview
+                    - document
+                  teamId:
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - null
+                  organizationId:
+                    type: string
+                    format: uuid
+                  processId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  processNodeId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  userId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                    x-extensible-enum:
+                    - pending
+                    - recording
+                    - processing
+                    - complete
+                    - failed
+                  usabilityStatus:
+                    default: usable
+                    type: string
+                    enum:
+                    - usable
+                    - excluded
+                  usabilityReason:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  usabilitySource:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - interviewee
+                    - manager
+                  usabilityConfidence:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - high
+                    - medium
+                    - low
+                  recordingUrl:
+                    type:
+                    - string
+                    - 'null'
+                  transcript:
+                    type:
+                    - array
+                    - 'null'
+                    items:
+                      type: object
+                      properties:
+                        source:
+                          type: string
+                          enum:
+                          - ai
+                          - user
+                          - interviewer
+                        speakerName:
+                          type: string
+                        message:
+                          type: string
+                          minLength: 1
+                        timestamp:
+                          type: number
+                      required:
+                      - source
+                      - message
+                      additionalProperties: false
+                  createdAt:
+                    type: string
+                  updatedAt:
+                    type: string
+                required:
+                - id
+                - scope
+                - type
+                - teamId
+                - organizationId
+                - processId
+                - processNodeId
+                - userId
+                - title
+                - status
+                - usabilityStatus
+                - usabilityReason
+                - usabilitySource
+                - usabilityConfidence
+                - recordingUrl
+                - transcript
+                - createdAt
+                - updatedAt
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Complete Clarity Organization Document Upload
   /v2/organizations/mine:
     get:
       operationId: listMyOrganizations
@@ -2156,6 +5049,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2169,6 +5064,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

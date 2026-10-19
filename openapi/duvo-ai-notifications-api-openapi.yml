@@ -1,0 +1,3884 @@
+openapi: 3.2.0
+info:
+  title: Duvo Public Notifications API
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Notifications
+  description: List, read, dismiss, and clear the authenticated user's team notifications (the Notification Center in the Duvo UI)
+paths:
+  /v2/notifications/{id}:
+    get:
+      operationId: getNotification
+      tags:
+      - Notifications
+      description: Get a single notification by id for the authenticated user. Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The notification's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - oneOf:
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      recipientUserId:
+                        type: string
+                        format: uuid
+                      teamId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      batchId:
+                        default: null
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      severity:
+                        type: string
+                        enum:
+                        - info
+                        - warning
+                        - critical
+                        - success
+                      title:
+                        type: string
+                      summary:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      createdAt:
+                        type: string
+                      seenAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      readAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      resolvedAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      dismissedAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      occurrenceCount:
+                        default: 1
+                        type: integer
+                        minimum: 1
+                        maximum: 9007199254740991
+                      lastSeenAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      type:
+                        type: string
+                        enum:
+                        - job_issue
+                      agentRunId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      evaluationId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      source:
+                        type: string
+                        enum:
+                        - run_failed
+                        - run_stuck
+                        - eval_flagged
+                        - eval_failed
+                      agentId:
+                        default: null
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      agentName:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                    required:
+                    - id
+                    - recipientUserId
+                    - teamId
+                    - batchId
+                    - severity
+                    - title
+                    - summary
+                    - createdAt
+                    - seenAt
+                    - readAt
+                    - resolvedAt
+                    - dismissedAt
+                    - occurrenceCount
+                    - lastSeenAt
+                    - type
+                    - agentRunId
+                    - evaluationId
+                    - source
+                    - agentId
+                    - agentName
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      recipientUserId:
+                        type: string
+                        format: uuid
+                      teamId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      batchId:
+                        default: null
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      severity:
+                        type: string
+                        enum:
+                        - info
+                        - warning
+                        - critical
+                        - success
+                      title:
+                        type: string
+                      summary:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      createdAt:
+                        type: string
+                      seenAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      readAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      resolvedAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      dismissedAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      occurrenceCount:
+                        default: 1
+                        type: integer
+                        minimum: 1
+                        maximum: 9007199254740991
+                      lastSeenAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      type:
+                        type: string
+                        enum:
+                        - job_done
+                      agentRunId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      agentId:
+                        default: null
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      agentName:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                    required:
+                    - id
+                    - recipientUserId
+                    - teamId
+                    - batchId
+                    - severity
+                    - title
+                    - summary
+                    - createdAt
+                    - seenAt
+                    - readAt
+                    - resolvedAt
+                    - dismissedAt
+                    - occurrenceCount
+                    - lastSeenAt
+                    - type
+                    - agentRunId
+                    - agentId
+                    - agentName
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      recipientUserId:
+                        type: string
+                        format: uuid
+                      teamId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      batchId:
+                        default: null
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      severity:
+                        type: string
+                        enum:
+                        - info
+                        - warning
+                        - critical
+                        - success
+                      title:
+                        type: string
+                      summary:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      createdAt:
+                        type: string
+                      seenAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      readAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      resolvedAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      dismissedAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      occurrenceCount:
+                        default: 1
+                        type: integer
+                        minimum: 1
+                        maximum: 9007199254740991
+                      lastSeenAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      type:
+                        type: string
+                        enum:
+                        - background_job
+                      jobType:
+                        type: string
+                        enum:
+                        - clarity_signavio_export
+                      outcome:
+                        type: string
+                        enum:
+                        - succeeded
+                        - failed
+                      sourceId:
+                        type: string
+                        format: uuid
+                      processId:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                    required:
+                    - id
+                    - recipientUserId
+                    - teamId
+                    - batchId
+                    - severity
+                    - title
+                    - summary
+                    - createdAt
+                    - seenAt
+                    - readAt
+                    - resolvedAt
+                    - dismissedAt
+                    - occurrenceCount
+                    - lastSeenAt
+                    - type
+                    - jobType
+                    - outcome
+                    - sourceId
+                    - processId
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      recipientUserId:
+                        type: string
+                        format: uuid
+                      teamId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      batchId:
+                        default: null
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      severity:
+                        type: string
+                        enum:
+                        - info
+                        - warning
+                        - critical
+                        - success
+                      title:
+                        type: string
+                      summary:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      createdAt:
+                        type: string
+                      seenAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      readAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      resolvedAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      dismissedAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      occurrenceCount:
+                        default: 1
+                        type: integer
+                        minimum: 1
+                        maximum: 9007199254740991
+                      lastSeenAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      provider:
+                        type: string
+                      integrationSlug:
+                        type: string
+                      instanceName:
+                        type: string
+                      brokenReason:
+                        type: string
+                        description: Why the connection stopped working.
+                        x-extensible-enum:
+                        - oauth_client_invalid
+                        - oauth_grant_revoked
+                        - refresh_token_missing
+                        - insufficient_scopes
+                      ownerUserId:
+                        default: null
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      ownerName:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      createdByUserId:
+                        default: null
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      createdByName:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      type:
+                        type: string
+                        enum:
+                        - connection_broken
+                      integrationInstanceId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      requiresAction:
+                        default: true
+                        type: boolean
+                    required:
+                    - id
+                    - recipientUserId
+                    - teamId
+                    - batchId
+                    - severity
+                    - title
+                    - summary
+                    - createdAt
+                    - seenAt
+                    - readAt
+                    - resolvedAt
+                    - dismissedAt
+                    - occurrenceCount
+                    - lastSeenAt
+                    - provider
+                    - integrationSlug
+                    - instanceName
+                    - brokenReason
+                    - ownerUserId
+                    - ownerName
+                    - createdByUserId
+                    - createdByName
+                    - type
+                    - integrationInstanceId
+                    - requiresAction
+                    additionalProperties: false
+                  - type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      recipientUserId:
+                        type: string
+                        format: uuid
+                      teamId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      batchId:
+                        default: null
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      severity:
+                        type: string
+                        enum:
+                        - info
+                        - warning
+                        - critical
+                        - success
+                      title:
+                        type: string
+                      summary:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      createdAt:
+                        type: string
+                      seenAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      readAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      resolvedAt:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      dismissedAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      occurrenceCount:
+                        default: 1
+                        type: integer
+                        minimum: 1
+                        maximum: 9007199254740991
+                      lastSeenAt:
+                        default: null
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      type:
+                        type: string
+                        enum:
+                        - schedule_issue
+                      scheduleId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      agentId:
+                        anyOf:
+                        - type: string
+                          format: uuid
+                        - type: 'null'
+                      reason:
+                        type: string
+                        enum:
+                        - missing_connections
+                      missingConnections:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            integrationType:
+                              type: string
+                            customIntegrationId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                          required:
+                          - integrationType
+                          - customIntegrationId
+                          additionalProperties: false
+                    required:
+                    - id
+                    - recipientUserId
+                    - teamId
+                    - batchId
+                    - severity
+                    - title
+                    - summary
+                    - createdAt
+                    - seenAt
+                    - readAt
+                    - resolvedAt
+                    - dismissedAt
+                    - occurrenceCount
+                    - lastSeenAt
+                    - type
+                    - scheduleId
+                    - agentId
+                    - reason
+                    additionalProperties: false
+                - type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    recipientUserId:
+                      type: string
+                      format: uuid
+                    teamId:
+                      type:
+                      - string
+                      - 'null'
+                      format: uuid
+                    batchId:
+                      default: null
+                      type:
+                      - string
+                      - 'null'
+                      format: uuid
+                    severity:
+                      type: string
+                      enum:
+                      - info
+                      - warning
+                      - critical
+                      - success
+                    title:
+                      type: string
+                    summary:
+                      type:
+                      - string
+                      - 'null'
+                    createdAt:
+                      type: string
+                    seenAt:
+                      type:
+                      - string
+                      - 'null'
+                    readAt:
+                      type:
+                      - string
+                      - 'null'
+                    resolvedAt:
+                      type:
+                      - string
+                      - 'null'
+                    dismissedAt:
+                      default: null
+                      type:
+                      - string
+                      - 'null'
+                    occurrenceCount:
+                      default: 1
+                      type: integer
+                      minimum: 1
+                      maximum: 9007199254740991
+                    lastSeenAt:
+                      default: null
+                      type:
+                      - string
+                      - 'null'
+                    type:
+                      type: string
+                    fallback:
+                      type: boolean
+                      enum:
+                      - true
+                  required:
+                  - id
+                  - recipientUserId
+                  - teamId
+                  - batchId
+                  - severity
+                  - title
+                  - summary
+                  - createdAt
+                  - seenAt
+                  - readAt
+                  - resolvedAt
+                  - dismissedAt
+                  - occurrenceCount
+                  - lastSeenAt
+                  - type
+                  - fallback
+                  additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Notification
+  /v2/notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags:
+      - Notifications
+      description: Mark a notification as read for the authenticated user. Idempotent — calling it again on an already-read notification still returns success. Pass `openedFrom` to record which channel the reader came through (`in_app` when they were already in Duvo, or `email`/`slack`/`teams` from the `notificationSource` param on an external link); omit it when the read is not somebody opening the notification. Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                openedFrom:
+                  type: string
+                  enum:
+                  - in_app
+                  - email
+                  - slack
+                  - teams
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The notification's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Mark Notification Read
+  /v2/notifications/{id}/dismiss:
+    patch:
+      operationId: dismissNotification
+      tags:
+      - Notifications
+      description: 'Dismiss an important notification for the authenticated user. A row pinned to their Important section is unpinned and the card stays, because the connection is still broken; a row that is not pinned for them — one they cannot reconnect themselves — is removed from their feed instead, matching what the card''s Dismiss button does. Only important notifications (currently: connection_broken) can be dismissed. Idempotent. Requires the Notification Center feature; returns 404 when it is not enabled for the team.'
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The notification's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                - success
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Dismiss Notification
+  /v2/teams/{teamId}/notifications:
+    get:
+      operationId: listNotifications
+      tags:
+      - Notifications
+      description: List notifications for the authenticated user's current team, most recent first. Filter with type, unread, severity or minSeverity (mutually exclusive), important, agentRunId, or processId; paginate with limit/cursor. Pass batchId to list only the live members of a notification batch, optionally ordered by sort=importance (only valid together with batchId). Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+      parameters:
+      - schema:
+          type: string
+          enum:
+          - connection_broken
+          - case_failed
+          - critical_case_issue
+          - case_issue
+          - critical_eval_issue
+          - eval_issue
+          - job_issue
+          - job_done
+          - background_job
+          - schedule_issue
+          - config_proposal
+        in: query
+        name: type
+        required: false
+        description: 'Only return notifications of this type. One of: connection_broken, case_failed, critical_case_issue, case_issue, critical_eval_issue, eval_issue, job_issue, job_done, background_job, schedule_issue, config_proposal.'
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: unread
+        required: false
+        description: If true, only return unread notifications.
+      - schema:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+          - success
+        in: query
+        name: severity
+        required: false
+        description: 'Only return notifications with this severity. One of: info, warning, critical, success.'
+      - schema:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+          - success
+        in: query
+        name: minSeverity
+        required: false
+        description: 'Only return notifications at or above this urgency. Least to most urgent: success < info < warning < critical. Mutually exclusive with severity.'
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: important
+        required: false
+        description: 'If true, only return important notifications: unresolved connection_broken rows pinned until reconnected, removed, or dismissed.'
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: agentRunId
+        required: false
+        description: Only return notifications about this agent run.
+      - schema:
+          type: string
+          minLength: 1
+        in: query
+        name: processId
+        required: false
+        description: Only return notifications about this Clarity process.
+      - schema:
+          type: string
+          format: uuid
+        in: query
+        name: batchId
+        required: false
+        description: Only return live members of this notification batch.
+      - schema:
+          default: recency
+          type: string
+          enum:
+          - recency
+          - importance
+        in: query
+        name: sort
+        required: false
+        description: importance orders by type importance then severity (only valid together with batchId); default recency.
+      - schema:
+          default: 30
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Number of notifications per page (1-100, default 30).
+      - schema:
+          type: string
+        in: query
+        name: cursor
+        required: false
+        description: Opaque cursor from the previous page's nextCursor. Omit for the first page.
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      anyOf:
+                      - oneOf:
+                        - type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            recipientUserId:
+                              type: string
+                              format: uuid
+                            teamId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            batchId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            severity:
+                              type: string
+                              enum:
+                              - info
+                              - warning
+                              - critical
+                              - success
+                            title:
+                              type: string
+                            summary:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            createdAt:
+                              type: string
+                            seenAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            readAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            resolvedAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            dismissedAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            occurrenceCount:
+                              default: 1
+                              type: integer
+                              minimum: 1
+                              maximum: 9007199254740991
+                            lastSeenAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            type:
+                              type: string
+                              enum:
+                              - job_issue
+                            agentRunId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            evaluationId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            source:
+                              type: string
+                              enum:
+                              - run_failed
+                              - run_stuck
+                              - eval_flagged
+                              - eval_failed
+                            agentId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            agentName:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                          required:
+                          - id
+                          - recipientUserId
+                          - teamId
+                          - batchId
+                          - severity
+                          - title
+                          - summary
+                          - createdAt
+                          - seenAt
+                          - readAt
+                          - resolvedAt
+                          - dismissedAt
+                          - occurrenceCount
+                          - lastSeenAt
+                          - type
+                          - agentRunId
+                          - evaluationId
+                          - source
+                          - agentId
+                          - agentName
+                          additionalProperties: false
+                        - type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            recipientUserId:
+                              type: string
+                              format: uuid
+                            teamId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            batchId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            severity:
+                              type: string
+                              enum:
+                              - info
+                              - warning
+                              - critical
+                              - success
+                            title:
+                              type: string
+                            summary:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            createdAt:
+                              type: string
+                            seenAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            readAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            resolvedAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            dismissedAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            occurrenceCount:
+                              default: 1
+                              type: integer
+                              minimum: 1
+                              maximum: 9007199254740991
+                            lastSeenAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            type:
+                              type: string
+                              enum:
+                              - job_done
+                            agentRunId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            agentId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            agentName:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                          required:
+                          - id
+                          - recipientUserId
+                          - teamId
+                          - batchId
+                          - severity
+                          - title
+                          - summary
+                          - createdAt
+                          - seenAt
+                          - readAt
+                          - resolvedAt
+                          - dismissedAt
+                          - occurrenceCount
+                          - lastSeenAt
+                          - type
+                          - agentRunId
+                          - agentId
+                          - agentName
+                          additionalProperties: false
+                        - type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            recipientUserId:
+                              type: string
+                              format: uuid
+                            teamId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            batchId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            severity:
+                              type: string
+                              enum:
+                              - info
+                              - warning
+                              - critical
+                              - success
+                            title:
+                              type: string
+                            summary:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            createdAt:
+                              type: string
+                            seenAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            readAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            resolvedAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            dismissedAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            occurrenceCount:
+                              default: 1
+                              type: integer
+                              minimum: 1
+                              maximum: 9007199254740991
+                            lastSeenAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            type:
+                              type: string
+                              enum:
+                              - background_job
+                            jobType:
+                              type: string
+                              enum:
+                              - clarity_signavio_export
+                            outcome:
+                              type: string
+                              enum:
+                              - succeeded
+                              - failed
+                            sourceId:
+                              type: string
+                              format: uuid
+                            processId:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                          required:
+                          - id
+                          - recipientUserId
+                          - teamId
+                          - batchId
+                          - severity
+                          - title
+                          - summary
+                          - createdAt
+                          - seenAt
+                          - readAt
+                          - resolvedAt
+                          - dismissedAt
+                          - occurrenceCount
+                          - lastSeenAt
+                          - type
+                          - jobType
+                          - outcome
+                          - sourceId
+                          - processId
+                          additionalProperties: false
+                        - type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            recipientUserId:
+                              type: string
+                              format: uuid
+                            teamId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            batchId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            severity:
+                              type: string
+                              enum:
+                              - info
+                              - warning
+                              - critical
+                              - success
+                            title:
+                              type: string
+                            summary:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            createdAt:
+                              type: string
+                            seenAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            readAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            resolvedAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            dismissedAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            occurrenceCount:
+                              default: 1
+                              type: integer
+                              minimum: 1
+                              maximum: 9007199254740991
+                            lastSeenAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            provider:
+                              type: string
+                            integrationSlug:
+                              type: string
+                            instanceName:
+                              type: string
+                            brokenReason:
+                              type: string
+                              description: Why the connection stopped working.
+                              x-extensible-enum:
+                              - oauth_client_invalid
+                              - oauth_grant_revoked
+                              - refresh_token_missing
+                              - insufficient_scopes
+                            ownerUserId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            ownerName:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            createdByUserId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            createdByName:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            type:
+                              type: string
+                              enum:
+                              - connection_broken
+                            integrationInstanceId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            requiresAction:
+                              default: true
+                              type: boolean
+                          required:
+                          - id
+                          - recipientUserId
+                          - teamId
+                          - batchId
+                          - severity
+                          - title
+                          - summary
+                          - createdAt
+                          - seenAt
+                          - readAt
+                          - resolvedAt
+                          - dismissedAt
+                          - occurrenceCount
+                          - lastSeenAt
+                          - provider
+                          - integrationSlug
+                          - instanceName
+                          - brokenReason
+                          - ownerUserId
+                          - ownerName
+                          - createdByUserId
+                          - createdByName
+                          - type
+                          - integrationInstanceId
+                          - requiresAction
+                          additionalProperties: false
+                        - type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            recipientUserId:
+                              type: string
+                              format: uuid
+                            teamId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            batchId:
+                              default: null
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            severity:
+                              type: string
+                              enum:
+                              - info
+                              - warning
+                              - critical
+                              - success
+                            title:
+                              type: string
+                            summary:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            createdAt:
+                              type: string
+                            seenAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            readAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            resolvedAt:
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            dismissedAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            occurrenceCount:
+                              default: 1
+                              type: integer
+                              minimum: 1
+                              maximum: 9007199254740991
+                            lastSeenAt:
+                              default: null
+                              anyOf:
+                              - type: string
+                              - type: 'null'
+                            type:
+                              type: string
+                              enum:
+                              - schedule_issue
+                            scheduleId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            agentId:
+                              anyOf:
+                              - type: string
+                                format: uuid
+                              - type: 'null'
+                            reason:
+                              type: string
+                              enum:
+                              - missing_connections
+                            missingConnections:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  integrationType:
+                                    type: string
+                                  customIntegrationId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                required:
+                                - integrationType
+                                - customIntegrationId
+                                additionalProperties: false
+                          required:
+                          - id
+                          - recipientUserId
+                          - teamId
+                          - batchId
+                          - severity
+                          - title
+                          - summary
+                          - createdAt
+                          - seenAt
+                          - readAt
+                          - resolvedAt
+                          - dismissedAt
+                          - occurrenceCount
+                          - lastSeenAt
+                          - type
+                          - scheduleId
+                          - agentId
+                          - reason
+                          additionalProperties: false
+                      - type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          recipientUserId:
+                            type: string
+                            format: uuid
+                          teamId:
+                            type:
+                            - string
+                            - 'null'
+                            format: uuid
+                          batchId:
+                            default: null
+                            type:
+                            - string
+                            - 'null'
+                            format: uuid
+                          severity:
+                            type: string
+                            enum:
+                            - info
+                            - warning
+                            - critical
+                            - success
+                          title:
+                            type: string
+                          summary:
+                            type:
+                            - string
+                            - 'null'
+                          createdAt:
+                            type: string
+                          seenAt:
+                            type:
+                            - string
+                            - 'null'
+                          readAt:
+                            type:
+                            - string
+                            - 'null'
+                          resolvedAt:
+                            type:
+                            - string
+                            - 'null'
+                          dismissedAt:
+                            default: null
+                            type:
+                            - string
+                            - 'null'
+                          occurrenceCount:
+                            default: 1
+                            type: integer
+                            minimum: 1
+                            maximum: 9007199254740991
+                          lastSeenAt:
+                            default: null
+                            type:
+                            - string
+                            - 'null'
+                          type:
+                            type: string
+                          fallback:
+                            type: boolean
+                            enum:
+                            - true
+                        required:
+                        - id
+                        - recipientUserId
+                        - teamId
+                        - batchId
+                        - severity
+                        - title
+                        - summary
+                        - createdAt
+                        - seenAt
+                        - readAt
+                        - resolvedAt
+                        - dismissedAt
+                        - occurrenceCount
+                        - lastSeenAt
+                        - type
+                        - fallback
+                        additionalProperties: false
+                  nextCursor:
+                    type:
+                    - string
+                    - 'null'
+                required:
+                - notifications
+                - nextCursor
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Notifications
+    delete:
+      operationId: deleteAllNotifications
+      tags:
+      - Notifications
+      description: Soft-delete all notifications for the authenticated user's current team, read or unread. Returns the count of notifications that were deleted. Destructive — only call on explicit user request, never bulk-delete unprompted. Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - count
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete All Notifications
+  /v2/teams/{teamId}/notifications/feed:
+    get:
+      operationId: getNotificationFeed
+      tags:
+      - Notifications
+      description: List the notification feed for the authenticated user's current team, most recent activity first. Each item is either an individual notification or a notification batch (a per-agent group of job_issue/eval_issue/job_done/schedule_issue notifications). Filter with type, unread, and either severity (exact match) or minSeverity (threshold; the two are mutually exclusive); paginate with limit/cursor. Either severity filter also narrows a surfaced batch's counts to its qualifying members, and hides a batch with no qualifying live member. The feed is eventually consistent — a batch's counts can lag a concurrent write by one page fetch. Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+      parameters:
+      - schema:
+          type: string
+          enum:
+          - connection_broken
+          - case_failed
+          - critical_case_issue
+          - case_issue
+          - critical_eval_issue
+          - eval_issue
+          - job_issue
+          - job_done
+          - background_job
+          - schedule_issue
+          - config_proposal
+        in: query
+        name: type
+        required: false
+        description: Only return individual notifications of this type and batches with at least one live member of it.
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: unread
+        required: false
+        description: If true, only return unread individual notifications and batches with at least one unread live member.
+      - schema:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+          - success
+        in: query
+        name: severity
+        required: false
+        description: 'Only return individual notifications with exactly this severity, and batches with at least one live member of it. A batch''s counts then describe only those members. Mutually exclusive with minSeverity. One of: info, warning, critical, success.'
+      - schema:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+          - success
+        in: query
+        name: minSeverity
+        required: false
+        description: 'Only return individual notifications at or above this urgency, and batches with at least one live member at or above it. A batch''s counts and worst severity then describe only its members at or above the threshold. Least to most urgent: success < info < warning < critical. Mutually exclusive with severity.'
+      - schema:
+          type: string
+          enum:
+          - mine
+        in: query
+        name: agents
+        required: false
+        description: 'When ''mine'', only return notifications for agents the authenticated user created. connection_broken notifications are always returned regardless, because they are not about an agent: a broken connection is only notified to the people who can act on it or escalate it, so filtering by agent authorship would hide it from the reader it was addressed to.'
+      - schema:
+          default: 30
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+      - schema:
+          type: string
+        in: query
+        name: cursor
+        required: false
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      oneOf:
+                      - type: object
+                        properties:
+                          kind:
+                            type: string
+                            enum:
+                            - batch
+                          batch:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              agentId:
+                                type:
+                                - string
+                                - 'null'
+                                format: uuid
+                              agentName:
+                                type:
+                                - string
+                                - 'null'
+                              agentType:
+                                default: null
+                                type:
+                                - string
+                                - 'null'
+                                enum:
+                                - agent
+                                - code
+                                description: 'Flavour of the step: "agent" for an agentic step, "code" for a deterministic code step. Fixed at creation — a step''s builds all belong to the matching config family.'
+                              queueId:
+                                default: null
+                                type:
+                                - string
+                                - 'null'
+                                format: uuid
+                              queueName:
+                                default: null
+                                type:
+                                - string
+                                - 'null'
+                              teamId:
+                                type: string
+                                format: uuid
+                              createdAt:
+                                type: string
+                              lastEventAt:
+                                type: string
+                              closedAt:
+                                type:
+                                - string
+                                - 'null'
+                              typeCounts:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    type:
+                                      type: string
+                                      description: Notification kind. New kinds are added over time.
+                                      x-extensible-enum:
+                                      - connection_broken
+                                      - case_failed
+                                      - critical_case_issue
+                                      - case_issue
+                                      - critical_eval_issue
+                                      - eval_issue
+                                      - job_issue
+                                      - job_done
+                                      - background_job
+                                      - schedule_issue
+                                      - config_proposal
+                                    total:
+                                      type: integer
+                                      minimum: 0
+                                      maximum: 9007199254740991
+                                    unread:
+                                      type: integer
+                                      minimum: 0
+                                      maximum: 9007199254740991
+                                  required:
+                                  - type
+                                  - total
+                                  - unread
+                                  additionalProperties: false
+                              severityCounts:
+                                default: []
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    severity:
+                                      type: string
+                                      enum:
+                                      - info
+                                      - warning
+                                      - critical
+                                      - success
+                                    total:
+                                      type: integer
+                                      minimum: 0
+                                      maximum: 9007199254740991
+                                    unread:
+                                      type: integer
+                                      minimum: 0
+                                      maximum: 9007199254740991
+                                  required:
+                                  - severity
+                                  - total
+                                  - unread
+                                  additionalProperties: false
+                              unreadCount:
+                                type: integer
+                                minimum: 0
+                                maximum: 9007199254740991
+                              worstSeverity:
+                                type: string
+                                enum:
+                                - info
+                                - warning
+                                - critical
+                                - success
+                            required:
+                            - id
+                            - agentId
+                            - agentName
+                            - agentType
+                            - queueId
+                            - queueName
+                            - teamId
+                            - createdAt
+                            - lastEventAt
+                            - closedAt
+                            - typeCounts
+                            - severityCounts
+                            - unreadCount
+                            - worstSeverity
+                            additionalProperties: false
+                        required:
+                        - kind
+                        - batch
+                        additionalProperties: false
+                      - type: object
+                        properties:
+                          kind:
+                            type: string
+                            enum:
+                            - notification
+                          notification:
+                            anyOf:
+                            - oneOf:
+                              - type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  recipientUserId:
+                                    type: string
+                                    format: uuid
+                                  teamId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  batchId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  severity:
+                                    type: string
+                                    enum:
+                                    - info
+                                    - warning
+                                    - critical
+                                    - success
+                                  title:
+                                    type: string
+                                  summary:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  createdAt:
+                                    type: string
+                                  seenAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  readAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  resolvedAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  dismissedAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  occurrenceCount:
+                                    default: 1
+                                    type: integer
+                                    minimum: 1
+                                    maximum: 9007199254740991
+                                  lastSeenAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  type:
+                                    type: string
+                                    enum:
+                                    - job_issue
+                                  agentRunId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  evaluationId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  source:
+                                    type: string
+                                    enum:
+                                    - run_failed
+                                    - run_stuck
+                                    - eval_flagged
+                                    - eval_failed
+                                  agentId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  agentName:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                required:
+                                - id
+                                - recipientUserId
+                                - teamId
+                                - batchId
+                                - severity
+                                - title
+                                - summary
+                                - createdAt
+                                - seenAt
+                                - readAt
+                                - resolvedAt
+                                - dismissedAt
+                                - occurrenceCount
+                                - lastSeenAt
+                                - type
+                                - agentRunId
+                                - evaluationId
+                                - source
+                                - agentId
+                                - agentName
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  recipientUserId:
+                                    type: string
+                                    format: uuid
+                                  teamId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  batchId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  severity:
+                                    type: string
+                                    enum:
+                                    - info
+                                    - warning
+                                    - critical
+                                    - success
+                                  title:
+                                    type: string
+                                  summary:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  createdAt:
+                                    type: string
+                                  seenAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  readAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  resolvedAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  dismissedAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  occurrenceCount:
+                                    default: 1
+                                    type: integer
+                                    minimum: 1
+                                    maximum: 9007199254740991
+                                  lastSeenAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  type:
+                                    type: string
+                                    enum:
+                                    - job_done
+                                  agentRunId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  agentId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  agentName:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                required:
+                                - id
+                                - recipientUserId
+                                - teamId
+                                - batchId
+                                - severity
+                                - title
+                                - summary
+                                - createdAt
+                                - seenAt
+                                - readAt
+                                - resolvedAt
+                                - dismissedAt
+                                - occurrenceCount
+                                - lastSeenAt
+                                - type
+                                - agentRunId
+                                - agentId
+                                - agentName
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  recipientUserId:
+                                    type: string
+                                    format: uuid
+                                  teamId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  batchId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  severity:
+                                    type: string
+                                    enum:
+                                    - info
+                                    - warning
+                                    - critical
+                                    - success
+                                  title:
+                                    type: string
+                                  summary:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  createdAt:
+                                    type: string
+                                  seenAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  readAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  resolvedAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  dismissedAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  occurrenceCount:
+                                    default: 1
+                                    type: integer
+                                    minimum: 1
+                                    maximum: 9007199254740991
+                                  lastSeenAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  type:
+                                    type: string
+                                    enum:
+                                    - background_job
+                                  jobType:
+                                    type: string
+                                    enum:
+                                    - clarity_signavio_export
+                                  outcome:
+                                    type: string
+                                    enum:
+                                    - succeeded
+                                    - failed
+                                  sourceId:
+                                    type: string
+                                    format: uuid
+                                  processId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                required:
+                                - id
+                                - recipientUserId
+                                - teamId
+                                - batchId
+                                - severity
+                                - title
+                                - summary
+                                - createdAt
+                                - seenAt
+                                - readAt
+                                - resolvedAt
+                                - dismissedAt
+                                - occurrenceCount
+                                - lastSeenAt
+                                - type
+                                - jobType
+                                - outcome
+                                - sourceId
+                                - processId
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  recipientUserId:
+                                    type: string
+                                    format: uuid
+                                  teamId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  batchId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  severity:
+                                    type: string
+                                    enum:
+                                    - info
+                                    - warning
+                                    - critical
+                                    - success
+                                  title:
+                                    type: string
+                                  summary:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  createdAt:
+                                    type: string
+                                  seenAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  readAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  resolvedAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  dismissedAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  occurrenceCount:
+                                    default: 1
+                                    type: integer
+                                    minimum: 1
+                                    maximum: 9007199254740991
+                                  lastSeenAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  provider:
+                                    type: string
+                                  integrationSlug:
+                                    type: string
+                                  instanceName:
+                                    type: string
+                                  brokenReason:
+                                    type: string
+                                    description: Why the connection stopped working.
+                                    x-extensible-enum:
+                                    - oauth_client_invalid
+                                    - oauth_grant_revoked
+                                    - refresh_token_missing
+                                    - insufficient_scopes
+                                  ownerUserId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  ownerName:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  createdByUserId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  createdByName:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  type:
+                                    type: string
+                                    enum:
+                                    - connection_broken
+                                  integrationInstanceId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  requiresAction:
+                                    default: true
+                                    type: boolean
+                                required:
+                                - id
+                                - recipientUserId
+                                - teamId
+                                - batchId
+                                - severity
+                                - title
+                                - summary
+                                - createdAt
+                                - seenAt
+                                - readAt
+                                - resolvedAt
+                                - dismissedAt
+                                - occurrenceCount
+                                - lastSeenAt
+                                - provider
+                                - integrationSlug
+                                - instanceName
+                                - brokenReason
+                                - ownerUserId
+                                - ownerName
+                                - createdByUserId
+                                - createdByName
+                                - type
+                                - integrationInstanceId
+                                - requiresAction
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  id:
+                                    type: string
+                                    format: uuid
+                                  recipientUserId:
+                                    type: string
+                                    format: uuid
+                                  teamId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  batchId:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  severity:
+                                    type: string
+                                    enum:
+                                    - info
+                                    - warning
+                                    - critical
+                                    - success
+                                  title:
+                                    type: string
+                                  summary:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  createdAt:
+                                    type: string
+                                  seenAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  readAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  resolvedAt:
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  dismissedAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  occurrenceCount:
+                                    default: 1
+                                    type: integer
+                                    minimum: 1
+                                    maximum: 9007199254740991
+                                  lastSeenAt:
+                                    default: null
+                                    anyOf:
+                                    - type: string
+                                    - type: 'null'
+                                  type:
+                                    type: string
+                                    enum:
+                                    - schedule_issue
+                                  scheduleId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  agentId:
+                                    anyOf:
+                                    - type: string
+                                      format: uuid
+                                    - type: 'null'
+                                  reason:
+                                    type: string
+                                    enum:
+                                    - missing_connections
+                                  missingConnections:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        integrationType:
+                                          type: string
+                                        customIntegrationId:
+                                          default: null
+                                          anyOf:
+                                          - type: string
+                                            format: uuid
+                                          - type: 'null'
+                                      required:
+                                      - integrationType
+                                      - customIntegrationId
+                                      additionalProperties: false
+                                required:
+                                - id
+                                - recipientUserId
+                                - teamId
+                                - batchId
+                                - severity
+                                - title
+                                - summary
+                                - createdAt
+                                - seenAt
+                                - readAt
+                                - resolvedAt
+                                - dismissedAt
+                                - occurrenceCount
+                                - lastSeenAt
+                                - type
+                                - scheduleId
+                                - agentId
+                                - reason
+                                additionalProperties: false
+                            - type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                recipientUserId:
+                                  type: string
+                                  format: uuid
+                                teamId:
+                                  type:
+                                  - string
+                                  - 'null'
+                                  format: uuid
+                                batchId:
+                                  default: null
+                                  type:
+                                  - string
+                                  - 'null'
+                                  format: uuid
+                                severity:
+                                  type: string
+                                  enum:
+                                  - info
+                                  - warning
+                                  - critical
+                                  - success
+                                title:
+                                  type: string
+                                summary:
+                                  type:
+                                  - string
+                                  - 'null'
+                                createdAt:
+                                  type: string
+                                seenAt:
+                                  type:
+                                  - string
+                                  - 'null'
+                                readAt:
+                                  type:
+                                  - string
+                                  - 'null'
+                                resolvedAt:
+                                  type:
+                                  - string
+                                  - 'null'
+                                dismissedAt:
+                                  default: null
+                                  type:
+                                  - string
+                                  - 'null'
+                                occurrenceCount:
+                                  default: 1
+                                  type: integer
+                                  minimum: 1
+                                  maximum: 9007199254740991
+                                lastSeenAt:
+                                  default: null
+                                  type:
+                                  - string
+                                  - 'null'
+                                type:
+                                  type: string
+                                fallback:
+                                  type: boolean
+                                  enum:
+                                  - true
+                              required:
+                              - id
+                              - recipientUserId
+                              - teamId
+                              - batchId
+                              - severity
+                              - title
+                              - summary
+                              - createdAt
+                              - seenAt
+                              - readAt
+                              - resolvedAt
+                              - dismissedAt
+                              - occurrenceCount
+                              - lastSeenAt
+                              - type
+                              - fallback
+                              additionalProperties: false
+                        required:
+                        - kind
+                        - notification
+                        additionalProperties: false
+                  nextCursor:
+                    type:
+                    - string
+                    - 'null'
+                required:
+                - items
+                - nextCursor
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Notification Feed
+  /v2/teams/{teamId}/notifications/batches/{id}:
+    get:
+      operationId: getNotificationBatch
+      tags:
+      - Notifications
+      description: Get a single notification batch by id for the authenticated user, with per-type live-member counts, unread count, and worst severity. Serves cold deep links and sidebar retention for batches the caller can no longer see in the feed. Counts every live member by default; the optional type/severity/minSeverity filters narrow them to matching members only, exactly as the feed narrows a batch row it returns under the same filters. Requires the Notification Center feature; returns 404 when it is not enabled for the team, the batch does not exist, it belongs to another recipient/team, or no live member matches the given filters.
+      parameters:
+      - schema:
+          type: string
+          enum:
+          - connection_broken
+          - case_failed
+          - critical_case_issue
+          - case_issue
+          - critical_eval_issue
+          - eval_issue
+          - job_issue
+          - job_done
+          - background_job
+          - schedule_issue
+          - config_proposal
+        in: query
+        name: type
+        required: false
+        description: Count only live members of this type. Omit to count every live member.
+      - schema:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+          - success
+        in: query
+        name: severity
+        required: false
+        description: 'Count only live members with exactly this severity. Mutually exclusive with minSeverity. One of: info, warning, critical, success.'
+      - schema:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+          - success
+        in: query
+        name: minSeverity
+        required: false
+        description: 'Count only live members at or above this urgency. Least to most urgent: success < info < warning < critical. Mutually exclusive with severity.'
+      - schema:
+          type: string
+          enum:
+          - mine
+        in: query
+        name: agents
+        required: false
+        description: When 'mine', 404 unless the batch's agent is one the authenticated user created. Pass it alongside the feed's My agents filter so a retained batch cannot come back narrowed on type and severity but not on ownership.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The notification batch's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  agentId:
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  agentName:
+                    type:
+                    - string
+                    - 'null'
+                  agentType:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - agent
+                    - code
+                    description: 'Flavour of the step: "agent" for an agentic step, "code" for a deterministic code step. Fixed at creation — a step''s builds all belong to the matching config family.'
+                  queueId:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                    format: uuid
+                  queueName:
+                    default: null
+                    type:
+                    - string
+                    - 'null'
+                  teamId:
+                    type: string
+                    format: uuid
+                  createdAt:
+                    type: string
+                  lastEventAt:
+                    type: string
+                  closedAt:
+                    type:
+                    - string
+                    - 'null'
+                  typeCounts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          description: Notification kind. New kinds are added over time.
+                          x-extensible-enum:
+                          - connection_broken
+                          - case_failed
+                          - critical_case_issue
+                          - case_issue
+                          - critical_eval_issue
+                          - eval_issue
+                          - job_issue
+                          - job_done
+                          - background_job
+                          - schedule_issue
+                          - config_proposal
+                        total:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        unread:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                      required:
+                      - type
+                      - total
+                      - unread
+                      additionalProperties: false
+                  severityCounts:
+                    default: []
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        severity:
+                          type: string
+                          enum:
+                          - info
+                          - warning
+                          - critical
+                          - success
+                        total:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        unread:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                      required:
+                      - severity
+                      - total
+                      - unread
+                      additionalProperties: false
+                  unreadCount:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  worstSeverity:
+                    type: string
+                    enum:
+                    - info
+                    - warning
+                    - critical
+                    - success
+                required:
+                - id
+                - agentId
+                - agentName
+                - agentType
+                - queueId
+                - queueName
+                - teamId
+                - createdAt
+                - lastEventAt
+                - closedAt
+                - typeCounts
+                - severityCounts
+                - unreadCount
+                - worstSeverity
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Notification Batch
+  /v2/teams/{teamId}/notifications/batches/{id}/read:
+    post:
+      operationId: markNotificationBatchRead
+      tags:
+      - Notifications
+      description: 'Mark every unread live member of a notification batch as read for the authenticated user. Pass `types` to narrow the mark-read to those member types, and `severity` (exact) or `minSeverity` (threshold, mutually exclusive with `severity`) to narrow it by urgency — e.g. the page''s active filters; omit them to mark every live member. Narrowing matters when the batch card was rendered under a filter: the rows marked read should be the rows the card counted. Pass `openedFrom` to record which channel the reader came through, on every member this call marks read. Returns the count of members that were updated. Requires the Notification Center feature; returns 404 when it is not enabled for the team or the batch does not exist or belongs to another recipient/team.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                types:
+                  minItems: 1
+                  maxItems: 11
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                    - connection_broken
+                    - case_failed
+                    - critical_case_issue
+                    - case_issue
+                    - critical_eval_issue
+                    - eval_issue
+                    - job_issue
+                    - job_done
+                    - background_job
+                    - schedule_issue
+                    - config_proposal
+                severity:
+                  type: string
+                  enum:
+                  - info
+                  - warning
+                  - critical
+                  - success
+                minSeverity:
+                  type: string
+                  enum:
+                  - info
+                  - warning
+                  - critical
+                  - success
+                openedFrom:
+                  type: string
+                  enum:
+                  - in_app
+                  - email
+                  - slack
+                  - teams
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The notification batch's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - count
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Mark Notification Batch Read
+  /v2/teams/{teamId}/notifications/unread-count:
+    get:
+      operationId: getUnreadNotificationCount
+      tags:
+      - Notifications
+      description: Get the unread notification count for the authenticated user's current team. Each notification batch with unread members counts as 1, regardless of its member count. Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - count
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Unread Notification Count
+  /v2/teams/{teamId}/notifications/counts:
+    get:
+      operationId: getNotificationCounts
+      tags:
+      - Notifications
+      description: Per-type notification counts for the authenticated user's current team. Narrow with `unread`, `important`, and with either `severity` (counts only that exact severity) or `minSeverity` (counts that urgency and above) — the two are mutually exclusive and a request carrying both is rejected with 400. Pass the same filters the feed is showing, so the counts describe the list the reader would land on. Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+      parameters:
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: unread
+        required: false
+        description: If true, only count unread notifications.
+      - schema:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+          - success
+        in: query
+        name: severity
+        required: false
+        description: Only count notifications with exactly this severity, so the counts match a feed filtered the same way. Mutually exclusive with minSeverity.
+      - schema:
+          type: string
+          enum:
+          - info
+          - warning
+          - critical
+          - success
+        in: query
+        name: minSeverity
+        required: false
+        description: 'Only count notifications at or above this urgency, so the counts match a feed filtered the same way. Least to most urgent: success < info < warning < critical. Mutually exclusive with severity.'
+      - schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+        in: query
+        name: important
+        required: false
+        description: 'If true, only count notifications pinned to Important for you: unresolved, undismissed connection_broken rows you can reconnect yourself. Use it to size the sidebar alert without paging the list.'
+      - schema:
+          type: string
+          enum:
+          - mine
+        in: query
+        name: agents
+        required: false
+        description: When 'mine', only count notifications for agents the authenticated user created (plus connection_broken, which is always counted), so the counts match a feed filtered the same way.
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                required:
+                - connection_broken
+                - case_failed
+                - critical_case_issue
+                - case_issue
+                - critical_eval_issue
+                - eval_issue
+                - job_issue
+                - job_done
+                - background_job
+                - schedule_issue
+                - config_proposal
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Notification Counts
+  /v2/teams/{teamId}/notifications/mark-all-read:
+    post:
+      operationId: markAllNotificationsRead
+      tags:
+      - Notifications
+      description: Mark all notifications as read for the authenticated user's current team. Returns the count of notifications that were updated. Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - count
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Mark All Notifications Read
+  /v2/teams/{teamId}/notifications/read:
+    delete:
+      operationId: deleteReadNotifications
+      tags:
+      - Notifications
+      description: Soft-delete all read notifications for the authenticated user's current team. Returns the count of notifications that were deleted. Destructive — only call on explicit user request. Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+      security:
+      - bearerAuth: []
+      parameters:
+      - schema:
+          type: string
+        in: path
+        name: teamId
+        required: true
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - count
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Delete Read Notifications
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.

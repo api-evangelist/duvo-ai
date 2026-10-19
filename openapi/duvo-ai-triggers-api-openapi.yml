@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Triggers API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -80,6 +98,31 @@ paths:
                           type: string
                         updated_at:
                           type: string
+                        pending_change:
+                          description: Set on a trigger that belongs to an automation with versions when its draft changes this trigger. Null otherwise.
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            automation_revision_id:
+                              type: string
+                              description: The automation's draft revision that holds the change.
+                            enabled:
+                              description: Whether the trigger is on once the draft is made active. Null when the draft removes it.
+                              type:
+                              - boolean
+                              - 'null'
+                            filter_config:
+                              description: The filter the trigger uses once the draft is made active. Null when the draft removes it.
+                              type:
+                              - object
+                              - 'null'
+                              additionalProperties: {}
+                          required:
+                          - automation_revision_id
+                          - enabled
+                          - filter_config
+                          additionalProperties: false
                       required:
                       - id
                       - agent_id
@@ -111,6 +154,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -124,6 +169,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -139,6 +186,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -153,6 +202,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -161,7 +212,7 @@ paths:
       operationId: upsertAgentTrigger
       tags:
       - Triggers
-      description: 'Create or update the authenticated user''s trigger for an integration on an agent. The integration must already be connected to the agent (its OAuth connection set up in the Duvo dashboard). Set `enabled: false` to pause a trigger without deleting it.'
+      description: 'Create or update the authenticated user''s trigger for an integration on an agent. The integration must already be connected to the agent (its OAuth connection set up in the Duvo dashboard). Set `enabled: false` to pause a trigger without deleting it. An agent holds one trigger per integration for a user, so a save with a different `trigger_type` replaces the existing one — except when that trigger is an @mention trigger, which is managed from the agent''s mention setting and answers 409 (`mention_trigger_protected`) here. @mention triggers are best managed from that setting throughout: this route leaves an existing one''s `filter_config` untouched, and refuses to create a `teams_mention` trigger without a `filter_config.tenantId` (400, `mention_trigger_workspace_required`) — a Slack mention trigger has no equivalent field to supply.'
       requestBody:
         required: true
         content:
@@ -174,9 +225,9 @@ paths:
                   description: Integration slug the trigger fires for (e.g. `gmail`, `outlook`, `linear-native`, `google-drive`).
                 trigger_type:
                   type: string
-                  description: Trigger type within the integration (e.g. `email_received`). Discover valid values via the trigger types endpoint.
+                  description: Trigger type within the integration (e.g. `email_received`). Discover valid values via the trigger types endpoint. Integrations that enumerate their trigger types (Microsoft Teams, Google Drive, Google Sheets) reject anything else with 400 (`trigger_type_unsupported`), except a save that pauses a trigger already carrying that type.
                 filter_config:
-                  description: Integration-specific filter config (e.g. sender/subject filters). Shape comes from the integration's filter schema.
+                  description: Integration-specific filter config (e.g. sender/subject filters). Shape comes from the integration's filter schema. Replaces the trigger's current config, so send the whole object — except on an @mention trigger, whose config is managed from the agent's mention setting and is left as it is.
                   default: {}
                   type: object
                   additionalProperties: {}
@@ -246,6 +297,46 @@ paths:
                     type: string
                   updated_at:
                     type: string
+                  pending_change:
+                    description: Set on a trigger that belongs to an automation with versions when its draft changes this trigger. Null otherwise.
+                    type:
+                    - object
+                    - 'null'
+                    properties:
+                      automation_revision_id:
+                        type: string
+                        description: The automation's draft revision that holds the change.
+                      enabled:
+                        description: Whether the trigger is on once the draft is made active. Null when the draft removes it.
+                        type:
+                        - boolean
+                        - 'null'
+                      filter_config:
+                        description: The filter the trigger uses once the draft is made active. Null when the draft removes it.
+                        type:
+                        - object
+                        - 'null'
+                        additionalProperties: {}
+                    required:
+                    - automation_revision_id
+                    - enabled
+                    - filter_config
+                    additionalProperties: false
+                  webhook_status:
+                    description: 'Whether the upstream webhook this trigger needs is registered. Null when the save needed no webhook work: every trigger type but Jira today, and a Jira save with `enabled: false`. Every enabled Jira save reconciles, so saving again retries a failed registration. `registered` means Duvo holds a current subscription covering this trigger''s projects. `connection_required` means the Jira Connection this trigger is bound to names no Atlassian site, so there is nothing to register against; reconnect Jira and save again. `project_not_found` means Jira found no project for one of `filter_config.project_keys` that the Connection can open, so that key is left out of the webhook; check the keys and save again. `failed` means Atlassian refused or the call did not complete; see `webhook_error` and retry. The trigger row is saved in every case; anything but `registered` means it will not fire yet.'
+                    type:
+                    - string
+                    - 'null'
+                    enum:
+                    - registered
+                    - connection_required
+                    - project_not_found
+                    - failed
+                  webhook_error:
+                    description: On `failed`, a stable reason code for the refusal (for example `http_403`, `rejected_by_jira`). `conflict_other_binding` means the Connection's Jira account already sends events to another Duvo Connection, in this team or another, and Jira allows one per account; connect a different Jira account. `issue_created_unconfirmed` means Jira has not yet confirmed that the webhook sends new issues, so they may not start Runs; Duvo tries again about every two hours, and saving again tries at once. Null otherwise.
+                    type:
+                    - string
+                    - 'null'
                 required:
                 - id
                 - agent_id
@@ -262,6 +353,8 @@ paths:
                 - last_missing_connection_failure_at
                 - created_at
                 - updated_at
+                - webhook_status
+                - webhook_error
                 additionalProperties: false
         '400':
           description: Default Response
@@ -274,6 +367,13 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    description: 'Stable discriminator for errors a client must tell apart. `connection_missing_scopes` means the bound connection''s OAuth grant lacks a scope this trigger needs and must be reconnected. `trigger_type_unsupported` means the integration enumerates its trigger types and `trigger_type` is not one of them, so the trigger could never fire; the message lists the types it does have, and the trigger types endpoint is the general source. A trigger that already carries such a type can still be paused (`enabled: false`, same `trigger_type`) and deleted. `jira_watched_fields_required` means a Jira save that enables or creates the trigger carried no readable watched field in `filter_config.fields` and was not a new-issues trigger (`filter_config.issue_created: true` with no `fields`), so the trigger could never start a Run; send at least one readable field id, or turn on new issues and send no fields. An existing Jira trigger can still be paused without either. `jira_project_keys_required` means such a save carried no project key in `filter_config.project_keys`; send at least one. `jira_project_keys_limit` means it carried more than 50, which is one Jira lookup page. `mention_trigger_protected` means the trigger this save would replace is an @mention trigger, which only the agent''s mention setting may change; delete it to free the integration. `mention_trigger_workspace_required` means this save would create a `teams_mention` trigger with no `filter_config.tenantId`, which would match no inbound mention; turn @mentions on from the agent''s mention setting, which resolves the tenant from the team''s Teams workspace, or send `tenantId` explicitly. Only Teams mention triggers pin a workspace this way — a Slack one needs no such field. `trigger_save_timed_out` means the save did not finish inside the bound this route holds while writing the trigger; nothing is wrong with the request, so retry it.'
+                    type: string
+                  integration_instance_id:
+                    description: On `connection_missing_scopes`, the connection that was rejected — the one to reconnect. Several connections can be bound to one agent, so this names which.
+                    type: string
+                    format: uuid
                 required:
                 - error
                 additionalProperties: false
@@ -287,6 +387,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -302,6 +404,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -315,6 +419,134 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: '`mention_trigger_protected`: the trigger this save would replace is an @mention trigger and the requested `trigger_type` differs. Delete that trigger (`DELETE /v1/triggers/{agentId}/{triggerId}`, id from `GET /v1/triggers/{agentId}`) to use the integration for a different trigger type. `trigger_save_timed_out`: the save did not finish inside the bound this route holds while writing the trigger — retry. Without either code, the integration already has a trigger on this agent and the save simply collided.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    description: 'Stable discriminator for errors a client must tell apart. `connection_missing_scopes` means the bound connection''s OAuth grant lacks a scope this trigger needs and must be reconnected. `trigger_type_unsupported` means the integration enumerates its trigger types and `trigger_type` is not one of them, so the trigger could never fire; the message lists the types it does have, and the trigger types endpoint is the general source. A trigger that already carries such a type can still be paused (`enabled: false`, same `trigger_type`) and deleted. `jira_watched_fields_required` means a Jira save that enables or creates the trigger carried no readable watched field in `filter_config.fields` and was not a new-issues trigger (`filter_config.issue_created: true` with no `fields`), so the trigger could never start a Run; send at least one readable field id, or turn on new issues and send no fields. An existing Jira trigger can still be paused without either. `jira_project_keys_required` means such a save carried no project key in `filter_config.project_keys`; send at least one. `jira_project_keys_limit` means it carried more than 50, which is one Jira lookup page. `mention_trigger_protected` means the trigger this save would replace is an @mention trigger, which only the agent''s mention setting may change; delete it to free the integration. `mention_trigger_workspace_required` means this save would create a `teams_mention` trigger with no `filter_config.tenantId`, which would match no inbound mention; turn @mentions on from the agent''s mention setting, which resolves the tenant from the team''s Teams workspace, or send `tenantId` explicitly. Only Teams mention triggers pin a workspace this way — a Slack one needs no such field. `trigger_save_timed_out` means the save did not finish inside the bound this route holds while writing the trigger; nothing is wrong with the request, so retry it.'
+                    type: string
+                  integration_instance_id:
+                    description: On `connection_missing_scopes`, the connection that was rejected — the one to reconnect. Several connections can be bound to one agent, so this names which.
+                    type: string
+                    format: uuid
+                required:
+                - error
+                additionalProperties: false
+                description: '`mention_trigger_protected`: the trigger this save would replace is an @mention trigger and the requested `trigger_type` differs. Delete that trigger (`DELETE /v1/triggers/{agentId}/{triggerId}`, id from `GET /v1/triggers/{agentId}`) to use the integration for a different trigger type. `trigger_save_timed_out`: the save did not finish inside the bound this route holds while writing the trigger — retry. Without either code, the integration already has a trigger on this agent and the save simply collided.'
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Upsert Agent Trigger
+  /v2/triggers/{agentId}/{triggerId}:
+    delete:
+      operationId: deleteAgentTrigger
+      summary: Delete Agent Trigger
+      tags:
+      - Triggers
+      description: 'Permanently delete one of your own event triggers on an agent. The agent stops starting Runs for that event and the trigger''s filter config is lost. To keep the trigger but stop it firing, upsert it with `enabled: false` instead.'
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agentId
+        required: true
+        description: The agent's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: triggerId
+        required: true
+        description: The trigger to delete
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - success
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -330,6 +562,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -344,10 +578,11 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
-      summary: Upsert Agent Trigger
   /v2/trigger-config/{agentId}:
     get:
       operationId: listAgentTriggerTypes
@@ -415,6 +650,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -428,6 +665,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -443,6 +682,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -457,10 +698,963 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: List Agent Trigger Types
+  /v2/agents/{agent_id}/slack-triggers:
+    post:
+      operationId: createAgentSlackTrigger
+      summary: Create Slack Channel Trigger
+      tags:
+      - Triggers
+      description: 'Create a Slack channel trigger on an agent (Agent in the Duvo UI): the agent starts a Run whenever a matching message is posted in the channel. An agent can carry one trigger per channel, so call this once per channel. The Slack workspace must be installed for the team AND bound to the agent''s live build first (see the Slack bound-workspaces endpoint) — otherwise this returns 400.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trigger_type:
+                  type: string
+                  enum:
+                  - slack_channel_message
+                  description: Trigger type. Only `slack_channel_message` (a message posted in a Slack channel) is supported here.
+                slack_team_id:
+                  description: Slack workspace (team) ID the channel belongs to, e.g. `T0123ABCD`. Defaults to the team's default installed workspace. Discover the workspaces an agent can use with the bound-workspaces endpoint.
+                  type: string
+                  minLength: 1
+                channel_id:
+                  type: string
+                  minLength: 1
+                  description: Slack channel ID to watch, e.g. `C0123ABCD`.
+                channel_name:
+                  type: string
+                  minLength: 1
+                  description: Slack channel name shown in Duvo, without the leading `#`, e.g. `support-inbox`.
+                match_rule:
+                  oneOf:
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - all
+                    required:
+                    - kind
+                    description: Fire on every message posted in the channel.
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - contains
+                      values:
+                        description: Case-insensitive keywords; a message fires the trigger when it contains any of them. Duplicates are deduplicated.
+                        minItems: 1
+                        maxItems: 50
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 500
+                    required:
+                    - kind
+                    - values
+                    description: Fire only on messages containing one of the keywords.
+                  description: 'Which channel messages fire the trigger: `{"kind":"all"}` for every message, or `{"kind":"contains","values":["invoice"]}` to match keywords.'
+                is_private:
+                  description: Whether the channel is private. Defaults to false. Private channels require the Duvo Slack app to be invited to the channel.
+                  type: boolean
+                integration_instance_id:
+                  description: Specific bound Slack connection to run the trigger off. Omit to use your own connection, or pass one returned by the bound-workspaces endpoint.
+                  type: string
+                  format: uuid
+              required:
+              - trigger_type
+              - channel_id
+              - channel_name
+              - match_rule
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slack_trigger:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      agent_id:
+                        type: string
+                      user_id:
+                        type: string
+                      integration_slug:
+                        type: string
+                      trigger_type:
+                        type: string
+                      filter_config:
+                        type: object
+                        additionalProperties: {}
+                      integration_instance_id:
+                        type: string
+                      enabled:
+                        type: boolean
+                      auto_disabled_at:
+                        type:
+                        - string
+                        - 'null'
+                      auto_disabled_reason:
+                        type:
+                        - string
+                        - 'null'
+                      consecutive_missing_connection_failures:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      first_missing_connection_failure_at:
+                        type:
+                        - string
+                        - 'null'
+                      last_missing_connection_failure_at:
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                      pending_change:
+                        description: Set on a trigger that belongs to an automation with versions when its draft changes this trigger. Null otherwise.
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          automation_revision_id:
+                            type: string
+                            description: The automation's draft revision that holds the change.
+                          enabled:
+                            description: Whether the trigger is on once the draft is made active. Null when the draft removes it.
+                            type:
+                            - boolean
+                            - 'null'
+                          filter_config:
+                            description: The filter the trigger uses once the draft is made active. Null when the draft removes it.
+                            type:
+                            - object
+                            - 'null'
+                            additionalProperties: {}
+                        required:
+                        - automation_revision_id
+                        - enabled
+                        - filter_config
+                        additionalProperties: false
+                    required:
+                    - id
+                    - agent_id
+                    - user_id
+                    - integration_slug
+                    - trigger_type
+                    - filter_config
+                    - integration_instance_id
+                    - enabled
+                    - auto_disabled_at
+                    - auto_disabled_reason
+                    - consecutive_missing_connection_failures
+                    - first_missing_connection_failure_at
+                    - last_missing_connection_failure_at
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                required:
+                - slack_trigger
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+    get:
+      operationId: listAgentSlackTriggers
+      summary: List Slack Channel Triggers
+      tags:
+      - Triggers
+      description: List the Slack channel triggers you own on an agent (Agent in the Duvo UI), oldest first. Each trigger's `filter_config` carries the watched `channelId`, `channelName`, Slack `workspaceId`, and `matchRule`. Capped at 100 triggers per agent.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slack_triggers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        agent_id:
+                          type: string
+                        user_id:
+                          type: string
+                        integration_slug:
+                          type: string
+                        trigger_type:
+                          type: string
+                        filter_config:
+                          type: object
+                          additionalProperties: {}
+                        integration_instance_id:
+                          type: string
+                        enabled:
+                          type: boolean
+                        auto_disabled_at:
+                          type:
+                          - string
+                          - 'null'
+                        auto_disabled_reason:
+                          type:
+                          - string
+                          - 'null'
+                        consecutive_missing_connection_failures:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        first_missing_connection_failure_at:
+                          type:
+                          - string
+                          - 'null'
+                        last_missing_connection_failure_at:
+                          type:
+                          - string
+                          - 'null'
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        pending_change:
+                          description: Set on a trigger that belongs to an automation with versions when its draft changes this trigger. Null otherwise.
+                          type:
+                          - object
+                          - 'null'
+                          properties:
+                            automation_revision_id:
+                              type: string
+                              description: The automation's draft revision that holds the change.
+                            enabled:
+                              description: Whether the trigger is on once the draft is made active. Null when the draft removes it.
+                              type:
+                              - boolean
+                              - 'null'
+                            filter_config:
+                              description: The filter the trigger uses once the draft is made active. Null when the draft removes it.
+                              type:
+                              - object
+                              - 'null'
+                              additionalProperties: {}
+                          required:
+                          - automation_revision_id
+                          - enabled
+                          - filter_config
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - user_id
+                      - integration_slug
+                      - trigger_type
+                      - filter_config
+                      - integration_instance_id
+                      - enabled
+                      - auto_disabled_at
+                      - auto_disabled_reason
+                      - consecutive_missing_connection_failures
+                      - first_missing_connection_failure_at
+                      - last_missing_connection_failure_at
+                      - created_at
+                      - updated_at
+                      additionalProperties: false
+                required:
+                - slack_triggers
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+  /v2/slack-triggers/{trigger_id}:
+    patch:
+      operationId: updateSlackTrigger
+      summary: Update Slack Channel Trigger
+      tags:
+      - Triggers
+      description: Update a Slack channel trigger you own — repoint it at another channel, change which messages match, or pause and resume it with `enabled`. Only the supplied fields change. Resuming a paused trigger requires the Slack connection it runs off to still be available on the agent; changing the channel resets the trigger's seen-message state.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                channel_id:
+                  description: New Slack channel ID to watch. Omit to leave unchanged.
+                  type: string
+                  minLength: 1
+                channel_name:
+                  description: New Slack channel name, without the leading `#`.
+                  type: string
+                  minLength: 1
+                match_rule:
+                  oneOf:
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - all
+                    required:
+                    - kind
+                    description: Fire on every message posted in the channel.
+                  - type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - contains
+                      values:
+                        description: Case-insensitive keywords; a message fires the trigger when it contains any of them. Duplicates are deduplicated.
+                        minItems: 1
+                        maxItems: 50
+                        type: array
+                        items:
+                          type: string
+                          minLength: 1
+                          maxLength: 500
+                    required:
+                    - kind
+                    - values
+                    description: Fire only on messages containing one of the keywords.
+                  description: 'Which channel messages fire the trigger: `{"kind":"all"}` for every message, or `{"kind":"contains","values":["invoice"]}` to match keywords.'
+                is_private:
+                  description: Whether the channel is private.
+                  type: boolean
+                enabled:
+                  description: Set to false to pause the trigger without deleting it, or true to resume it. Resuming requires the connection the trigger uses to still be available on the agent.
+                  type: boolean
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: trigger_id
+        required: true
+        description: The Slack channel trigger's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slack_trigger:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      agent_id:
+                        type: string
+                      user_id:
+                        type: string
+                      integration_slug:
+                        type: string
+                      trigger_type:
+                        type: string
+                      filter_config:
+                        type: object
+                        additionalProperties: {}
+                      integration_instance_id:
+                        type: string
+                      enabled:
+                        type: boolean
+                      auto_disabled_at:
+                        type:
+                        - string
+                        - 'null'
+                      auto_disabled_reason:
+                        type:
+                        - string
+                        - 'null'
+                      consecutive_missing_connection_failures:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      first_missing_connection_failure_at:
+                        type:
+                        - string
+                        - 'null'
+                      last_missing_connection_failure_at:
+                        type:
+                        - string
+                        - 'null'
+                      created_at:
+                        type: string
+                      updated_at:
+                        type: string
+                      pending_change:
+                        description: Set on a trigger that belongs to an automation with versions when its draft changes this trigger. Null otherwise.
+                        type:
+                        - object
+                        - 'null'
+                        properties:
+                          automation_revision_id:
+                            type: string
+                            description: The automation's draft revision that holds the change.
+                          enabled:
+                            description: Whether the trigger is on once the draft is made active. Null when the draft removes it.
+                            type:
+                            - boolean
+                            - 'null'
+                          filter_config:
+                            description: The filter the trigger uses once the draft is made active. Null when the draft removes it.
+                            type:
+                            - object
+                            - 'null'
+                            additionalProperties: {}
+                        required:
+                        - automation_revision_id
+                        - enabled
+                        - filter_config
+                        additionalProperties: false
+                    required:
+                    - id
+                    - agent_id
+                    - user_id
+                    - integration_slug
+                    - trigger_type
+                    - filter_config
+                    - integration_instance_id
+                    - enabled
+                    - auto_disabled_at
+                    - auto_disabled_reason
+                    - consecutive_missing_connection_failures
+                    - first_missing_connection_failure_at
+                    - last_missing_connection_failure_at
+                    - created_at
+                    - updated_at
+                    additionalProperties: false
+                required:
+                - slack_trigger
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+    delete:
+      operationId: deleteSlackTrigger
+      summary: Delete Slack Channel Trigger
+      tags:
+      - Triggers
+      description: 'Permanently delete a Slack channel trigger you own. The agent stops starting Runs for that channel. To keep the trigger but stop it firing, update it with `enabled: false` instead.'
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: trigger_id
+        required: true
+        description: The Slack channel trigger's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                required:
+                - success
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '409':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+  /v2/agents/{agent_id}/builds/{build_id}/slack-bound-workspaces:
+    get:
+      operationId: listAgentSlackBoundWorkspaces
+      summary: List Slack Workspaces Bound To An Agent
+      tags:
+      - Triggers
+      description: List the Slack workspaces bound to an agent build that you can create channel triggers for. Creating a Slack channel trigger for any other workspace is rejected, so start here to pick a valid `slack_team_id` and `integration_instance_id`.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: agent_id
+        required: true
+        description: The agent's unique identifier
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: build_id
+        required: true
+        description: The agent build (revision) whose bound connections to list
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workspaces:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        slack_team_id:
+                          type: string
+                          description: Slack workspace (team) ID, e.g. `T0123ABCD`.
+                        slack_workspace_name:
+                          type: string
+                          description: Slack workspace display name.
+                        integration_instance_id:
+                          type: string
+                          description: Bound Slack connection ID to pass as `integration_instance_id` when creating a trigger for this workspace.
+                        shared:
+                          type: boolean
+                          description: True when this is a team-shared connection rather than your personal one.
+                      required:
+                      - slack_team_id
+                      - slack_workspace_name
+                      - integration_instance_id
+                      - shared
+                      additionalProperties: false
+                required:
+                - workspaces
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
 components:
   securitySchemes:
     bearerAuth:

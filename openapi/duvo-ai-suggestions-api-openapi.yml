@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Suggestions API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -82,6 +100,7 @@ paths:
                             type: string
                             enum:
                             - connection_llm
+                            - aop_llm
                             - eval
                             - dreaming
                           title:
@@ -138,13 +157,37 @@ paths:
                           payload:
                             type: object
                             properties:
-                              oldSop:
+                              base_build_id:
                                 type: string
-                              newSop:
+                                format: uuid
+                              base_revision_number:
+                                type:
+                                - integer
+                                - 'null'
+                                minimum: -9007199254740991
+                                maximum: 9007199254740991
+                              applied_build_id:
                                 type: string
+                                format: uuid
+                              apply:
+                                type: object
+                                properties:
+                                  state:
+                                    type: string
+                                    enum:
+                                    - running
+                                    - failed
+                                  started_at:
+                                    type: string
+                                  error:
+                                    type: string
+                                required:
+                                - state
+                                - started_at
+                                additionalProperties: false
                             required:
-                            - oldSop
-                            - newSop
+                            - base_build_id
+                            - base_revision_number
                             additionalProperties: false
                         required:
                         - id
@@ -183,6 +226,7 @@ paths:
                             type: string
                             enum:
                             - connection_llm
+                            - aop_llm
                             - eval
                             - dreaming
                           title:
@@ -241,7 +285,8 @@ paths:
                             properties:
                               toSlug:
                                 type: string
-                                enum:
+                                description: Integration catalog slug. New slugs are added over time.
+                                x-extensible-enum:
                                 - googlecalendar
                                 - google-calendar
                                 - gmail
@@ -255,7 +300,6 @@ paths:
                                 - exa-company-search
                                 - exa-people-search
                                 - deep-research
-                                - system
                                 - browser-agent
                                 - browser-agent-devtools
                                 - notion
@@ -284,7 +328,6 @@ paths:
                                 - sap-ecc
                                 - msteams
                                 - human-in-the-loop
-                                - email-attachments-reader
                                 - document-processor
                                 - google-docs
                                 - google-sheets
@@ -312,6 +355,7 @@ paths:
                                 - duvo-computer-use-rdp
                                 - eu-commodity-prices
                                 - asana
+                                - jira
                                 - ssh
                                 - scheduling
                                 - github
@@ -320,6 +364,24 @@ paths:
                                 - granola
                                 - apify
                                 - bamboohr
+                                - edi
+                                - maersk
+                                - infor-nexus
+                                - dhl
+                                - fedex
+                                - ups
+                                - dsv
+                                - trinity-logistics
+                                - ontrac
+                                - dachser
+                                - hellmann
+                                - omni-logistics
+                                - ceva-logistics
+                                - dpd
+                                - canada-post
+                                - o9
+                                - manhattan
+                                - blue-yonder
                               toIntegrationId:
                                 type: string
                                 format: uuid
@@ -364,6 +426,7 @@ paths:
                             type: string
                             enum:
                             - connection_llm
+                            - aop_llm
                             - eval
                             - dreaming
                           title:
@@ -422,7 +485,8 @@ paths:
                             properties:
                               fromSlug:
                                 type: string
-                                enum:
+                                description: Integration catalog slug. New slugs are added over time.
+                                x-extensible-enum:
                                 - googlecalendar
                                 - google-calendar
                                 - gmail
@@ -436,7 +500,6 @@ paths:
                                 - exa-company-search
                                 - exa-people-search
                                 - deep-research
-                                - system
                                 - browser-agent
                                 - browser-agent-devtools
                                 - notion
@@ -465,7 +528,6 @@ paths:
                                 - sap-ecc
                                 - msteams
                                 - human-in-the-loop
-                                - email-attachments-reader
                                 - document-processor
                                 - google-docs
                                 - google-sheets
@@ -493,6 +555,7 @@ paths:
                                 - duvo-computer-use-rdp
                                 - eu-commodity-prices
                                 - asana
+                                - jira
                                 - ssh
                                 - scheduling
                                 - github
@@ -501,9 +564,28 @@ paths:
                                 - granola
                                 - apify
                                 - bamboohr
+                                - edi
+                                - maersk
+                                - infor-nexus
+                                - dhl
+                                - fedex
+                                - ups
+                                - dsv
+                                - trinity-logistics
+                                - ontrac
+                                - dachser
+                                - hellmann
+                                - omni-logistics
+                                - ceva-logistics
+                                - dpd
+                                - canada-post
+                                - o9
+                                - manhattan
+                                - blue-yonder
                               toSlug:
                                 type: string
-                                enum:
+                                description: Integration catalog slug. New slugs are added over time.
+                                x-extensible-enum:
                                 - googlecalendar
                                 - google-calendar
                                 - gmail
@@ -517,7 +599,6 @@ paths:
                                 - exa-company-search
                                 - exa-people-search
                                 - deep-research
-                                - system
                                 - browser-agent
                                 - browser-agent-devtools
                                 - notion
@@ -546,7 +627,6 @@ paths:
                                 - sap-ecc
                                 - msteams
                                 - human-in-the-loop
-                                - email-attachments-reader
                                 - document-processor
                                 - google-docs
                                 - google-sheets
@@ -574,6 +654,7 @@ paths:
                                 - duvo-computer-use-rdp
                                 - eu-commodity-prices
                                 - asana
+                                - jira
                                 - ssh
                                 - scheduling
                                 - github
@@ -582,6 +663,24 @@ paths:
                                 - granola
                                 - apify
                                 - bamboohr
+                                - edi
+                                - maersk
+                                - infor-nexus
+                                - dhl
+                                - fedex
+                                - ups
+                                - dsv
+                                - trinity-logistics
+                                - ontrac
+                                - dachser
+                                - hellmann
+                                - omni-logistics
+                                - ceva-logistics
+                                - dpd
+                                - canada-post
+                                - o9
+                                - manhattan
+                                - blue-yonder
                               toIntegrationId:
                                 type: string
                                 format: uuid
@@ -627,6 +726,7 @@ paths:
                             type: string
                             enum:
                             - connection_llm
+                            - aop_llm
                             - eval
                             - dreaming
                           title:
@@ -685,7 +785,8 @@ paths:
                             properties:
                               slug:
                                 type: string
-                                enum:
+                                description: Integration catalog slug. New slugs are added over time.
+                                x-extensible-enum:
                                 - googlecalendar
                                 - google-calendar
                                 - gmail
@@ -699,7 +800,6 @@ paths:
                                 - exa-company-search
                                 - exa-people-search
                                 - deep-research
-                                - system
                                 - browser-agent
                                 - browser-agent-devtools
                                 - notion
@@ -728,7 +828,6 @@ paths:
                                 - sap-ecc
                                 - msteams
                                 - human-in-the-loop
-                                - email-attachments-reader
                                 - document-processor
                                 - google-docs
                                 - google-sheets
@@ -756,6 +855,7 @@ paths:
                                 - duvo-computer-use-rdp
                                 - eu-commodity-prices
                                 - asana
+                                - jira
                                 - ssh
                                 - scheduling
                                 - github
@@ -764,6 +864,24 @@ paths:
                                 - granola
                                 - apify
                                 - bamboohr
+                                - edi
+                                - maersk
+                                - infor-nexus
+                                - dhl
+                                - fedex
+                                - ups
+                                - dsv
+                                - trinity-logistics
+                                - ontrac
+                                - dachser
+                                - hellmann
+                                - omni-logistics
+                                - ceva-logistics
+                                - dpd
+                                - canada-post
+                                - o9
+                                - manhattan
+                                - blue-yonder
                             required:
                             - slug
                             additionalProperties: false
@@ -804,6 +922,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -817,6 +937,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -832,27 +954,18 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
       summary: List Agent Suggestions
-  /v2/agents/suggestions/{id}/consume:
-    post:
-      operationId: consumeAgentSuggestion
+  /v2/agents/suggestions/{id}:
+    get:
+      operationId: getAgentSuggestion
       tags:
       - Suggestions
-      description: 'Apply a suggestion: stage its change into the Agent''s draft revision, then auto-clear any pending suggestions it makes moot.'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              default: {}
-              type: object
-              properties:
-                revision_id:
-                  type: string
-                  format: uuid
+      description: 'Fetch a single suggestion. Poll this after a 202 from consume: an AOP apply in flight reports payload.apply.state (running/failed); once consumed, applied_revision_id carries the draft revision the change was staged onto.'
       parameters:
       - schema:
           type: string
@@ -892,6 +1005,7 @@ paths:
                           type: string
                           enum:
                           - connection_llm
+                          - aop_llm
                           - eval
                           - dreaming
                         title:
@@ -948,13 +1062,37 @@ paths:
                         payload:
                           type: object
                           properties:
-                            oldSop:
+                            base_build_id:
                               type: string
-                            newSop:
+                              format: uuid
+                            base_revision_number:
+                              type:
+                              - integer
+                              - 'null'
+                              minimum: -9007199254740991
+                              maximum: 9007199254740991
+                            applied_build_id:
                               type: string
+                              format: uuid
+                            apply:
+                              type: object
+                              properties:
+                                state:
+                                  type: string
+                                  enum:
+                                  - running
+                                  - failed
+                                started_at:
+                                  type: string
+                                error:
+                                  type: string
+                              required:
+                              - state
+                              - started_at
+                              additionalProperties: false
                           required:
-                          - oldSop
-                          - newSop
+                          - base_build_id
+                          - base_revision_number
                           additionalProperties: false
                       required:
                       - id
@@ -993,6 +1131,7 @@ paths:
                           type: string
                           enum:
                           - connection_llm
+                          - aop_llm
                           - eval
                           - dreaming
                         title:
@@ -1051,7 +1190,8 @@ paths:
                           properties:
                             toSlug:
                               type: string
-                              enum:
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
                               - googlecalendar
                               - google-calendar
                               - gmail
@@ -1065,7 +1205,6 @@ paths:
                               - exa-company-search
                               - exa-people-search
                               - deep-research
-                              - system
                               - browser-agent
                               - browser-agent-devtools
                               - notion
@@ -1094,7 +1233,6 @@ paths:
                               - sap-ecc
                               - msteams
                               - human-in-the-loop
-                              - email-attachments-reader
                               - document-processor
                               - google-docs
                               - google-sheets
@@ -1122,6 +1260,7 @@ paths:
                               - duvo-computer-use-rdp
                               - eu-commodity-prices
                               - asana
+                              - jira
                               - ssh
                               - scheduling
                               - github
@@ -1130,6 +1269,24 @@ paths:
                               - granola
                               - apify
                               - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
                             toIntegrationId:
                               type: string
                               format: uuid
@@ -1174,6 +1331,7 @@ paths:
                           type: string
                           enum:
                           - connection_llm
+                          - aop_llm
                           - eval
                           - dreaming
                         title:
@@ -1232,7 +1390,8 @@ paths:
                           properties:
                             fromSlug:
                               type: string
-                              enum:
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
                               - googlecalendar
                               - google-calendar
                               - gmail
@@ -1246,7 +1405,6 @@ paths:
                               - exa-company-search
                               - exa-people-search
                               - deep-research
-                              - system
                               - browser-agent
                               - browser-agent-devtools
                               - notion
@@ -1275,7 +1433,6 @@ paths:
                               - sap-ecc
                               - msteams
                               - human-in-the-loop
-                              - email-attachments-reader
                               - document-processor
                               - google-docs
                               - google-sheets
@@ -1303,6 +1460,7 @@ paths:
                               - duvo-computer-use-rdp
                               - eu-commodity-prices
                               - asana
+                              - jira
                               - ssh
                               - scheduling
                               - github
@@ -1311,9 +1469,28 @@ paths:
                               - granola
                               - apify
                               - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
                             toSlug:
                               type: string
-                              enum:
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
                               - googlecalendar
                               - google-calendar
                               - gmail
@@ -1327,7 +1504,6 @@ paths:
                               - exa-company-search
                               - exa-people-search
                               - deep-research
-                              - system
                               - browser-agent
                               - browser-agent-devtools
                               - notion
@@ -1356,7 +1532,6 @@ paths:
                               - sap-ecc
                               - msteams
                               - human-in-the-loop
-                              - email-attachments-reader
                               - document-processor
                               - google-docs
                               - google-sheets
@@ -1384,6 +1559,7 @@ paths:
                               - duvo-computer-use-rdp
                               - eu-commodity-prices
                               - asana
+                              - jira
                               - ssh
                               - scheduling
                               - github
@@ -1392,6 +1568,24 @@ paths:
                               - granola
                               - apify
                               - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
                             toIntegrationId:
                               type: string
                               format: uuid
@@ -1437,6 +1631,7 @@ paths:
                           type: string
                           enum:
                           - connection_llm
+                          - aop_llm
                           - eval
                           - dreaming
                         title:
@@ -1495,7 +1690,8 @@ paths:
                           properties:
                             slug:
                               type: string
-                              enum:
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
                               - googlecalendar
                               - google-calendar
                               - gmail
@@ -1509,7 +1705,6 @@ paths:
                               - exa-company-search
                               - exa-people-search
                               - deep-research
-                              - system
                               - browser-agent
                               - browser-agent-devtools
                               - notion
@@ -1538,7 +1733,6 @@ paths:
                               - sap-ecc
                               - msteams
                               - human-in-the-loop
-                              - email-attachments-reader
                               - document-processor
                               - google-docs
                               - google-sheets
@@ -1566,6 +1760,7 @@ paths:
                               - duvo-computer-use-rdp
                               - eu-commodity-prices
                               - asana
+                              - jira
                               - ssh
                               - scheduling
                               - github
@@ -1574,6 +1769,1799 @@ paths:
                               - granola
                               - apify
                               - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
+                          required:
+                          - slug
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                  applied_revision_id:
+                    type: string
+                    format: uuid
+                required:
+                - data
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Get Agent Suggestion
+  /v2/agents/suggestions/{id}/consume:
+    post:
+      operationId: consumeAgentSuggestion
+      tags:
+      - Suggestions
+      description: 'Apply a suggestion: stage its change into the Agent''s draft revision, then auto-clear any pending suggestions it makes moot.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              default: {}
+              type: object
+              properties:
+                revision_id:
+                  type: string
+                  format: uuid
+                create_new_draft:
+                  type: boolean
+                selected_automation_revision_id:
+                  description: The automation revision this edit is being made at. Pass a draft and the edit is folded into that draft itself; pass the active revision and the edit lands on a draft branched from it. A historic revision is rejected — it cannot be activated from without an explicit rebase. A revision belonging to a different automation is ignored, and the edit targets the automation the addressed agent belongs to. Omit to target the automation's active revision.
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The suggestion's unique identifier
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    oneOf:
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - aop_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_by_user_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        superseded_reason:
+                          type:
+                          - string
+                          - 'null'
+                        superseded_by_suggestion_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - aop
+                        payload:
+                          type: object
+                          properties:
+                            base_build_id:
+                              type: string
+                              format: uuid
+                            base_revision_number:
+                              type:
+                              - integer
+                              - 'null'
+                              minimum: -9007199254740991
+                              maximum: 9007199254740991
+                            applied_build_id:
+                              type: string
+                              format: uuid
+                            apply:
+                              type: object
+                              properties:
+                                state:
+                                  type: string
+                                  enum:
+                                  - running
+                                  - failed
+                                started_at:
+                                  type: string
+                                error:
+                                  type: string
+                              required:
+                              - state
+                              - started_at
+                              additionalProperties: false
+                          required:
+                          - base_build_id
+                          - base_revision_number
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - aop_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_by_user_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        superseded_reason:
+                          type:
+                          - string
+                          - 'null'
+                        superseded_by_suggestion_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_add
+                        payload:
+                          type: object
+                          properties:
+                            toSlug:
+                              type: string
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - jira
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
+                            toIntegrationId:
+                              type: string
+                              format: uuid
+                          required:
+                          - toSlug
+                          - toIntegrationId
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - aop_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_by_user_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        superseded_reason:
+                          type:
+                          - string
+                          - 'null'
+                        superseded_by_suggestion_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_replace
+                        payload:
+                          type: object
+                          properties:
+                            fromSlug:
+                              type: string
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - jira
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
+                            toSlug:
+                              type: string
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - jira
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
+                            toIntegrationId:
+                              type: string
+                              format: uuid
+                          required:
+                          - fromSlug
+                          - toSlug
+                          - toIntegrationId
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - aop_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_by_user_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        superseded_reason:
+                          type:
+                          - string
+                          - 'null'
+                        superseded_by_suggestion_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_remove
+                        payload:
+                          type: object
+                          properties:
+                            slug:
+                              type: string
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - jira
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
+                          required:
+                          - slug
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                  applied_revision_id:
+                    type: string
+                    format: uuid
+                required:
+                - data
+                additionalProperties: false
+        '202':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    oneOf:
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - aop_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_by_user_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        superseded_reason:
+                          type:
+                          - string
+                          - 'null'
+                        superseded_by_suggestion_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - aop
+                        payload:
+                          type: object
+                          properties:
+                            base_build_id:
+                              type: string
+                              format: uuid
+                            base_revision_number:
+                              type:
+                              - integer
+                              - 'null'
+                              minimum: -9007199254740991
+                              maximum: 9007199254740991
+                            applied_build_id:
+                              type: string
+                              format: uuid
+                            apply:
+                              type: object
+                              properties:
+                                state:
+                                  type: string
+                                  enum:
+                                  - running
+                                  - failed
+                                started_at:
+                                  type: string
+                                error:
+                                  type: string
+                              required:
+                              - state
+                              - started_at
+                              additionalProperties: false
+                          required:
+                          - base_build_id
+                          - base_revision_number
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - aop_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_by_user_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        superseded_reason:
+                          type:
+                          - string
+                          - 'null'
+                        superseded_by_suggestion_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_add
+                        payload:
+                          type: object
+                          properties:
+                            toSlug:
+                              type: string
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - jira
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
+                            toIntegrationId:
+                              type: string
+                              format: uuid
+                          required:
+                          - toSlug
+                          - toIntegrationId
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - aop_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_by_user_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        superseded_reason:
+                          type:
+                          - string
+                          - 'null'
+                        superseded_by_suggestion_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_replace
+                        payload:
+                          type: object
+                          properties:
+                            fromSlug:
+                              type: string
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - jira
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
+                            toSlug:
+                              type: string
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - jira
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
+                            toIntegrationId:
+                              type: string
+                              format: uuid
+                          required:
+                          - fromSlug
+                          - toSlug
+                          - toIntegrationId
+                          additionalProperties: false
+                      required:
+                      - id
+                      - agent_id
+                      - status
+                      - generated_by
+                      - title
+                      - description
+                      - dedup_key
+                      - resolved_at
+                      - resolved_by_user_id
+                      - superseded_reason
+                      - superseded_by_suggestion_id
+                      - created_at
+                      - updated_at
+                      - sources
+                      - type
+                      - payload
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        agent_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - consumed
+                          - rejected
+                          - superseded
+                        generated_by:
+                          type: string
+                          enum:
+                          - connection_llm
+                          - aop_llm
+                          - eval
+                          - dreaming
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        dedup_key:
+                          type: string
+                        resolved_at:
+                          type:
+                          - string
+                          - 'null'
+                        resolved_by_user_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        superseded_reason:
+                          type:
+                          - string
+                          - 'null'
+                        superseded_by_suggestion_id:
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        created_at:
+                          type: string
+                        updated_at:
+                          type: string
+                        sources:
+                          minItems: 1
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              agent_run_id:
+                                type: string
+                                format: uuid
+                              run_number:
+                                type: integer
+                                maximum: 9007199254740991
+                              created_at:
+                                type: string
+                            required:
+                            - agent_run_id
+                            - run_number
+                            - created_at
+                            additionalProperties: false
+                        type:
+                          type: string
+                          enum:
+                          - connection_remove
+                        payload:
+                          type: object
+                          properties:
+                            slug:
+                              type: string
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
+                              - googlecalendar
+                              - google-calendar
+                              - gmail
+                              - slack
+                              - googledocs
+                              - googlesheets
+                              - googledrive
+                              - firecrawl
+                              - exa
+                              - exa-search
+                              - exa-company-search
+                              - exa-people-search
+                              - deep-research
+                              - browser-agent
+                              - browser-agent-devtools
+                              - notion
+                              - linear
+                              - confluence
+                              - custom_mcp
+                              - user_mcp
+                              - snowflake
+                              - sharepoint
+                              - teams
+                              - onedrive
+                              - bigquery
+                              - databricks
+                              - netsuite
+                              - outlook
+                              - microsoft-calendar
+                              - excel
+                              - word
+                              - saps4hana
+                              - md365
+                              - businesscentral
+                              - oraclefusion
+                              - workday
+                              - coupa
+                              - signavio
+                              - sap-ecc
+                              - msteams
+                              - human-in-the-loop
+                              - document-processor
+                              - google-docs
+                              - google-sheets
+                              - google-drive
+                              - outbound-call
+                              - case-queue-producer
+                              - case-queue-consumer
+                              - handover
+                              - shopify
+                              - hubspot
+                              - zendesk
+                              - intercom
+                              - powerbi
+                              - salesforce
+                              - pipedrive
+                              - tableau
+                              - image-generation
+                              - forecasting
+                              - supabase
+                              - attio
+                              - amplitude
+                              - websets
+                              - firecrawl-platform
+                              - duvo-computer-use
+                              - duvo-computer-use-rdp
+                              - eu-commodity-prices
+                              - asana
+                              - jira
+                              - ssh
+                              - scheduling
+                              - github
+                              - linear-native
+                              - notion-native
+                              - granola
+                              - apify
+                              - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
                           required:
                           - slug
                           additionalProperties: false
@@ -1612,6 +3600,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1625,6 +3615,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1640,6 +3632,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1653,6 +3647,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1668,6 +3664,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -1681,6 +3679,24 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '502':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -1731,6 +3747,7 @@ paths:
                           type: string
                           enum:
                           - connection_llm
+                          - aop_llm
                           - eval
                           - dreaming
                         title:
@@ -1787,13 +3804,37 @@ paths:
                         payload:
                           type: object
                           properties:
-                            oldSop:
+                            base_build_id:
                               type: string
-                            newSop:
+                              format: uuid
+                            base_revision_number:
+                              type:
+                              - integer
+                              - 'null'
+                              minimum: -9007199254740991
+                              maximum: 9007199254740991
+                            applied_build_id:
                               type: string
+                              format: uuid
+                            apply:
+                              type: object
+                              properties:
+                                state:
+                                  type: string
+                                  enum:
+                                  - running
+                                  - failed
+                                started_at:
+                                  type: string
+                                error:
+                                  type: string
+                              required:
+                              - state
+                              - started_at
+                              additionalProperties: false
                           required:
-                          - oldSop
-                          - newSop
+                          - base_build_id
+                          - base_revision_number
                           additionalProperties: false
                       required:
                       - id
@@ -1832,6 +3873,7 @@ paths:
                           type: string
                           enum:
                           - connection_llm
+                          - aop_llm
                           - eval
                           - dreaming
                         title:
@@ -1890,7 +3932,8 @@ paths:
                           properties:
                             toSlug:
                               type: string
-                              enum:
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
                               - googlecalendar
                               - google-calendar
                               - gmail
@@ -1904,7 +3947,6 @@ paths:
                               - exa-company-search
                               - exa-people-search
                               - deep-research
-                              - system
                               - browser-agent
                               - browser-agent-devtools
                               - notion
@@ -1933,7 +3975,6 @@ paths:
                               - sap-ecc
                               - msteams
                               - human-in-the-loop
-                              - email-attachments-reader
                               - document-processor
                               - google-docs
                               - google-sheets
@@ -1961,6 +4002,7 @@ paths:
                               - duvo-computer-use-rdp
                               - eu-commodity-prices
                               - asana
+                              - jira
                               - ssh
                               - scheduling
                               - github
@@ -1969,6 +4011,24 @@ paths:
                               - granola
                               - apify
                               - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
                             toIntegrationId:
                               type: string
                               format: uuid
@@ -2013,6 +4073,7 @@ paths:
                           type: string
                           enum:
                           - connection_llm
+                          - aop_llm
                           - eval
                           - dreaming
                         title:
@@ -2071,7 +4132,8 @@ paths:
                           properties:
                             fromSlug:
                               type: string
-                              enum:
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
                               - googlecalendar
                               - google-calendar
                               - gmail
@@ -2085,7 +4147,6 @@ paths:
                               - exa-company-search
                               - exa-people-search
                               - deep-research
-                              - system
                               - browser-agent
                               - browser-agent-devtools
                               - notion
@@ -2114,7 +4175,6 @@ paths:
                               - sap-ecc
                               - msteams
                               - human-in-the-loop
-                              - email-attachments-reader
                               - document-processor
                               - google-docs
                               - google-sheets
@@ -2142,6 +4202,7 @@ paths:
                               - duvo-computer-use-rdp
                               - eu-commodity-prices
                               - asana
+                              - jira
                               - ssh
                               - scheduling
                               - github
@@ -2150,9 +4211,28 @@ paths:
                               - granola
                               - apify
                               - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
                             toSlug:
                               type: string
-                              enum:
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
                               - googlecalendar
                               - google-calendar
                               - gmail
@@ -2166,7 +4246,6 @@ paths:
                               - exa-company-search
                               - exa-people-search
                               - deep-research
-                              - system
                               - browser-agent
                               - browser-agent-devtools
                               - notion
@@ -2195,7 +4274,6 @@ paths:
                               - sap-ecc
                               - msteams
                               - human-in-the-loop
-                              - email-attachments-reader
                               - document-processor
                               - google-docs
                               - google-sheets
@@ -2223,6 +4301,7 @@ paths:
                               - duvo-computer-use-rdp
                               - eu-commodity-prices
                               - asana
+                              - jira
                               - ssh
                               - scheduling
                               - github
@@ -2231,6 +4310,24 @@ paths:
                               - granola
                               - apify
                               - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
                             toIntegrationId:
                               type: string
                               format: uuid
@@ -2276,6 +4373,7 @@ paths:
                           type: string
                           enum:
                           - connection_llm
+                          - aop_llm
                           - eval
                           - dreaming
                         title:
@@ -2334,7 +4432,8 @@ paths:
                           properties:
                             slug:
                               type: string
-                              enum:
+                              description: Integration catalog slug. New slugs are added over time.
+                              x-extensible-enum:
                               - googlecalendar
                               - google-calendar
                               - gmail
@@ -2348,7 +4447,6 @@ paths:
                               - exa-company-search
                               - exa-people-search
                               - deep-research
-                              - system
                               - browser-agent
                               - browser-agent-devtools
                               - notion
@@ -2377,7 +4475,6 @@ paths:
                               - sap-ecc
                               - msteams
                               - human-in-the-loop
-                              - email-attachments-reader
                               - document-processor
                               - google-docs
                               - google-sheets
@@ -2405,6 +4502,7 @@ paths:
                               - duvo-computer-use-rdp
                               - eu-commodity-prices
                               - asana
+                              - jira
                               - ssh
                               - scheduling
                               - github
@@ -2413,6 +4511,24 @@ paths:
                               - granola
                               - apify
                               - bamboohr
+                              - edi
+                              - maersk
+                              - infor-nexus
+                              - dhl
+                              - fedex
+                              - ups
+                              - dsv
+                              - trinity-logistics
+                              - ontrac
+                              - dachser
+                              - hellmann
+                              - omni-logistics
+                              - ceva-logistics
+                              - dpd
+                              - canada-post
+                              - o9
+                              - manhattan
+                              - blue-yonder
                           required:
                           - slug
                           additionalProperties: false
@@ -2451,6 +4567,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2464,6 +4582,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -2479,6 +4599,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2493,6 +4615,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -2506,6 +4630,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

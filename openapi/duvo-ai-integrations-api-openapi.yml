@@ -1,7 +1,25 @@
 openapi: 3.2.0
 info:
   title: Duvo Public Integrations API
-  description: Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
   version: 1.0.0
 servers:
 - url: https://api.duvo.ai
@@ -53,6 +71,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -66,6 +86,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -81,6 +103,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -94,6 +118,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -109,6 +135,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -118,7 +146,7 @@ paths:
       operationId: listIntegrations
       tags:
       - Integrations
-      description: 'List the team''s integration catalog: built-in integration types plus any custom connection types defined for the team. OAuth authorization flows are browser-based and cannot be performed via this API; use the Duvo dashboard to complete OAuth-based connections.'
+      description: 'List the team''s integration catalog: built-in integration types plus the custom connection types this team owns or has been granted by another team in its organization. OAuth authorization flows are browser-based and cannot be performed via this API; use the Duvo dashboard to complete OAuth-based connections.'
       parameters:
       - schema:
           type: string
@@ -199,6 +227,7 @@ paths:
                           - string
                           - 'null'
                         oauth_provider_key:
+                          description: Native OAuth provider key used in the native OAuth start endpoint's provider path parameter. Read this value from listIntegrations; null when the integration type has no native OAuth provider.
                           type:
                           - string
                           - 'null'
@@ -276,6 +305,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -289,6 +320,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -385,6 +418,7 @@ paths:
                     - string
                     - 'null'
                   oauth_provider_key:
+                    description: Native OAuth provider key used in the native OAuth start endpoint's provider path parameter. Read this value from listIntegrations; null when the integration type has no native OAuth provider.
                     type:
                     - string
                     - 'null'
@@ -444,6 +478,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -457,6 +493,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error
@@ -472,6 +510,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -486,6 +526,8 @@ paths:
                     type: string
                   message:
                     type: string
+                  code:
+                    type: string
                 required:
                 - error
                 additionalProperties: false
@@ -499,6 +541,8 @@ paths:
                   error:
                     type: string
                   message:
+                    type: string
+                  code:
                     type: string
                 required:
                 - error

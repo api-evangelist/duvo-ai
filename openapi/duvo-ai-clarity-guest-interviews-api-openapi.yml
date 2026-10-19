@@ -1,0 +1,408 @@
+openapi: 3.2.0
+info:
+  title: Duvo Public Clarity Guest Interviews API
+  description: 'Public API for programmatic access to Duvo. Authenticate with API keys created in the Duvo dashboard.
+
+
+    ## Rate limits
+
+
+    Requests are counted per API key. Every response advertises the quota with the IETF RateLimit fields, so a client can self-throttle without waiting for a rejection:
+
+
+    - `RateLimit-Policy: "default";q=;w=` — the policy in force: `q` requests per `w` seconds.
+
+    - `RateLimit: "default";r=;t=` — the live state: `r` requests left, quota resetting in `t` seconds.
+
+    - Read the quota from the headers rather than hard-coding it; it differs per environment.
+
+    - The same numbers are also sent as `ratelimit-limit`, `ratelimit-remaining` and `ratelimit-reset`.
+
+
+    Once the quota is exhausted the API answers `429 Too Many Requests` with `Retry-After` set to the seconds to wait; honor it instead of retrying immediately.'
+  version: 1.0.0
+servers:
+- url: https://api.duvo.ai
+  description: Production server
+tags:
+- name: Clarity Guest Interviews
+paths:
+  /v2/clarity/processes/{id}/interview-invites:
+    post:
+      operationId: sendClarityInterviewInvites
+      tags:
+      - Clarity Guest Interviews
+      description: Invite people to record an interview about this Clarity process, and email each of them. To invite people from the organization chart or landscape, first use the Clarity hierarchy people tools to find their names and email addresses, then pass them as invitees. Set includeProcessPeople to true to also invite everyone already listed as a person on this process. At most 25 unique recipients per call. Each invitee gets a Clarity process invitation, exactly as the Invite dialog creates one; someone already invited is sent their invitation again rather than a second one. Where the team has account-free interview links on, people without a Duvo account get a link that opens the interview directly and expires after 30 days; everyone else gets the normal invitation that asks them to sign in. Revoke a pending invitation with deleteTeamInvite.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invitees:
+                  maxItems: 25
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                        description: The interview invitee's email address.
+                      name:
+                        type: string
+                        maxLength: 200
+                        description: The invitee's name, if it is known.
+                    required:
+                    - email
+                  description: People found through org-chart or landscape people tools. At most 25 unique recipients per call, counting includeProcessPeople.
+                includeProcessPeople:
+                  type: boolean
+                  description: Also invite every active process person with an email address. Use this for people already assigned to the process.
+                message:
+                  type: string
+                  maxLength: 500
+                  description: Optional plain-text note added to each invitation email, at most 500 characters. Line breaks are collapsed and markup is shown as text.
+      parameters:
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The Clarity process ID.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invites:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        invitationId:
+                          description: The Clarity process invitation ID. Pass it to deleteTeamInvite to revoke a pending invitation. Null when no invitation could be created.
+                          type:
+                          - string
+                          - 'null'
+                          format: uuid
+                        email:
+                          type: string
+                          format: email
+                          description: The invitee's normalized email address.
+                        name:
+                          description: The invitee's name, if known.
+                          type:
+                          - string
+                          - 'null'
+                        status:
+                          type: string
+                          enum:
+                          - sent
+                          - failed
+                          description: 'sent: the invitation exists and its email was sent. failed: see error; when invitationId is set the invitation exists and the email can be retried with sendTeamInviteEmail.'
+                        delivery:
+                          type:
+                          - string
+                          - 'null'
+                          enum:
+                          - guest_link
+                          - sign_in
+                          description: 'How the invitation was emailed: guest_link is an account-free interview link; sign_in is the normal invitation that asks the person to sign in (used for people who already have a Duvo account, SSO-enforced organizations, or when account-free links are off).'
+                        error:
+                          description: Why the invitation or its email failed, if it did.
+                          type:
+                          - string
+                          - 'null'
+                      required:
+                      - invitationId
+                      - email
+                      - name
+                      - status
+                      - delivery
+                      - error
+                      additionalProperties: false
+                    description: The result for each unique invitee.
+                required:
+                - invites
+                additionalProperties: false
+        '400':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: Send Clarity Interview Invites
+    get:
+      operationId: listClarityInterviewInvites
+      tags:
+      - Clarity Guest Interviews
+      description: List a Clarity process's pending and accepted invitations, newest first, with whether each was accepted, whether it was sent an account-free interview link, and whether the invitee has opened that link or submitted an interview. Paginate with limit and offset; total is the number of invitations. Revoke a pending invitation by passing its id to deleteTeamInvite.
+      parameters:
+      - schema:
+          default: 50
+          type: integer
+          minimum: 1
+          maximum: 100
+        in: query
+        name: limit
+        required: false
+        description: Maximum number of invitations to return, newest first.
+      - schema:
+          default: 0
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        in: query
+        name: offset
+        required: false
+        description: Number of invitations to skip, for the next page.
+      - schema:
+          type: string
+          format: uuid
+        in: path
+        name: id
+        required: true
+        description: The Clarity process ID.
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invites:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                          description: The Clarity process invitation ID. Pass it to deleteTeamInvite to revoke a pending invitation.
+                        email:
+                          type: string
+                          format: email
+                          description: The invitee's email address.
+                        name:
+                          description: The invitee's name, if known.
+                          type:
+                          - string
+                          - 'null'
+                        status:
+                          type: string
+                          enum:
+                          - pending
+                          - opened
+                          - completed
+                          - expired
+                          description: 'pending: no interview link opened and no interview yet. opened: the invitee opened at least one of the invitation''s account-free interview links but has not submitted an interview; expiresAt says when the newest link expires. completed: at least one interview is processing or complete. expired: none of its links was ever opened and the newest one has expired; send the invitation again to issue a new one.'
+                        accepted:
+                          type: boolean
+                          description: Whether the invitation was accepted. Teammates are accepted as soon as they are invited, so this alone does not mean the person engaged.
+                        guestLink:
+                          type: boolean
+                          description: Whether an account-free interview link was emailed.
+                        openedAt:
+                          description: When the invitee last opened an interview link.
+                          type:
+                          - string
+                          - 'null'
+                        expiresAt:
+                          description: When the newest account-free link expires, if any. A link also stops working before then if the invitation is revoked, the guest leaves the team, or account-free links are turned off for the team.
+                          type:
+                          - string
+                          - 'null'
+                        createdAt:
+                          type: string
+                          description: When this invitation was created.
+                        interviewCount:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                          description: Number of non-deleted interviews submitted by the invitee.
+                      required:
+                      - id
+                      - email
+                      - name
+                      - status
+                      - accepted
+                      - guestLink
+                      - openedAt
+                      - expiresAt
+                      - createdAt
+                      - interviewCount
+                      additionalProperties: false
+                    description: One page of the process's pending and accepted invitations.
+                  total:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  limit:
+                    type: integer
+                    maximum: 9007199254740991
+                  offset:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                required:
+                - invites
+                - total
+                - limit
+                - offset
+                additionalProperties: false
+        '401':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '403':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '404':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+        '500':
+          description: Default Response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  message:
+                    type: string
+                  code:
+                    type: string
+                required:
+                - error
+                additionalProperties: false
+      summary: List Clarity Interview Invites
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key authentication. Get your API key from the Duvo dashboard.
