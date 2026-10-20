@@ -1512,12 +1512,12 @@ deployment:
   checked: '2026-08-12'
   source: catalog MCP census
 tool_quality:
-  tool_count: 399
-  tokens_total: 172764
-  tokens_per_tool_median: 257
+  tool_count: 401
+  tokens_total: 166239
+  tokens_per_tool_median: 259
   heavy_tools:
   - name: saveClarityProcessSnapshot
-    tokens: 37585
+    tokens: 29733
   - name: createRevision
     tokens: 3422
   - name: createAutomation
@@ -1527,15 +1527,15 @@ tool_quality:
   - name: createAgent
     tokens: 2504
   heavy_tool_count: 8
-  params_total: 1242
-  params_undescribed: 326
+  params_total: 1254
+  params_undescribed: 328
   params_described_pct: 73.8
   tools_with_undescribed_params: 136
-  tools_annotated: 399
+  tools_annotated: 401
   annotated_pct: 100.0
   state_changing_unhinted: []
   tools_missing_schema: 0
-  short_descriptions: 4
+  short_descriptions: 3
   duplicate_descriptions: 0
   duplicate_names: 0
   nonportable_names: []

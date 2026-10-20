@@ -4025,9 +4025,68 @@
         }
       },
       {
+        "name": "getRevisionBody",
+        "title": "Get Revision Body",
+        "description": "Read one section of a revision's config as plain text, in character ranges: the AOP (`input`) or the code-step program (`source`). Use it instead of getRevision when the text is large; listAgents with `config=light` reports each agent's `input_chars` and `source_chars`.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "agent_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+              "description": "The agent's unique identifier"
+            },
+            "build_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$",
+              "description": "The revision's unique identifier"
+            },
+            "section": {
+              "type": "string",
+              "enum": [
+                "input",
+                "source"
+              ],
+              "description": "`input` is an agent step's AOP text; `source` is a code step's program."
+            },
+            "offset": {
+              "description": "Character offset to start reading from (default 0)",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "length": {
+              "description": "Characters to return (1-50000, default 40000). Repeat with a higher offset until offset plus the returned length reaches total_chars.",
+              "default": 40000,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50000
+            }
+          },
+          "required": [
+            "agent_id",
+            "build_id",
+            "section"
+          ]
+        },
+        "annotations": {
+          "title": "Get Revision Body",
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
         "name": "listAgentRevisions",
         "title": "List Agent Revisions",
-        "description": "List revisions for an agent.",
+        "description": "List revisions for an agent. Pass `config=light` to leave each revision's config out of the page and get its sizes instead; read the AOP with getRevisionBody.",
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -4058,6 +4117,14 @@
                 "draft",
                 "live",
                 "historic"
+              ]
+            },
+            "config": {
+              "description": "`full` (default) embeds each revision's config. `light` sets `config` to null and reports its sizes, hash and models in `config_summary`; read the AOP or program text with getRevisionBody. Use `light` unless you need the instructions themselves: a page of revisions can run to millions of characters.",
+              "type": "string",
+              "enum": [
+                "light",
+                "full"
               ]
             }
           },
@@ -4459,7 +4526,7 @@
       {
         "name": "getAgent",
         "title": "Get Agent",
-        "description": "Get an agent by ID.",
+        "description": "Get an agent by ID. The response carries no revision config: use listAgentRevisions and getRevision for a revision, and getRevisionBody to read a large AOP in character ranges.",
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -7872,6 +7939,11 @@
               "type": "string",
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+            },
+            "joinAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
             }
           },
           "required": [
@@ -10739,240 +10811,6 @@
                             ],
                             "description": "Always null on events; included for shape compatibility across variants."
                           },
-                          "conflicts": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "question": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "mappedVersionIndex": {
-                                  "description": "Zero-based index in versions of the account represented by this step in the current diagram. Omit when unknown. Update or clear it when the diagram or versions change. This records the diagram content, not a resolved conflict.",
-                                  "type": "integer",
-                                  "minimum": 0,
-                                  "maximum": 9007199254740991
-                                },
-                                "versions": {
-                                  "minItems": 2,
-                                  "type": "array",
-                                  "items": {
-                                    "type": "object",
-                                    "properties": {
-                                      "attribution": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Human-readable source label identifying who or what the evidence comes from. Examples: \"Anna (sales interview)\", \"Onboarding SOP §3.2\", \"Slack #ops 2024-06-12\""
-                                      },
-                                      "excerpt": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Verbatim supporting text quoted from the capture, document, or transcript. Example: \"We always wait for finance to sign off before sending the invoice.\""
-                                      },
-                                      "captureId": {
-                                        "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
-                                      },
-                                      "evidenceId": {
-                                        "description": "Stable id of the evidence unit from /workspace/captures/evidence-index.json when generation used that index.",
-                                        "type": "string",
-                                        "minLength": 1
-                                      },
-                                      "locator": {
-                                        "description": "Durable in-capture location for the excerpt. Missing means legacy free-text source; unresolved means a structured citation was attempted but could not be resolved.",
-                                        "oneOf": [
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "transcript_message"
-                                              },
-                                              "messageIndex": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based index into the capture transcript message array. This is the durable key; timestampMs is only supplemental."
-                                              },
-                                              "timestampMs": {
-                                                "description": "Optional epoch-millisecond timestamp for the transcript message when the capture supplied one.",
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "messageIndex"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "document_text_range"
-                                              },
-                                              "startOffset": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based character offset into the stored capture text."
-                                              },
-                                              "endOffset": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Exclusive character offset into the stored capture text. Must be greater than startOffset."
-                                              },
-                                              "pageNumber": {
-                                                "description": "Optional one-based PDF page number when the stored capture has page metadata.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "startLine": {
-                                                "description": "Optional one-based line number where the cited text starts on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "endLine": {
-                                                "description": "Optional one-based line number where the cited text ends on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "startOffset",
-                                              "endOffset"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "bpmn_element"
-                                              },
-                                              "elementId": {
-                                                "type": "string",
-                                                "minLength": 1,
-                                                "description": "BPMN XML element id within an uploaded .bpmn document."
-                                              },
-                                              "elementType": {
-                                                "description": "Optional BPMN element type as parsed from the XML, for example \"bpmn:UserTask\" or \"bpmn:ExclusiveGateway\".",
-                                                "type": "string",
-                                                "minLength": 1
-                                              },
-                                              "name": {
-                                                "description": "Optional BPMN element name as parsed from the XML. The element id is the durable key.",
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "elementId"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "screenshare_frame"
-                                              },
-                                              "timestampMs": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Epoch-millisecond frame timestamp matching a screenshare frame filename."
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "timestampMs"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "manual"
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "unresolved"
-                                              },
-                                              "reason": {
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          }
-                                        ]
-                                      },
-                                      "sourceConfidence": {
-                                        "description": "Confidence in this individual source citation. \"high\" = direct quote at the locator, \"medium\" = strong nearby evidence, \"low\" = weak or inferred support.",
-                                        "type": "string",
-                                        "enum": [
-                                          "low",
-                                          "medium",
-                                          "high"
-                                        ]
-                                      },
-                                      "resolutionStatus": {
-                                        "description": "Resolution status for the structured source link. Legacy sources may omit this field.",
-                                        "type": "string",
-                                        "enum": [
-                                          "resolved",
-                                          "unresolved",
-                                          "legacy",
-                                          "manual"
-                                        ]
-                                      },
-                                      "title": {
-                                        "description": "Short heading describing this account; the excerpt remains the exact source quote",
-                                        "type": "string",
-                                        "minLength": 1
-                                      }
-                                    },
-                                    "required": [
-                                      "attribution",
-                                      "excerpt",
-                                      "captureId"
-                                    ]
-                                  }
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "question",
-                                "versions"
-                              ]
-                            }
-                          },
                           "extraCaptureNeeded": {
                             "anyOf": [
                               {
@@ -11708,240 +11546,6 @@
                             ],
                             "description": "Optional precondition that gates this task. Null when the task is unconditional. Example: \"Only when invoice total exceeds $10,000\""
                           },
-                          "conflicts": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "question": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "mappedVersionIndex": {
-                                  "description": "Zero-based index in versions of the account represented by this step in the current diagram. Omit when unknown. Update or clear it when the diagram or versions change. This records the diagram content, not a resolved conflict.",
-                                  "type": "integer",
-                                  "minimum": 0,
-                                  "maximum": 9007199254740991
-                                },
-                                "versions": {
-                                  "minItems": 2,
-                                  "type": "array",
-                                  "items": {
-                                    "type": "object",
-                                    "properties": {
-                                      "attribution": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Human-readable source label identifying who or what the evidence comes from. Examples: \"Anna (sales interview)\", \"Onboarding SOP §3.2\", \"Slack #ops 2024-06-12\""
-                                      },
-                                      "excerpt": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Verbatim supporting text quoted from the capture, document, or transcript. Example: \"We always wait for finance to sign off before sending the invoice.\""
-                                      },
-                                      "captureId": {
-                                        "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
-                                      },
-                                      "evidenceId": {
-                                        "description": "Stable id of the evidence unit from /workspace/captures/evidence-index.json when generation used that index.",
-                                        "type": "string",
-                                        "minLength": 1
-                                      },
-                                      "locator": {
-                                        "description": "Durable in-capture location for the excerpt. Missing means legacy free-text source; unresolved means a structured citation was attempted but could not be resolved.",
-                                        "oneOf": [
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "transcript_message"
-                                              },
-                                              "messageIndex": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based index into the capture transcript message array. This is the durable key; timestampMs is only supplemental."
-                                              },
-                                              "timestampMs": {
-                                                "description": "Optional epoch-millisecond timestamp for the transcript message when the capture supplied one.",
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "messageIndex"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "document_text_range"
-                                              },
-                                              "startOffset": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based character offset into the stored capture text."
-                                              },
-                                              "endOffset": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Exclusive character offset into the stored capture text. Must be greater than startOffset."
-                                              },
-                                              "pageNumber": {
-                                                "description": "Optional one-based PDF page number when the stored capture has page metadata.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "startLine": {
-                                                "description": "Optional one-based line number where the cited text starts on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "endLine": {
-                                                "description": "Optional one-based line number where the cited text ends on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "startOffset",
-                                              "endOffset"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "bpmn_element"
-                                              },
-                                              "elementId": {
-                                                "type": "string",
-                                                "minLength": 1,
-                                                "description": "BPMN XML element id within an uploaded .bpmn document."
-                                              },
-                                              "elementType": {
-                                                "description": "Optional BPMN element type as parsed from the XML, for example \"bpmn:UserTask\" or \"bpmn:ExclusiveGateway\".",
-                                                "type": "string",
-                                                "minLength": 1
-                                              },
-                                              "name": {
-                                                "description": "Optional BPMN element name as parsed from the XML. The element id is the durable key.",
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "elementId"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "screenshare_frame"
-                                              },
-                                              "timestampMs": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Epoch-millisecond frame timestamp matching a screenshare frame filename."
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "timestampMs"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "manual"
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "unresolved"
-                                              },
-                                              "reason": {
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          }
-                                        ]
-                                      },
-                                      "sourceConfidence": {
-                                        "description": "Confidence in this individual source citation. \"high\" = direct quote at the locator, \"medium\" = strong nearby evidence, \"low\" = weak or inferred support.",
-                                        "type": "string",
-                                        "enum": [
-                                          "low",
-                                          "medium",
-                                          "high"
-                                        ]
-                                      },
-                                      "resolutionStatus": {
-                                        "description": "Resolution status for the structured source link. Legacy sources may omit this field.",
-                                        "type": "string",
-                                        "enum": [
-                                          "resolved",
-                                          "unresolved",
-                                          "legacy",
-                                          "manual"
-                                        ]
-                                      },
-                                      "title": {
-                                        "description": "Short heading describing this account; the excerpt remains the exact source quote",
-                                        "type": "string",
-                                        "minLength": 1
-                                      }
-                                    },
-                                    "required": [
-                                      "attribution",
-                                      "excerpt",
-                                      "captureId"
-                                    ]
-                                  }
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "question",
-                                "versions"
-                              ]
-                            }
-                          },
                           "extraCaptureNeeded": {
                             "anyOf": [
                               {
@@ -12666,240 +12270,6 @@
                             "description": "Decision criteria evaluated at this gateway. BPMN requires this on every branching gateway. Existing rows persisted with null/empty values parse as \"unknown\" via a read-side preprocess; producers should write a real condition string going forward.",
                             "type": "string",
                             "minLength": 1
-                          },
-                          "conflicts": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "question": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "mappedVersionIndex": {
-                                  "description": "Zero-based index in versions of the account represented by this step in the current diagram. Omit when unknown. Update or clear it when the diagram or versions change. This records the diagram content, not a resolved conflict.",
-                                  "type": "integer",
-                                  "minimum": 0,
-                                  "maximum": 9007199254740991
-                                },
-                                "versions": {
-                                  "minItems": 2,
-                                  "type": "array",
-                                  "items": {
-                                    "type": "object",
-                                    "properties": {
-                                      "attribution": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Human-readable source label identifying who or what the evidence comes from. Examples: \"Anna (sales interview)\", \"Onboarding SOP §3.2\", \"Slack #ops 2024-06-12\""
-                                      },
-                                      "excerpt": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Verbatim supporting text quoted from the capture, document, or transcript. Example: \"We always wait for finance to sign off before sending the invoice.\""
-                                      },
-                                      "captureId": {
-                                        "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
-                                      },
-                                      "evidenceId": {
-                                        "description": "Stable id of the evidence unit from /workspace/captures/evidence-index.json when generation used that index.",
-                                        "type": "string",
-                                        "minLength": 1
-                                      },
-                                      "locator": {
-                                        "description": "Durable in-capture location for the excerpt. Missing means legacy free-text source; unresolved means a structured citation was attempted but could not be resolved.",
-                                        "oneOf": [
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "transcript_message"
-                                              },
-                                              "messageIndex": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based index into the capture transcript message array. This is the durable key; timestampMs is only supplemental."
-                                              },
-                                              "timestampMs": {
-                                                "description": "Optional epoch-millisecond timestamp for the transcript message when the capture supplied one.",
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "messageIndex"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "document_text_range"
-                                              },
-                                              "startOffset": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based character offset into the stored capture text."
-                                              },
-                                              "endOffset": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Exclusive character offset into the stored capture text. Must be greater than startOffset."
-                                              },
-                                              "pageNumber": {
-                                                "description": "Optional one-based PDF page number when the stored capture has page metadata.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "startLine": {
-                                                "description": "Optional one-based line number where the cited text starts on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "endLine": {
-                                                "description": "Optional one-based line number where the cited text ends on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "startOffset",
-                                              "endOffset"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "bpmn_element"
-                                              },
-                                              "elementId": {
-                                                "type": "string",
-                                                "minLength": 1,
-                                                "description": "BPMN XML element id within an uploaded .bpmn document."
-                                              },
-                                              "elementType": {
-                                                "description": "Optional BPMN element type as parsed from the XML, for example \"bpmn:UserTask\" or \"bpmn:ExclusiveGateway\".",
-                                                "type": "string",
-                                                "minLength": 1
-                                              },
-                                              "name": {
-                                                "description": "Optional BPMN element name as parsed from the XML. The element id is the durable key.",
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "elementId"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "screenshare_frame"
-                                              },
-                                              "timestampMs": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Epoch-millisecond frame timestamp matching a screenshare frame filename."
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "timestampMs"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "manual"
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "unresolved"
-                                              },
-                                              "reason": {
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          }
-                                        ]
-                                      },
-                                      "sourceConfidence": {
-                                        "description": "Confidence in this individual source citation. \"high\" = direct quote at the locator, \"medium\" = strong nearby evidence, \"low\" = weak or inferred support.",
-                                        "type": "string",
-                                        "enum": [
-                                          "low",
-                                          "medium",
-                                          "high"
-                                        ]
-                                      },
-                                      "resolutionStatus": {
-                                        "description": "Resolution status for the structured source link. Legacy sources may omit this field.",
-                                        "type": "string",
-                                        "enum": [
-                                          "resolved",
-                                          "unresolved",
-                                          "legacy",
-                                          "manual"
-                                        ]
-                                      },
-                                      "title": {
-                                        "description": "Short heading describing this account; the excerpt remains the exact source quote",
-                                        "type": "string",
-                                        "minLength": 1
-                                      }
-                                    },
-                                    "required": [
-                                      "attribution",
-                                      "excerpt",
-                                      "captureId"
-                                    ]
-                                  }
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "question",
-                                "versions"
-                              ]
-                            }
                           },
                           "extraCaptureNeeded": {
                             "anyOf": [
@@ -13620,240 +12990,6 @@
                             ],
                             "description": "Always null on events; included for shape compatibility across variants."
                           },
-                          "conflicts": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "question": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "mappedVersionIndex": {
-                                  "description": "Zero-based index in versions of the account represented by this step in the current diagram. Omit when unknown. Update or clear it when the diagram or versions change. This records the diagram content, not a resolved conflict.",
-                                  "type": "integer",
-                                  "minimum": 0,
-                                  "maximum": 9007199254740991
-                                },
-                                "versions": {
-                                  "minItems": 2,
-                                  "type": "array",
-                                  "items": {
-                                    "type": "object",
-                                    "properties": {
-                                      "attribution": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Human-readable source label identifying who or what the evidence comes from. Examples: \"Anna (sales interview)\", \"Onboarding SOP §3.2\", \"Slack #ops 2024-06-12\""
-                                      },
-                                      "excerpt": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Verbatim supporting text quoted from the capture, document, or transcript. Example: \"We always wait for finance to sign off before sending the invoice.\""
-                                      },
-                                      "captureId": {
-                                        "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
-                                      },
-                                      "evidenceId": {
-                                        "description": "Stable id of the evidence unit from /workspace/captures/evidence-index.json when generation used that index.",
-                                        "type": "string",
-                                        "minLength": 1
-                                      },
-                                      "locator": {
-                                        "description": "Durable in-capture location for the excerpt. Missing means legacy free-text source; unresolved means a structured citation was attempted but could not be resolved.",
-                                        "oneOf": [
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "transcript_message"
-                                              },
-                                              "messageIndex": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based index into the capture transcript message array. This is the durable key; timestampMs is only supplemental."
-                                              },
-                                              "timestampMs": {
-                                                "description": "Optional epoch-millisecond timestamp for the transcript message when the capture supplied one.",
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "messageIndex"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "document_text_range"
-                                              },
-                                              "startOffset": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based character offset into the stored capture text."
-                                              },
-                                              "endOffset": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Exclusive character offset into the stored capture text. Must be greater than startOffset."
-                                              },
-                                              "pageNumber": {
-                                                "description": "Optional one-based PDF page number when the stored capture has page metadata.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "startLine": {
-                                                "description": "Optional one-based line number where the cited text starts on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "endLine": {
-                                                "description": "Optional one-based line number where the cited text ends on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "startOffset",
-                                              "endOffset"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "bpmn_element"
-                                              },
-                                              "elementId": {
-                                                "type": "string",
-                                                "minLength": 1,
-                                                "description": "BPMN XML element id within an uploaded .bpmn document."
-                                              },
-                                              "elementType": {
-                                                "description": "Optional BPMN element type as parsed from the XML, for example \"bpmn:UserTask\" or \"bpmn:ExclusiveGateway\".",
-                                                "type": "string",
-                                                "minLength": 1
-                                              },
-                                              "name": {
-                                                "description": "Optional BPMN element name as parsed from the XML. The element id is the durable key.",
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "elementId"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "screenshare_frame"
-                                              },
-                                              "timestampMs": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Epoch-millisecond frame timestamp matching a screenshare frame filename."
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "timestampMs"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "manual"
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "unresolved"
-                                              },
-                                              "reason": {
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          }
-                                        ]
-                                      },
-                                      "sourceConfidence": {
-                                        "description": "Confidence in this individual source citation. \"high\" = direct quote at the locator, \"medium\" = strong nearby evidence, \"low\" = weak or inferred support.",
-                                        "type": "string",
-                                        "enum": [
-                                          "low",
-                                          "medium",
-                                          "high"
-                                        ]
-                                      },
-                                      "resolutionStatus": {
-                                        "description": "Resolution status for the structured source link. Legacy sources may omit this field.",
-                                        "type": "string",
-                                        "enum": [
-                                          "resolved",
-                                          "unresolved",
-                                          "legacy",
-                                          "manual"
-                                        ]
-                                      },
-                                      "title": {
-                                        "description": "Short heading describing this account; the excerpt remains the exact source quote",
-                                        "type": "string",
-                                        "minLength": 1
-                                      }
-                                    },
-                                    "required": [
-                                      "attribution",
-                                      "excerpt",
-                                      "captureId"
-                                    ]
-                                  }
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "question",
-                                "versions"
-                              ]
-                            }
-                          },
                           "extraCaptureNeeded": {
                             "anyOf": [
                               {
@@ -14560,240 +13696,6 @@
                             ],
                             "description": "Optional precondition that gates this task. Null when the task is unconditional. Example: \"Only when invoice total exceeds $10,000\""
                           },
-                          "conflicts": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "question": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "mappedVersionIndex": {
-                                  "description": "Zero-based index in versions of the account represented by this step in the current diagram. Omit when unknown. Update or clear it when the diagram or versions change. This records the diagram content, not a resolved conflict.",
-                                  "type": "integer",
-                                  "minimum": 0,
-                                  "maximum": 9007199254740991
-                                },
-                                "versions": {
-                                  "minItems": 2,
-                                  "type": "array",
-                                  "items": {
-                                    "type": "object",
-                                    "properties": {
-                                      "attribution": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Human-readable source label identifying who or what the evidence comes from. Examples: \"Anna (sales interview)\", \"Onboarding SOP §3.2\", \"Slack #ops 2024-06-12\""
-                                      },
-                                      "excerpt": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Verbatim supporting text quoted from the capture, document, or transcript. Example: \"We always wait for finance to sign off before sending the invoice.\""
-                                      },
-                                      "captureId": {
-                                        "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
-                                      },
-                                      "evidenceId": {
-                                        "description": "Stable id of the evidence unit from /workspace/captures/evidence-index.json when generation used that index.",
-                                        "type": "string",
-                                        "minLength": 1
-                                      },
-                                      "locator": {
-                                        "description": "Durable in-capture location for the excerpt. Missing means legacy free-text source; unresolved means a structured citation was attempted but could not be resolved.",
-                                        "oneOf": [
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "transcript_message"
-                                              },
-                                              "messageIndex": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based index into the capture transcript message array. This is the durable key; timestampMs is only supplemental."
-                                              },
-                                              "timestampMs": {
-                                                "description": "Optional epoch-millisecond timestamp for the transcript message when the capture supplied one.",
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "messageIndex"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "document_text_range"
-                                              },
-                                              "startOffset": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based character offset into the stored capture text."
-                                              },
-                                              "endOffset": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Exclusive character offset into the stored capture text. Must be greater than startOffset."
-                                              },
-                                              "pageNumber": {
-                                                "description": "Optional one-based PDF page number when the stored capture has page metadata.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "startLine": {
-                                                "description": "Optional one-based line number where the cited text starts on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "endLine": {
-                                                "description": "Optional one-based line number where the cited text ends on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "startOffset",
-                                              "endOffset"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "bpmn_element"
-                                              },
-                                              "elementId": {
-                                                "type": "string",
-                                                "minLength": 1,
-                                                "description": "BPMN XML element id within an uploaded .bpmn document."
-                                              },
-                                              "elementType": {
-                                                "description": "Optional BPMN element type as parsed from the XML, for example \"bpmn:UserTask\" or \"bpmn:ExclusiveGateway\".",
-                                                "type": "string",
-                                                "minLength": 1
-                                              },
-                                              "name": {
-                                                "description": "Optional BPMN element name as parsed from the XML. The element id is the durable key.",
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "elementId"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "screenshare_frame"
-                                              },
-                                              "timestampMs": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Epoch-millisecond frame timestamp matching a screenshare frame filename."
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "timestampMs"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "manual"
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "unresolved"
-                                              },
-                                              "reason": {
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          }
-                                        ]
-                                      },
-                                      "sourceConfidence": {
-                                        "description": "Confidence in this individual source citation. \"high\" = direct quote at the locator, \"medium\" = strong nearby evidence, \"low\" = weak or inferred support.",
-                                        "type": "string",
-                                        "enum": [
-                                          "low",
-                                          "medium",
-                                          "high"
-                                        ]
-                                      },
-                                      "resolutionStatus": {
-                                        "description": "Resolution status for the structured source link. Legacy sources may omit this field.",
-                                        "type": "string",
-                                        "enum": [
-                                          "resolved",
-                                          "unresolved",
-                                          "legacy",
-                                          "manual"
-                                        ]
-                                      },
-                                      "title": {
-                                        "description": "Short heading describing this account; the excerpt remains the exact source quote",
-                                        "type": "string",
-                                        "minLength": 1
-                                      }
-                                    },
-                                    "required": [
-                                      "attribution",
-                                      "excerpt",
-                                      "captureId"
-                                    ]
-                                  }
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "question",
-                                "versions"
-                              ]
-                            }
-                          },
                           "extraCaptureNeeded": {
                             "anyOf": [
                               {
@@ -15490,240 +14392,6 @@
                             "type": "string",
                             "minLength": 1
                           },
-                          "conflicts": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "properties": {
-                                "id": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "question": {
-                                  "type": "string",
-                                  "minLength": 1
-                                },
-                                "mappedVersionIndex": {
-                                  "description": "Zero-based index in versions of the account represented by this step in the current diagram. Omit when unknown. Update or clear it when the diagram or versions change. This records the diagram content, not a resolved conflict.",
-                                  "type": "integer",
-                                  "minimum": 0,
-                                  "maximum": 9007199254740991
-                                },
-                                "versions": {
-                                  "minItems": 2,
-                                  "type": "array",
-                                  "items": {
-                                    "type": "object",
-                                    "properties": {
-                                      "attribution": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Human-readable source label identifying who or what the evidence comes from. Examples: \"Anna (sales interview)\", \"Onboarding SOP §3.2\", \"Slack #ops 2024-06-12\""
-                                      },
-                                      "excerpt": {
-                                        "type": "string",
-                                        "minLength": 1,
-                                        "description": "Verbatim supporting text quoted from the capture, document, or transcript. Example: \"We always wait for finance to sign off before sending the invoice.\""
-                                      },
-                                      "captureId": {
-                                        "type": "string",
-                                        "format": "uuid",
-                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
-                                      },
-                                      "evidenceId": {
-                                        "description": "Stable id of the evidence unit from /workspace/captures/evidence-index.json when generation used that index.",
-                                        "type": "string",
-                                        "minLength": 1
-                                      },
-                                      "locator": {
-                                        "description": "Durable in-capture location for the excerpt. Missing means legacy free-text source; unresolved means a structured citation was attempted but could not be resolved.",
-                                        "oneOf": [
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "transcript_message"
-                                              },
-                                              "messageIndex": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based index into the capture transcript message array. This is the durable key; timestampMs is only supplemental."
-                                              },
-                                              "timestampMs": {
-                                                "description": "Optional epoch-millisecond timestamp for the transcript message when the capture supplied one.",
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "messageIndex"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "document_text_range"
-                                              },
-                                              "startOffset": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Zero-based character offset into the stored capture text."
-                                              },
-                                              "endOffset": {
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Exclusive character offset into the stored capture text. Must be greater than startOffset."
-                                              },
-                                              "pageNumber": {
-                                                "description": "Optional one-based PDF page number when the stored capture has page metadata.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "startLine": {
-                                                "description": "Optional one-based line number where the cited text starts on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              },
-                                              "endLine": {
-                                                "description": "Optional one-based line number where the cited text ends on pageNumber.",
-                                                "type": "integer",
-                                                "exclusiveMinimum": 0,
-                                                "maximum": 9007199254740991
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "startOffset",
-                                              "endOffset"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "bpmn_element"
-                                              },
-                                              "elementId": {
-                                                "type": "string",
-                                                "minLength": 1,
-                                                "description": "BPMN XML element id within an uploaded .bpmn document."
-                                              },
-                                              "elementType": {
-                                                "description": "Optional BPMN element type as parsed from the XML, for example \"bpmn:UserTask\" or \"bpmn:ExclusiveGateway\".",
-                                                "type": "string",
-                                                "minLength": 1
-                                              },
-                                              "name": {
-                                                "description": "Optional BPMN element name as parsed from the XML. The element id is the durable key.",
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "elementId"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "screenshare_frame"
-                                              },
-                                              "timestampMs": {
-                                                "type": "integer",
-                                                "minimum": 0,
-                                                "maximum": 9007199254740991,
-                                                "description": "Epoch-millisecond frame timestamp matching a screenshare frame filename."
-                                              }
-                                            },
-                                            "required": [
-                                              "type",
-                                              "timestampMs"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "manual"
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          },
-                                          {
-                                            "type": "object",
-                                            "properties": {
-                                              "type": {
-                                                "type": "string",
-                                                "const": "unresolved"
-                                              },
-                                              "reason": {
-                                                "type": "string",
-                                                "minLength": 1
-                                              }
-                                            },
-                                            "required": [
-                                              "type"
-                                            ]
-                                          }
-                                        ]
-                                      },
-                                      "sourceConfidence": {
-                                        "description": "Confidence in this individual source citation. \"high\" = direct quote at the locator, \"medium\" = strong nearby evidence, \"low\" = weak or inferred support.",
-                                        "type": "string",
-                                        "enum": [
-                                          "low",
-                                          "medium",
-                                          "high"
-                                        ]
-                                      },
-                                      "resolutionStatus": {
-                                        "description": "Resolution status for the structured source link. Legacy sources may omit this field.",
-                                        "type": "string",
-                                        "enum": [
-                                          "resolved",
-                                          "unresolved",
-                                          "legacy",
-                                          "manual"
-                                        ]
-                                      },
-                                      "title": {
-                                        "description": "Short heading describing this account; the excerpt remains the exact source quote",
-                                        "type": "string",
-                                        "minLength": 1
-                                      }
-                                    },
-                                    "required": [
-                                      "attribution",
-                                      "excerpt",
-                                      "captureId"
-                                    ]
-                                  }
-                                }
-                              },
-                              "required": [
-                                "id",
-                                "question",
-                                "versions"
-                              ]
-                            }
-                          },
                           "extraCaptureNeeded": {
                             "anyOf": [
                               {
@@ -16200,6 +14868,61 @@
           "title": "Stop Clarity Process Snapshot",
           "readOnlyHint": false,
           "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "bulkGenerateClarityProcessSnapshots",
+        "title": "Bulk Generate Clarity Process Snapshots",
+        "description": "Start snapshot generation for many v2 clarity processes in the current team. Starts at most a share of the free sandbox capacity per call; the rest come back in `deferred` and should be sent again once some of the started runs finish. Processes that cannot start (already generating, no usable interviews, not found) come back in `skipped` with the reason.",
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "current_process",
+                "transformation_proposal"
+              ],
+              "description": "Snapshot kind to list"
+            },
+            "process_ids": {
+              "minItems": 1,
+              "maxItems": 200,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+              },
+              "description": "Clarity v2 process ids to generate maps for"
+            },
+            "transformation_aggressiveness": {
+              "default": "aggressive",
+              "description": "Transformation proposals only: the transformation appetite. `aggressive`, `conservative`, and `none` redesign around Duvo automation with decreasing freedom to change the process; `optimize` standardizes and streamlines the process while every step stays performed by people.",
+              "type": "string",
+              "enum": [
+                "none",
+                "conservative",
+                "aggressive",
+                "optimize"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "process_ids"
+          ]
+        },
+        "annotations": {
+          "title": "Bulk Generate Clarity Process Snapshots",
+          "readOnlyHint": false,
+          "destructiveHint": false,
           "idempotentHint": false,
           "openWorldHint": false
         },
@@ -17507,6 +16230,11 @@
               "type": "string",
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+            },
+            "joinAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
             },
             "title": {
               "type": "string",
@@ -22739,7 +21467,7 @@
       {
         "name": "listAgents",
         "title": "List Agents",
-        "description": "List agents for your team.",
+        "description": "List agents for your team. Pass `config=light` to leave each agent's revision config out of the page and get its sizes instead; read the AOP with getRevisionBody.",
         "inputSchema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -22777,6 +21505,14 @@
               "type": "string",
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$"
+            },
+            "config": {
+              "description": "`full` (default) embeds each agent's live revision config in `latest_build.config`. `light` sets that to null and reports its sizes, hash and models in `latest_build_config_summary`; read the AOP or program text with getRevisionBody. Use `light` unless you need the instructions themselves: a full page can run to hundreds of thousands of characters.",
+              "type": "string",
+              "enum": [
+                "light",
+                "full"
+              ]
             }
           }
         },
