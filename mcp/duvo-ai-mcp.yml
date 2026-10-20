@@ -46,3 +46,38 @@ deployment:
   probe: gated
   checked: '2026-08-12'
   source: catalog MCP census
+tool_quality:
+  tool_count: 399
+  tokens_total: 172764
+  tokens_per_tool_median: 257
+  heavy_tools:
+  - name: saveClarityProcessSnapshot
+    tokens: 37585
+  - name: createRevision
+    tokens: 3422
+  - name: createAutomation
+    tokens: 2641
+  - name: listOrgRuns
+    tokens: 2585
+  - name: createAgent
+    tokens: 2504
+  heavy_tool_count: 8
+  params_total: 1242
+  params_undescribed: 326
+  params_described_pct: 73.8
+  tools_with_undescribed_params: 136
+  tools_annotated: 399
+  annotated_pct: 100.0
+  state_changing_unhinted: []
+  tools_missing_schema: 0
+  short_descriptions: 4
+  duplicate_descriptions: 0
+  duplicate_names: 0
+  nonportable_names: []
+  output_schema_count: 0
+  token_estimate: chars/3.6 of each compact tool definition
+  source: mcp/duvo-ai-mcp-tools.json
+  measured: '2026-10-20'
+  scored: false
+  note: Facts from the saved tools/list capture (mcp_tool_quality.py); recorded, not scored. Checks learned
+    from Glimind's agent-readiness audit.
