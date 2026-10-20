@@ -20,22 +20,1487 @@ listings:
   url: https://smithery.ai/servers/duvo/duvo
   name: duvo/duvo
 tools:
-- name: start_run
-  description: Start an agent-backed Duvo run.
-  read_only: false
-  destructive: false
-- name: get_run
-  description: Inspect run status, messages, tool calls, files, and audit events.
-  read_only: true
-  destructive: false
-- name: create_case
-  description: Create a durable queue case for an agent or specialist worker.
-  read_only: false
-  destructive: false
-- name: respond_to_human_request
-  description: Approve, reject, or answer a human approval request.
-  read_only: false
-  destructive: false
+- name: listAgentMemoryFiles
+  description: List the memory files stored for an agent.
+- name: getAgentMemoryFile
+  description: Get the contents of a single memory file for an agent.
+- name: listPluginCatalog
+  description: List plugins that can be referenced by name in a build's plugins array. Builds may also
+    reference any public GitHub repository URL (https://github.com/owner/repo) as a plugin; those are
+    not enumerated here.
+- name: createSchedule
+  description: 'Create a schedule for an agent. The schedule fires against the agent''s live build. The
+    authenticated user owns the schedule. On a team with versions, a repeating schedule for an Agent in
+    an automation joins that automation''s versions: one matching a schedule the automation already runs
+    fires at once, and a new one is saved to the automation''s draft and fires once the draft is made
+    active (see `pending_change`).'
+- name: updateSchedule
+  description: 'Update fields on an existing schedule. Only supplied fields are changed; omitted fields
+    retain their current values. Owners may update their own schedules; team superadmins may update any
+    schedule on agents in the current team. A schedule that belongs to an automation with versions keeps
+    firing as its automation''s active version says: a change to its timing is saved to the automation''s
+    draft and takes effect when the draft is made active (see `pending_change`), while `enabled` applies
+    at once.'
+- name: deleteSchedule
+  description: Delete a schedule. Owners may delete their own schedules; team superadmins may delete any
+    schedule on agents in the current team. Deleting a schedule that belongs to an automation with versions
+    stops it for its owner at once; the automation's versions keep the schedule for anyone else subscribed
+    to it.
+- name: getTeam
+  description: Get a team by ID. The caller must be scoped to the requested team.
+- name: startNativeOAuth
+  description: Start an OAuth-based connection with a native provider (Gmail, Google Sheets, Outlook,
+    etc.). The provider path parameter is the native OAuth provider key from listIntegrations, not the
+    integration type. Returns an authorization URL that must be opened in a browser by a human end-user;
+    once they grant consent, Duvo creates the matching connection and redirects the browser to the optional
+    `return_url` (or the Duvo dashboard if none is provided). Poll `/v2/teams/:team_id/connections` to
+    detect the new connection.
+- name: authorizeMcpOAuth
+  description: Start an OAuth-based connection with a remote MCP server using Dynamic Client Registration.
+    Returns an authorization URL the user must open in a browser; once they grant consent, Duvo creates
+    the matching connection and redirects the browser to the optional `returnUrl`.
+- name: checkMcpOAuth
+  description: Probe an MCP server URL to discover whether it supports OAuth Dynamic Client Registration.
+    Returns the authorization endpoint and required scopes when supported. Useful as a precursor to `/v2/teams/:team_id/connections/oauth/mcp/start`
+    or `/v2/teams/:team_id/connections`. Performs no writes.
+- name: listPulseDashboards
+  description: List your Duvo Pulse dashboards (live, agent-generated visualizations of your Duvo data).
+    Ordered most recently updated first, except scope=automation, which is ordered by creation time (then
+    id) so the whole scope can be read with the after_id cursor without a concurrent change shifting a
+    page boundary.
+- name: createPulseDashboard
+  description: Create a new Duvo Pulse dashboard from a natural-language prompt (e.g. 'open cases by queue
+    this week') and dispatch the first generation turn. Generation is asynchronous — poll GET /artifacts/{artifactId}
+    until status is completed. The dashboard is private to you unless you set visibility to 'team', which
+    shares it with your whole team straight away — with permission 'view' (teammates see the dashboard)
+    or 'edit' (teammates can also iterate on it).
+- name: getPulseDashboard
+  description: Get a Duvo Pulse dashboard's metadata and generation status. When status is completed and
+    html_code_present is true, fetch the rendered HTML from GET /artifacts/{artifactId}/render; the conversation
+    is served by GET /artifacts/{artifactId}/messages.
+- name: listPulseDataSources
+  description: Discover queues the current editor may connect to this team-created Pulse before sampling
+    data. Requires live dashboard edit permission and ordinary team data access. Module sources are installed
+    with the Module. A queue ID in generated code does not grant access.
+- name: connectPulseDataSource
+  description: Connect an authorized same-team queue to a team-created Pulse before sampling it. Idempotent.
+    This bounds dashboard data access; it never grants Process membership or case-action authority. Requires
+    both edit permission and ordinary team source access.
+- name: disconnectPulseDataSource
+  description: Disconnect a source from a team-created dashboard. Subsequent dashboard reads and writes
+    immediately lose access. Idempotent; does not delete the queue or cases.
+- name: getPulseDashboardHtml
+  description: Serve a Duvo Pulse dashboard's rendered HTML document (text/html, not JSON). 404 until
+    the first generation turn has produced HTML.
+- name: getPulseDashboardPdf
+  description: Render a Duvo Pulse dashboard to a PDF document (application/pdf, not JSON). 404 until
+    the first generation turn has produced HTML; 409 for an openui dashboard, whose substrate this exporter
+    cannot render.
+- name: exportPulseDashboardHtml
+  description: Render a Duvo Pulse dashboard to a self-contained static HTML snapshot (text/html, data
+    baked in). 404 until the first generation turn has produced HTML; 409 for an openui dashboard, whose
+    substrate this exporter cannot render.
+- name: updatePulseDashboard
+  description: Update a Duvo Pulse dashboard's settings — rename it. Only the creator can update it.
+- name: publishPulseDashboard
+  description: Publish (share) a Duvo Pulse dashboard to your whole team or your whole organization, or
+    revert it to private (creator only). When publishing, set permission to 'view' (teammates see the
+    dashboard) or 'edit' (teammates can also iterate on it); organization-wide viewers outside the team
+    always get view-only access.
+- name: deletePulseDashboard
+  description: Delete a Duvo Pulse dashboard. Only the creator can delete it.
+- name: duplicatePulseDashboard
+  description: Duplicate a Duvo Pulse dashboard, producing an idle clone of the current rendered dashboard.
+    The conversation history, shares, and connections are not copied.
+- name: sendPulseDashboardMessage
+  description: Send an instruction to iterate on a Duvo Pulse dashboard (e.g. 'make it a bar chart', 'filter
+    to last 14 days'). The creator can always iterate; teammates can too when the Pulse is published to
+    the team with edit access. The agent regenerates asynchronously — poll GET /artifacts/{artifactId}
+    for status.
+- name: createPulseDashboardAttachmentUploadUrl
+  description: Issue a presigned upload URL for a file to attach to a Duvo Pulse dashboard message (e.g.
+    an HTML dashboard to copy, or a screenshot to match). POST the file bytes to the returned upload_url
+    as multipart form data under the field name 'file', then pass the returned attachment_id in the attachments
+    array of POST /artifacts/{artifactId}/messages. The agent reads the file directly from its sandbox.
+    Files live as long as the dashboard's sandbox (about 12 hours), so upload shortly before sending.
+- name: getPulseDashboardAttachmentDownloadUrl
+  description: Mint a short-lived presigned URL to download or preview a file attached to a Duvo Pulse
+    dashboard message. Returns 404 once the dashboard's sandbox has expired and the file is gone (about
+    12 hours).
+- name: refreshPulseDashboard
+  description: Trigger an on-demand data refresh of a Duvo Pulse dashboard. The dashboard regenerates
+    its connection-sourced values in the background — poll GET /artifacts/{artifactId} for status.
+- name: stopPulseDashboardMessage
+  description: Stop an in-flight Duvo Pulse generation turn. Requires edit access to the dashboard. Flips
+    the dashboard to 'interrupted' and keeps any streamed-so-far reply; stopping when nothing is generating
+    is a successful no-op.
+- name: listPulseDashboardConnections
+  description: List the connections (data sources) attached to a Duvo Pulse dashboard (requires edit access).
+- name: attachPulseDashboardConnection
+  description: Attach one of your connections (data sources) to a Duvo Pulse dashboard so the agent can
+    use its tools (requires edit access).
+- name: detachPulseDashboardConnection
+  description: Detach a connection (data source) from a Duvo Pulse dashboard (requires edit access).
+- name: answerPulseDashboardQuestion
+  description: Answer a pending question the Duvo Pulse agent asked and resume the paused run (creator
+    or team editors). Use the toolCallId from the dashboard's message transcript.
+- name: listPulseDashboardMessages
+  description: List the chat transcript of a Duvo Pulse dashboard's live version (requires edit access).
+    Returns the most recent page by default, oldest first within the page; pass `before` (a message id
+    from a previous page) to walk back through older messages. Messages from other version branches are
+    not included.
+- name: listPulseDashboardComments
+  description: List the comment threads on a Duvo Pulse dashboard (requires view access). Each thread
+    carries its author, the dashboard element it is pinned to, its replies oldest-first, and whether it
+    has been marked complete.
+- name: createPulseDashboardComment
+  description: Start a comment thread on a Duvo Pulse dashboard (requires view access). Pass `element`
+    — captured from the dashboard canvas — to pin the thread to one element; omit it for a comment on
+    the dashboard as a whole.
+- name: createPulseDashboardCommentReply
+  description: Reply to a comment thread on a Duvo Pulse dashboard (requires view access). `commentId`
+    must be a thread root; threads are one level deep. A thread already marked complete still accepts
+    replies and stays complete.
+- name: setPulseDashboardCommentResolution
+  description: Mark a Duvo Pulse dashboard comment thread complete, or reopen it (requires view access).
+    Pass the target state in `resolved`; the call is idempotent, and the response carries the thread with
+    `resolved_at` and `resolved_by` set or cleared.
+- name: deletePulseDashboardComment
+  description: Delete a comment or reply on a Duvo Pulse dashboard. Allowed for the comment's author and
+    for the dashboard's creator. Deleting a thread root keeps its replies, rendered under a deleted opening
+    comment.
+- name: listPulseDashboardVersions
+  description: List the version history of a Duvo Pulse dashboard, newest first (requires edit access).
+    Use the version id with the restore and version-render endpoints.
+- name: getPulseDashboardVersionHtml
+  description: Serve a specific version's rendered HTML document for a Duvo Pulse dashboard (text/html,
+    requires edit access).
+- name: restorePulseDashboardVersion
+  description: Restore a previous version of a Duvo Pulse dashboard, making it live again (requires edit
+    access). Non-destructive — it moves the head pointer to the chosen version.
+- name: createSandbox
+  description: Create a new sandbox for file uploads. The returned sandbox_id can be passed to POST /v2/teams/:team_id/runs
+    to stage data for a run.
+- name: createSandboxUploadUrl
+  description: Get a presigned URL for uploading a file into a sandbox. Use for files larger than 10MB;
+    smaller files can be uploaded directly via POST /v2/sandboxes/:sandbox_id/files.
+- name: listSandboxFiles
+  description: List files in a sandbox directory.
+- name: uploadSandboxFile
+  description: Upload a file directly to the sandbox. Maximum file size is 10MB. For larger files, use
+    POST /v2/sandboxes/:sandbox_id/upload-urls.
+- name: getRunEvaluation
+  description: Get the latest evaluation analysis for a specific agent run (Run).
+- name: getEvalScores
+  description: Aggregate evaluation counts and flag distribution for an Assignment's Jobs since the given
+    timestamp.
+- name: getEvalRubrics
+  description: 'List the evaluation rubrics a Run is scored against: the platform default rubrics plus
+    the Agent-specific rubrics for a build. Defaults to the Agent''s live build; pass build_id to target
+    the revision a specific Run ran against.'
+- name: createEvalRubric
+  description: Add one Agent-specific evaluation rubric to a build. A build may hold at most 5 custom
+    rubrics by default (25 on teams with the newer rubric generator enabled); this fails with 409 once
+    the build's ceiling is reached, and the error message states it. Defaults to the Agent's live build;
+    pass build_id to target a specific revision.
+- name: replaceEvalRubrics
+  description: Replace a build's entire Agent-specific evaluation rubric set in one call (at most 5 rubrics
+    by default, 25 on teams with the newer rubric generator enabled). Existing custom rubrics are removed
+    and the supplied list becomes the new set; pass an empty array to clear them. Defaults to the Agent's
+    live build; pass build_id to target a specific revision.
+- name: updateEvalRubric
+  description: Edit a single Agent-specific evaluation rubric's title and/or description. The edit produces
+    a NEW rubric (with a new id and slug) so previously scored Runs stay attributed to the original criterion;
+    the response contains the new rubric.
+- name: deleteEvalRubric
+  description: Remove a single Agent-specific evaluation rubric. Future Runs on the build are no longer
+    scored against it.
+- name: listAgentSchedules
+  description: List the schedules you own on an agent. Returns only your own schedules, whoever you are.
+    Callers with an elevated team role can read every member's schedules on the agent, including who created
+    each one, via `GET /agents/{agent_id}/schedules/all`.
+- name: listAllAgentSchedules
+  description: List every team member's schedules on an agent, including who created each one. Requires
+    an elevated team role; callers without one receive 403 and should use `GET /agents/{agent_id}/schedules`,
+    which returns only the schedules they own.
+- name: listAgentCaseTriggers
+  description: List the case triggers configured for an agent. Each trigger automatically dispatches the
+    agent to run cases added to a queue.
+- name: previewAgentCaseTriggerConflicts
+  description: Preview which other agents would conflict with this agent's case trigger if it pointed
+    at the given queue. Does not modify the trigger.
+- name: getAgentCaseTrigger
+  description: Retrieve a single case trigger by id.
+- name: createAgentCaseTrigger
+  description: Create a case trigger for an agent. An agent may have at most one case trigger; this returns
+    409 if one already exists.
+- name: updateAgentCaseTrigger
+  description: Update fields on a case trigger. Only the trigger creator or a builder/admin can disable
+    an enabled trigger or change its queue, and only a builder/admin can change queue concurrency.
+- name: deleteAgentCaseTrigger
+  description: Delete a case trigger. Only the trigger creator or a builder/admin can delete it.
+- name: listAgentTriggers
+  description: List the trigger definitions the authenticated user owns on an agent (Agent in the Duvo
+    UI). Triggers start a Run automatically when an external event fires (e.g. an email arrives or a Linear
+    issue is created).
+- name: upsertAgentTrigger
+  description: 'Create or update the authenticated user''s trigger for an integration on an agent. The
+    integration must already be connected to the agent (its OAuth connection set up in the Duvo dashboard).
+    Set `enabled: false` to pause a trigger without deleting it. An agent holds one trigger per integration
+    for a user, so a save with a different `trigger_type` replaces the existing one — except when that
+    trigger is an @mention trigger, which is managed from the agent''s mention setting and answers 409
+    (`mention_trigger_protected`) here. @mention triggers are best managed from that setting throughout:
+    this route leaves an existing one''s `filter_config` untouched, and refuses to create a `teams_mention`
+    trigger without a `filter_config.tenantId` (400, `mention_trigger_workspace_required`) — a Slack mention
+    trigger has no equivalent field to supply.'
+- name: deleteAgentTrigger
+  description: 'Permanently delete one of your own event triggers on an agent. The agent stops starting
+    Runs for that event and the trigger''s filter config is lost. To keep the trigger but stop it firing,
+    upsert it with `enabled: false` instead.'
+- name: listAgentTriggerTypes
+  description: List the trigger types available for an agent, grouped by integration. Use the returned
+    `integration_slug` and `trigger_type` values when creating a trigger.
+- name: createAgentSlackTrigger
+  description: 'Create a Slack channel trigger on an agent (Agent in the Duvo UI): the agent starts a
+    Run whenever a matching message is posted in the channel. An agent can carry one trigger per channel,
+    so call this once per channel. The Slack workspace must be installed for the team AND bound to the
+    agent''s live build first (see the Slack bound-workspaces endpoint) — otherwise this returns 400.'
+- name: listAgentSlackTriggers
+  description: List the Slack channel triggers you own on an agent (Agent in the Duvo UI), oldest first.
+    Each trigger's `filter_config` carries the watched `channelId`, `channelName`, Slack `workspaceId`,
+    and `matchRule`. Capped at 100 triggers per agent.
+- name: updateSlackTrigger
+  description: Update a Slack channel trigger you own — repoint it at another channel, change which messages
+    match, or pause and resume it with `enabled`. Only the supplied fields change. Resuming a paused trigger
+    requires the Slack connection it runs off to still be available on the agent; changing the channel
+    resets the trigger's seen-message state.
+- name: listAgentSlackBoundWorkspaces
+  description: List the Slack workspaces bound to an agent build that you can create channel triggers
+    for. Creating a Slack channel trigger for any other workspace is rejected, so start here to pick a
+    valid `slack_team_id` and `integration_instance_id`.
+- name: deleteSlackTrigger
+  description: 'Permanently delete a Slack channel trigger you own. The agent stops starting Runs for
+    that channel. To keep the trigger but stop it firing, update it with `enabled: false` instead.'
+- name: acceptRevisionGeneration
+  description: Accept the reviewed generated configuration and complete the builder run. The saved draft
+    is not activated.
+- name: cancelBuilderRun
+  description: Cancel a running builder run and pause its sandbox
+- name: createRevision
+  description: Create a new revision for an existing agent.
+- name: declineRevisionGeneration
+  description: Discard generated changes by restoring checkpoint_config and completing the builder run.
+    The saved draft is not activated.
+- name: getRevision
+  description: Get a revision by ID.
+- name: getBuilderRun
+  description: Get the status of a builder run
+- name: listAgentRevisions
+  description: List revisions for an agent.
+- name: updateRevision
+  description: Update a revision's configuration, name, description, or handover targets. Returns the
+    updated revision.
+- name: generateRevision
+  description: Generate agent instructions or code into a saved draft. Poll the returned builder run,
+    answer questions if requested, then accept or decline the reviewed checkpoint. This never activates
+    the revision.
+- name: resumeBuilderRun
+  description: Resume a builder run that is waiting for user input
+- name: promoteRevision
+  description: Promote a draft or historic revision to the live version. The live revision is the one
+    used by triggers and new runs. Fails if the revision is already live, or if a draft revision still
+    has an active builder run.
+- name: duplicateAgent
+  description: Duplicate an existing agent into a new agent named "Copy of <name>", carrying over its
+    configuration. Use the include_* flags in the (optional) body to control what is copied; all default
+    on except memory. Requires the Lead Builder team role or above.
+- name: getAgent
+  description: Get an agent by ID.
+- name: updateAgent
+  description: Update an agent's display name or delivery settings.
+- name: deleteAgent
+  description: Delete an agent and cascade-clean its schedules, case triggers, builder runs, and handover
+    targets. Any active jobs are interrupted and their sandboxes paused.
+- name: moveAgent
+  description: Move an agent (and its connected workspace) to a different team. Pass dry_run=true to preview
+    the closure without applying changes.
+- name: getAutomation
+  description: Get a single automation with its agent and queue counts, the tab arrangement its detail
+    view navigates by, and `links` to each tab it has right now.
+- name: updateAutomation
+  description: Update an automation, e.g. rename it. Only the fields present in the body are changed.
+- name: getAutomationTabs
+  description: Get the automation detail view's tab arrangement, plus metadata for the Pulse dashboards
+    pinned into it. Pinned dashboards are filtered to the ones the calling identity may see.
+- name: updateAutomationTabs
+  description: Replace the automation detail view's tab arrangement. Pinning, unpinning, reordering and
+    hiding a tab are all expressed as a different arrangement.
+- name: deleteAutomation
+  description: Soft-delete an automation. Its member agents and queues stop dispatching and disappear
+    from listings, but their underlying rows and run history are preserved (not erased) so the automation
+    can be restored.
+- name: duplicateAutomation
+  description: 'Duplicate an automation into a new one named "Copy of <name>", copying what it runs today:
+    its live agents and builds, its queues (empty), the routing and handovers between them, and each agent''s
+    Memory when the team holds Memory and the agent has it on. The caller''s own triggers and schedules
+    are copied switched off, so the copy starts no run until they turn them on; other members'' triggers
+    and schedules are not copied. An automation built by hand also gets its Policy: sections, questions,
+    answers, and which agents read them. Cases and run history are not copied. A Module demo, and a Module
+    automation with Policy questions, can''t be duplicated.'
+- name: getAutomationCurrent
+  description: 'Get what the automation is set up to do right now: its member agents with the builds that
+    are live, its queues'' routing, and the triggers and schedules firing for it. The revision-less counterpart
+    of the revision detail — an automation without revisions is read here. `links` holds a link to each
+    tab the automation has right now.'
+- name: getAutomationCurrentFlow
+  description: 'Get the automation''s flow graph as it stands right now: the agents and queues it currently
+    wires together, plus the producer, consumer, and handover edges between them. The revision-less counterpart
+    of the revision flow.'
+- name: getAutomationReadiness
+  description: 'What still has to be set up before an automation can run on real work. Call this first
+    for a readiness question ("what do I still need to set up", "is it ready to run", "why isn''t it running")
+    and before checking an automation''s Connections, Logins or Secrets one by one. Each of `items` is
+    `{ key, label, status: ok | missing | broken, detail, link, link_tab }` and covers one of: required
+    Policy questions still open, Connections with no working account pinned or that need reconnecting,
+    Logins and Secrets (present or missing, never their values), Queue slots with no Queue linked, Queues
+    with routing off, no Agent or an Agent with no live version, what starts it (a Trigger, a Schedule,
+    or Cases added to a routed Queue), the live revision and a pending draft, and whether it is still
+    a demo. Lead with what is `missing` or `broken`, each with its own `link` (named by `link_tab`); never
+    build a link. Quote counts from `summary`, including `connections_to_fix`, rather than counting items.
+    `ready` is null when the caller can''t read the Policy; `note` then says what to tell the user. A
+    Connection only the caller can see counts for the caller. When `links_note` is present, give no link
+    to the automation at all. Each `link` is a path in the Duvo web app; give the user the full URL beside
+    it (`url`, and `urls` for `links`).'
+- name: readAutomationDashboardData
+  description: 'The figures a Module automation''s Pulse dashboards show, computed server-side the same
+    way the dashboard computes them: each tile''s `label`, `value`, `unit` and `display` (the value as
+    the dashboard prints it), with a `description` where the label alone leaves the figure unclear and
+    a `note` for what the tile shows besides it. Call this for any number on a Module dashboard instead
+    of reading the dashboard''s HTML (`getPulseDashboardHtml` refuses Module dashboards for size) or paging
+    through Cases: a recount can disagree with the tile the user sees. Pass `dashboard_id` for one dashboard,
+    or leave it out for every dashboard of the automation the caller may open. `range` applies to dashboards
+    with a time range control; the result names the range it read. Pass `time_zone` with the user''s IANA
+    zone so a day starts at their midnight, as their dashboard''s do; without it days start at midnight
+    UTC, and `range.time_zone` says which zone was used. Quote `display`, say the period it covers, and
+    name and link the dashboard with its `link`. A dashboard whose figures are not declared, or that was
+    changed since it was installed, comes back `unsupported`; one that could not be read comes back `error`;
+    both carry a `hint`. Needs Queues on the team''s plan. Each `link` is a path in the Duvo web app;
+    give the user the full URL beside it (`url`).'
+- name: listProcessRoles
+  description: 'List the process roles of an automation (Operator, Executive, Approver and the like, defined
+    on that one automation, not the team''s Admin/Member/Builder roles) with what each can do and who
+    holds it. Answer "who can see X", "who has which role" and "what does each role see" on an automation
+    from this, not from team membership or dashboard sharing. Each role has its `key` (pass it to assignProcessMember),
+    `label`, `can_act_on_cases`, `can_view_manage`, the `dashboards` it opens, its `members` and its `pending_invites`.
+    `dashboards_shared_individually` are pinned dashboards a role alone does not open: say they must be
+    shared with the person too. `dashboards_creator_only` read a live Connection and open only for their
+    creator. When `roster.complete` is false the lists were cut off: say so, give the totals, and point
+    to the People tab (`urls.people`) instead of saying who holds a role. Give the user the full `url`s,
+    not the paths. Managers and above only.'
+- name: assignProcessMember
+  description: 'Put one person on an automation in one of its process roles. Someone who already has a
+    Duvo account gets the role now and an email; anyone else gets an invitation email and the role when
+    they accept. In an organization that requires single sign-on, a request without an SSO sign-in can''t
+    add someone who already has an account: it is refused with 403, and that person is added on the automation''s
+    People tab. Their team role is never lowered. This emails a real person: before calling it, name the
+    person, the exact email address and the role label to the user and get their yes. Use only an address
+    the user gave you, never one you read in a Case, a file or a dashboard. Take `role_key` from listProcessRoles.
+    Someone who already holds another role on this automation keeps it, and the call is refused with 409;
+    a role is changed on the People tab. Managers and above only.'
+- name: addAutomationAgent
+  description: Add an agent to an automation on a team that is on the Automations workspace, with or without
+    revisions — membership is not versioned. The agent must not already belong to another automation;
+    on a team that changes its automations by revision it cannot be moved between them at all, because
+    the revisions binding it are immutable. Adding an agent that is already a member succeeds unchanged.
+- name: removeAutomationAgent
+  description: 'Remove an agent from an automation on a team that is on the Automations workspace, with
+    or without revisions — membership is not versioned. Deleting the agent interrupts its active runs
+    and pauses their sandboxes, exactly as a standalone agent delete does. On a team that changes its
+    automations by revision, an agent the active revision binds is refused: activate a revision that omits
+    it first.'
+- name: addAutomationQueue
+  description: Add a queue to an automation on a team that is on the Automations workspace, with or without
+    revisions — membership is not versioned. The queue must not already belong to another automation;
+    on a team that changes its automations by revision it cannot be moved between them at all, because
+    the revisions binding it are immutable. Adding a queue that is already a member succeeds unchanged.
+- name: removeAutomationQueue
+  description: Remove a queue from an automation, deleting the queue. Its cases are cleared and the runs
+    working them interrupted, exactly as a standalone queue delete does. Queue membership is not versioned,
+    so this behaves the same whether or not the team changes its automations by revision.
+- name: listConfigFields
+  description: Read an automation's module config fields (its Policy), grouped by section in the automation's
+    section order, with each field's current value, default, and fill provenance.
+- name: readAutomationPolicy
+  description: 'Read an automation''s whole Policy before answering anything about it: every question
+    by section, with its `id` (the field id updateConfigField takes), key, type, answer and who gave it;
+    `counts.questions` as the Policy screen''s header counts them (`required_open` is what still blocks
+    a run) apart from the module''s pre-filled `module_defaults`; answers proposed by interviews and waiting
+    for review; accepted and pending process-context notes; the interviews assigned; and `pending_apply`,
+    the structural answers and notes not yet written into an Agent. `running` says whether the automation
+    runs on live work: there a changed answer reaches its Agents from their next run, so name the question,
+    its current answer and the new one, and change it only after the user says yes. A question whose `bindings`
+    include `structural` changes how the Agents run; propose the matching Agent change too. Never invent
+    an answer for a question shown as open. Give the user the full URLs in `urls`.'
+- name: assignPolicyInterview
+  description: 'Assign a Policy interview: a Clarity voice interview covering the automation''s open Policy
+    questions, whose answers are written back onto them. Pass `invited_email` to email it to someone,
+    and `context` to say who they are; leave `invited_email` out to create an unassigned interview slot.
+    This emails a real person: name them, give the exact address and say what the interview covers, and
+    call this only after the user says yes. Use only an address the user gave you. Administrators and
+    above only.'
+- name: updateConfigField
+  description: 'Set or clear a config field''s value. `value: null` removes the answer and does not restore
+    the module default, so a Run that reads the field is refused until it is answered again. To use the
+    default, send `default_value` as `value`. On a running automation (`running` in readAutomationPolicy)
+    the change reaches its Agents from their next run: name the question, its current answer and the new
+    one, change it only after the user says yes, and pass the current answer you showed, not the new one,
+    as `expected_value` so a change someone made in between is not overwritten. A compound question takes
+    every part in one write. When the field''s `bindings` include `structural`, the module''s Agents also
+    need a matching change; propose it.'
+- name: addConfigField
+  description: Add a Policy question to this automation. Its key is `custom_` plus the label in snake_case,
+    with `_2`, `_3` and so on appended when the key is taken, and it is placed at the end of its section.
+    A module template reinstall never changes a field added here.
+- name: updateConfigFieldDefinition
+  description: 'Edit a Policy question: its label, question, guidance, example answer, section, the roles
+    that answer it, the options of a select or multiSelect field, and the columns of an unanswered table
+    field a person added. A reworded question gets a new version, and a new section moves the field to
+    that section''s end. The type of a field added through the API can change while it has no answer;
+    a field from the module template keeps its type. The answer is never changed, and a module template
+    reinstall keeps the edit.'
+- name: hideConfigField
+  description: 'Hide a Policy question from the Policy screen, interviews and every agent''s context.
+    Nothing is deleted: the answer and its history stay, and the restore operation shows it again. Returns
+    the agents whose live version still reads the field; hiding is never refused because of them. A module
+    template reinstall keeps the field hidden.'
+- name: restoreConfigField
+  description: Show a hidden Policy question again, with the answer it had.
+- name: listConfigSections
+  description: 'List the sections of an automation''s Policy in display order, empty ones included, each
+    with its key, name, origin and question count. No offset/limit params: this is the automation''s whole
+    set of sections.'
+- name: addConfigSection
+  description: Add an empty section to this automation's Policy, last or right after after_key. Its key
+    is the name in lowercase words joined by hyphens, with `-2`, `-3` and so on appended when the key
+    is taken. A name another section has, ignoring case, is refused with a 409. A module template reinstall
+    never changes a section added here.
+- name: renameConfigSection
+  description: Rename a section of this automation's Policy. Its key and its questions stay as they are,
+    and every reader shows the new name. A name another section has, ignoring case, is refused with a
+    409; the current name changes nothing. A module template reinstall keeps the rename.
+- name: reorderConfigSections
+  description: Replace the display order of this automation's Policy sections. keys must list every section
+    key of the automation exactly once, else a 400 names what is missing, unknown or repeated. Returns
+    every section in its new order. A module template reinstall keeps the order of the sections moved
+    here.
+- name: removeConfigSection
+  description: Remove a section a person added to this automation's Policy, once it holds no question,
+    hidden ones included. A section with questions, or one from the module template, is refused with a
+    409. Returns the removed section.
+- name: listRevisionIntegrations
+  description: List integrations attached to an agent revision.
+- name: attachRevisionIntegrations
+  description: 'Attach one or more integrations to an agent revision. To pin specific connections after
+    attachment, use pinRevisionIntegrationConnection. IMPORTANT for the case-queue-producer and case-queue-consumer
+    integrations: attaching the integration alone is NOT enough — the slot points at no queue and will
+    fail at runtime until you link at least one queue with replaceRevisionIntegrationQueues. After wiring
+    up, call getRevisionCaseQueueSetup to confirm every case-queue slot has linked_queue_count > 0 before
+    starting work.'
+- name: removeRevisionIntegration
+  description: Remove an integration from an agent revision. Removes the slot for everyone on the revision,
+    including all per-user connection pins. Requires edit permission on the agent.
+- name: listRevisionIntegrationConnections
+  description: 'List the connections you have pinned to this build''s integration slot. Multi-pin is supported:
+    you can pin multiple connections to the same slot.'
+- name: pinRevisionIntegrationConnection
+  description: 'Pin one of your connections (from GET /v2/teams/:team_id/connections) to this build''s
+    integration slot. Multi-pin is supported: a single user can pin multiple connections to the same slot.'
+- name: unpinRevisionIntegrationConnection
+  description: Unpin one of your connections from this build's integration slot. The connection itself
+    is not deleted; only the binding to this slot is removed.
+- name: getRevisionCaseQueueSetup
+  description: Check that this build's case-queue integration slots are wired up correctly. Returns, per
+    case-queue-producer/consumer slot, how many queues are linked, plus whether any queue is available
+    to bind (scoped to the agent's automation on a migrated team, team-wide otherwise). A slot with linked_queue_count
+    of 0 is attached but points at no queue and will fail at runtime — link a queue with replaceRevisionIntegrationQueues
+    before starting work.
+- name: listRevisionIntegrationQueues
+  description: List the queues linked to this build's case-queue integration slot. Only meaningful for
+    case-queue-producer and case-queue-consumer integrations.
+- name: replaceRevisionIntegrationQueues
+  description: Replace the set of queues linked to this build's case-queue integration slot. Send the
+    full desired queue list — any queues not in the list will be unlinked. Requires edit permission on
+    the agent. After linking, call getRevisionCaseQueueSetup to confirm the slot now reports linked_queue_count
+    > 0.
+- name: listAgentSuggestions
+  description: List an Agent's suggestions. status=pending is the inbox; status=history is consumed/dismissed/auto-cleared.
+    Reads lazily auto-clear stale pending items.
+- name: getAgentSuggestion
+  description: 'Fetch a single suggestion. Poll this after a 202 from consume: an AOP apply in flight
+    reports payload.apply.state (running/failed); once consumed, applied_revision_id carries the draft
+    revision the change was staged onto.'
+- name: consumeAgentSuggestion
+  description: 'Apply a suggestion: stage its change into the Agent''s draft revision, then auto-clear
+    any pending suggestions it makes moot.'
+- name: rejectAgentSuggestion
+  description: Dismiss a pending suggestion.
+- name: listSystemSkills
+  description: List all system skills (skills available to all teams).
+- name: deleteSkill
+  description: Delete a skill for the current team.
+- name: downloadSkill
+  description: Download a custom skill as a ZIP archive. Only custom (team-owned) skills can be downloaded.
+- name: listSkillFiles
+  description: List all files in a skill.
+- name: getSkillFileContent
+  description: Get the content of a file in a skill.
+- name: updateSkillFile
+  description: 'Update the content of a file in a skill, overwriting the active revision in place — the
+    previous content is not recoverable. Prefer the non-destructive flow when you can: createSkillRevision
+    to open a draft, updateSkillRevisionFile to edit it, promoteSkillRevision to activate it. Only team
+    skills can be edited.'
+- name: updateSkillAskDuvo
+  description: Mark a team skill as available in Ask Duvo, or take it back off. Every NEW Ask Duvo chat
+    in the team starts with the marked skills on disk. A chat that is already open keeps the set it started
+    with until its sandbox is replaced, and picks up the current set from then on.
+- name: listSkillAssignments
+  description: List the agents in the current team whose live build references the given skill. Used to
+    warn users that editing a skill will affect every agent that uses it.
+- name: listSkillRevisions
+  description: List a skill's version history. Each revision is a snapshot of the skill's files; at most
+    one is active (live) at a time, plus at most one open draft.
+- name: createSkillRevision
+  description: 'Open a draft revision of a skill, copying its files from the active revision (or from
+    `source_revision_id`). Edit the draft with updateSkillRevisionFile and deleteSkillRevisionFile, then
+    activate it with promoteSkillRevision — the previously active revision stays intact and can be re-activated
+    later. A skill has at most one open draft: if one already exists this returns it with `created: false`.'
+- name: promoteSkillRevision
+  description: 'Make a skill revision the active (live) one. The previously active revision becomes historic
+    and can be re-activated later. Idempotent: promoting the already-active revision succeeds rather than
+    erroring, and still applies any revision_name / revision_description supplied in the body.'
+- name: listSkillRevisionFiles
+  description: List the files in a skill revision, one page at a time. When `has_more` is true, pass `next_cursor`
+    back as `cursor` to fetch the next page.
+- name: getSkillRevisionFileContent
+  description: Get the content of a text file in a skill revision.
+- name: updateSkillRevisionFile
+  description: 'Write a text file into a skill revision. Writing into a draft leaves the active revision
+    untouched until the draft is promoted; writing into the active revision changes what the skill runs
+    immediately. Historic revisions are read-only: create a draft from one to edit it.'
+- name: deleteSkillRevisionFile
+  description: 'Delete a file from a skill revision. Deleting from a draft leaves the active revision
+    untouched until the draft is promoted; deleting from the active revision changes what the skill runs
+    immediately. SKILL.md can''t be deleted. Historic revisions are read-only: create a draft from one
+    to edit it.'
+- name: updateSkillRevision
+  description: Rename a skill revision or change its description. Works for drafts, the active revision,
+    and historic revisions.
+- name: deleteSkillRevision
+  description: Delete a draft or historic skill revision and its files. The active revision can't be deleted
+    — activate another revision first.
+- name: getProfile
+  description: Get the profile of the authenticated user (the owner of the API key).
+- name: getLegacyClarityProcess
+  description: Get a legacy v1 Clarity process with process metadata, generated analysis, automation guidance,
+    generation progress, and captures. Use this for rows from listClarityProcesses where version=1; v2
+    rows should use getClarityProcess and snapshot detail tools.
+- name: updateClarityProcess
+  description: Update a Clarity process name, guidance, interview independence, visibility, or completion
+    status. Team Builders can edit names, guidance, and interview independence, only the creator or a
+    team manager can change visibility, and completing or reopening a process for review requires a Lead
+    Builder role.
+- name: listClarityProcessMembers
+  description: List users with accepted access to a clarity process, the people invited who have not accepted
+    yet, and anyone else who has recorded a capture on it
+- name: removeClarityProcessMember
+  description: Remove accepted access to a clarity process
+- name: deleteClarityProcess
+  description: Delete a Clarity process. The creator or a team admin can delete it unless capture analysis
+    is still in progress, or a Module runs it — a Module's process is part of the Module, so the Module
+    has to be removed first. An automation built from the process keeps running, with its setup answers
+    and people, but is no longer linked to it.
+- name: duplicateClarityProcess
+  description: Duplicate a Clarity process with its analysis, captures, message history, and, for v2 processes,
+    its live current map and automation proposal. Requires a team manager role.
+- name: createClarityVideoUploadUrl
+  description: Create a signed URL for uploading a video file directly to GCS
+- name: completeClarityVideoUpload
+  description: Complete a video capture after uploading to GCS via signed URL
+- name: createClarityDocumentUploadUrl
+  description: Create a signed URL for uploading a PDF, Word (.docx), TXT, Markdown, BPMN, XLSX, or CSV
+    document directly to GCS
+- name: completeClarityDocumentUpload
+  description: Complete a document capture after uploading to GCS via signed URL
+- name: createClarityImageUploadUrl
+  description: Create a signed URL for uploading a PNG, JPEG, WebP, or SVG image directly to GCS
+- name: completeClarityImageUpload
+  description: Complete an image capture after uploading it to GCS via a signed URL
+- name: inviteClarityMeetingNotetaker
+  description: Invite the in-meeting notetaker bot (Recall.ai) to a live meeting; the recording lands
+    as a 'meeting' capture on the process
+- name: deleteClarityCapture
+  description: Delete a capture from a clarity process
+- name: createClarityGuidance
+  description: Create a new automation guidance message for a clarity process
+- name: updateClarityGuidance
+  description: Update the automation guidance message for a clarity process
+- name: getClarityProcessSharing
+  description: Get the sharing status for a clarity process
+- name: updateClarityProcessSharing
+  description: Enable or disable sharing for a clarity process
+- name: sendClarityInterviewInvites
+  description: Invite people to record an interview about this Clarity process, and email each of them.
+    To invite people from the organization chart or landscape, first use the Clarity hierarchy people
+    tools to find their names and email addresses, then pass them as invitees. Set includeProcessPeople
+    to true to also invite everyone already listed as a person on this process. At most 25 unique recipients
+    per call. Each invitee gets a Clarity process invitation, exactly as the Invite dialog creates one;
+    someone already invited is sent their invitation again rather than a second one. Where the team has
+    account-free interview links on, people without a Duvo account get a link that opens the interview
+    directly and expires after 30 days; everyone else gets the normal invitation that asks them to sign
+    in. Revoke a pending invitation with deleteTeamInvite.
+- name: listClarityInterviewInvites
+  description: List a Clarity process's pending and accepted invitations, newest first, with whether each
+    was accepted, whether it was sent an account-free interview link, and whether the invitee has opened
+    that link or submitted an interview. Paginate with limit and offset; total is the number of invitations.
+    Revoke a pending invitation by passing its id to deleteTeamInvite.
+- name: getClarityProcessInviteLink
+  description: Get the active interview invite link for a process.
+- name: deleteClarityProcessInviteLink
+  description: Delete the active interview invite link for a process.
+- name: getClarityProcessJoinInfo
+  description: Get information about a clarity interview invite link (public).
+- name: acceptClarityProcessJoin
+  description: Accept a clarity interview invite link and gain process access.
+- name: updateClarityLandscapeNode
+  description: Rename a process landscape node or update its owner label (team manager or above for team
+    processes; organization admin for areas)
+- name: acceptClarityLandscapeNode
+  description: Accept a proposed area folder into the active process landscape, so it stops being a proposal
+    and becomes part of the real structure (organization admin+). Only area folders can be accepted; a
+    proposed process becomes real through assignClarityLandscapeNodeTeam instead. Re-accepting an already-active
+    area is a no-op.
+- name: declineClarityLandscapeNode
+  description: Reject a proposed process landscape node while it is still a proposal, removing it and
+    any proposed descendants. Real processes nested underneath survive and move back to Unsorted. Only
+    proposals can be declined — an accepted node is removed with deleteClarityLandscapeNode.
+- name: deleteClarityLandscapeNode
+  description: Soft-delete a tree node and its descendants. Organization admins may delete any subtree;
+    team managers may delete a childless process node owned by their team. The targeted node's linked
+    clarity process and captures are deleted, while nested processes detach to the Unsorted bag.
+- name: setClarityLandscapeNodePlacement
+  description: Move a process landscape node (team builder or above for team processes; team manager or
+    above for team proposals; organization admin for areas)
+- name: reorderClarityLandscapeAreas
+  description: Reorder a sibling group of the organization's process landscape area folders left-to-right
+    — the top-level areas by default, or the folder children of parentId (organization admin+). This changes
+    display order only; use setClarityLandscapeNodePlacement to move a node to a different parent.
+- name: assignClarityLandscapeNodeTeam
+  description: Set the owning team of a process in the process landscape (organization admin+). On a proposed
+    process this accepts the proposal and creates the real process for that team; on an existing process
+    it moves the process, its captures and its brief to another team.
+- name: createClarityProcessNode
+  description: File an existing Clarity process into an area of the process landscape (team builder or
+    organization admin+). Use this for a process that already exists but sits in Unsorted; use proposeClarityLandscapeProcess
+    to create a brand-new one.
+- name: proposeClarityLandscapeProcess
+  description: Create a manual process in the organization's Process Landscape, either as an unassigned
+    proposal or atomically assigned to an eligible team.
+- name: batchAddClarityLandscapeNodePeople
+  description: Add one or more people to multiple Process Landscape nodes in a bounded batch. Email entries
+    can create invitations; each node-person outcome reports success, conflict, or delivery failure.
+- name: listClarityLandscapeNodePeople
+  description: List the people involved in the process behind one process landscape node. To read the
+    people across the whole landscape in one request, use getClarityHierarchyPeople instead.
+- name: addClarityLandscapeNodePerson
+  description: Add a person involved in the process behind a process landscape node. Name only records
+    a placeholder; supplying an email also gives that person access to the process and emails them an
+    invitation, so only pass an email the user asked you to invite.
+- name: updateClarityLandscapeNodePerson
+  description: 'Change the role a person plays in the process behind a process landscape node (for example
+    "Approver"). Send role: null to clear it.'
+- name: removeClarityLandscapeNodePerson
+  description: Remove a person from the process behind a process landscape node, and revoke the process
+    access they were granted when they were added.
+- name: acceptClarityTeamAssignmentSuggestion
+  description: Accept a pending Process Landscape team-assignment suggestion and durably assign the suggested
+    team (manager+).
+- name: dismissClarityTeamAssignmentSuggestion
+  description: Dismiss a pending Process Landscape team-assignment suggestion without changing the node's
+    owner (manager+).
+- name: acceptClarityCaptureSuggestion
+  description: Accept a pending Process Landscape capture suggestion and create the durable capture request
+    (manager+).
+- name: assignClarityLandscapeCaptureRequest
+  description: 'Assign an open Process Landscape capture request to a team member, or unassign it by sending
+    userId: null (manager+).'
+- name: dismissClarityCaptureSuggestion
+  description: Dismiss a pending Process Landscape capture suggestion without creating a capture request
+    (manager+).
+- name: listClarityLandscapeNodeInterviews
+  description: List Clarity interviews linked to a process folder
+- name: deleteClarityLandscapeNodeInterview
+  description: Delete an organization-scoped folder interview
+- name: getClarityProcess
+  description: 'Get the v2 read model for a clarity process: the process row (with operational fields
+    like generation_error, generation_progress, generation_started_at, generation_last_activity_at, custom_prompt),
+    its captures, and the lightweight version arrays for both snapshot tabs. The full payload of any specific
+    snapshot is fetched lazily via the unified per-snapshot detail endpoint (`GET .../snapshots/:kind/:id`);
+    this read model deliberately doesn''t carry it so the response stays small.'
+- name: getClarityCapture
+  description: Get a single Clarity v2 capture including full transcript and video transcript. Use this
+    when the process was loaded with captures=lite, or when only one capture's transcript is needed.
+- name: postprocessClaritySnapshot
+  description: Re-run postprocessing agents on an existing v2 clarity snapshot. Targets either the current-process
+    snapshot or the automation proposal snapshot, identified by id in the body. Flips the process status
+    to `generating` and returns 202 immediately; agents run asynchronously and flip the status back to
+    `review` once they settle.
+- name: listClarityStepFrames
+  description: Return one representative screenshare frame for each current-process step. Explicit frame
+    evidence wins. Otherwise, a timestamped screenshare transcript source selects the closest persisted
+    frame at or after that timestamp, with the closest earlier frame as fallback. Pass `window` (1-5)
+    to also receive that many neighbouring frames on each side as candidates, for recovering when the
+    selected frame does not show the step. Pass `size=thumb` for 768px copies that are cheaper to download
+    and inspect. Signed URLs are short-lived and can be null when signing is unavailable.
+- name: buildClarityAutomation
+  description: Hand an automation proposal for a v2 clarity process off to the workflow-builder pipeline.
+    Builds from `transformation_proposal_id` when supplied, otherwise from the process's live proposal.
+    The proposal id is the durable idempotency key, so retries return the same run and a different proposal
+    starts a new run. Returns 202 while the LLM run completes asynchronously, or 409 when the resolved
+    proposal is still being written.
+- name: listClarityExtraCaptureRequests
+  description: List active extra-capture requests for a given automation proposal of a Clarity v2 process.
+    The caller is expected to know the proposal id from the V2 read model and skip the call when no proposal
+    exists yet.
+- name: assignClarityExtraCaptureRequest
+  description: 'Assign (or unassign, with `user_id: null`) a team member to fulfil an extra-capture request.
+    Restricted to Lead Builders and above.'
+- name: createClarityInviteLink
+  description: Create or regenerate a process-scoped Clarity interview invite link. Only the process creator
+    or team managers can create invite links; creating a new link invalidates any prior active link for
+    the process.
+- name: createClarityArtifactImportUploadUrl
+  description: Create a signed upload URL for importing a Miro export into a Clarity v2 process. Supports
+    SVG, XML, PNG, and JPEG exports. The caller must upload the file to the returned URL, then complete
+    the import.
+- name: completeClarityArtifactImport
+  description: Complete a Miro artifact import after uploading to the signed URL. The uploaded bytes are
+    validated before the import becomes a usable Clarity capture.
+- name: listClarityArtifactChatConversations
+  description: List the current user's recent non-deleted artifact-chat conversations for a Clarity v2
+    process and snapshot kind.
+- name: getClarityArtifactChatMessages
+  description: Load the latest artifact-chat messages for one active conversation, returned oldest-first.
+- name: deleteClarityArtifactChatConversation
+  description: Soft-delete an open or running artifact-chat conversation for the current user.
+- name: stopClarityArtifactChatConversation
+  description: Stop an in-flight artifact-chat turn. Flips the conversation back to `open` first so the
+    interrupted run's late webhooks are dropped as stale, then best-effort interrupts the cc-server execution.
+- name: upgradeClarityProcess
+  description: Move a v1 clarity process into v2. Rows with generated analysis are reset in place and
+    regenerated; rows without analysis migrate in place when not generating.
+- name: listClarityProcessSnapshots
+  description: List lightweight Clarity v2 process snapshots for one kind.
+- name: getClarityProcessSnapshot
+  description: Fetch the full payload for a Clarity v2 process snapshot of either kind.
+- name: saveClarityProcessSnapshot
+  description: Save user edits as the live Clarity v2 snapshot for the selected kind.
+- name: promoteClarityProcessSnapshot
+  description: Promote a draft or historic Clarity v2 snapshot to live for its kind.
+- name: revertClarityProcessSnapshot
+  description: Archive a Clarity v2 snapshot of either kind. If the live row is archived, the repository
+    auto-promotes the latest historic row of the same kind.
+- name: generateClarityProcessSnapshot
+  description: Trigger a snapshot generation pipeline for a v2 clarity process, selected by kind. `current_process`
+    runs the generateCurrentProcess pipeline (body fields are proposal-only and rejected); `transformation_proposal`
+    runs the generate or regenerate proposal pipeline. Returns 202 immediately and finalises asynchronously
+    via the cc-server webhook stream.
+- name: stopClarityProcessSnapshot
+  description: Stop an in-flight snapshot generation for the selected kind. Reads the sandbox id from
+    the process row, kills the sandbox, flips the process back to `review`, and clears the sandbox marker
+    so any late webhook from the killed run is dropped as stale.
+- name: createWorkspace
+  description: 'Set up the user''s Duvo workspace, or return the one they already have (`created: false`,
+    nothing created). Call it first when the user has no workspace: other tools fail with ''User has no
+    current team'' until one exists. A new workspace is on the Free plan, with Clarity and Automation.
+    `has_clarity_access` says whether the team''s plan includes Clarity, `interviews_remaining` counts
+    interviews left on the plan without subtracting people invited but not yet interviewed, and `billing_url`
+    is where the user upgrades. If the user''s organization or email domain is already on Duvo, the call
+    is refused with a link the user must open.'
+- name: inviteOrgMember
+  description: Invite a person to an organization you administer, optionally assigning them to a team
+    in that organization. Requires an organization Admin, Executive, or Owner role. You cannot grant a
+    role higher than your own.
+- name: listOrgTeams
+  description: List teams belonging to an organization you are a member of, including your membership
+    and role in each.
+- name: listOrgAgents
+  description: 'List every agent across all teams in an organization, with the team it belongs to, the
+    state of its most recent run and the state of its schedules. Intended for external monitoring: it
+    answers ''which agents have gone silent'' and ''which agents were switched off'' without a request
+    per team or per agent. Requires an organization Admin, Executive, or Owner role, and an API key scoped
+    to all teams you can access — a key pinned to a single team is rejected, because this endpoint spans
+    every team in the organization.'
+- name: listOrgRuns
+  description: 'List runs across every team in an organization, filtered by status, agent, team, source,
+    evaluation issues and time. Intended for external monitoring: one call covers the whole org instead
+    of one per team. Requires an organization Admin, Executive, or Owner role, and an API key scoped to
+    all teams you can access — a key pinned to a single team is rejected, because this endpoint spans
+    every team in the organization.'
+- name: getOrgInsightsHeadline
+  description: Get org-wide headline insight KPIs (run totals, success rate, distinct active agents and
+    users) aggregated across every team in the organization. Requires an organization Admin, Executive,
+    or Owner role.
+- name: getOrgInsightsMetrics
+  description: Get org-level insights metrics (runs, assignments, schedules) broken down per team across
+    the organization. Requires an organization Admin, Executive, or Owner role.
+- name: getOrgInsightsUsageChart
+  description: Get org-level run-volume buckets (scheduled vs on-demand) at day/week/month granularity
+    across the organization. Requires an organization Admin, Executive, or Owner role.
+- name: createOrgTeam
+  description: Create a new team under an organization you administer. Requires an organization Admin,
+    Executive, or Owner role.
+- name: organizeClarityProcessLandscape
+  description: Start an asynchronous organization pass over the organization's unfiled processes, placing
+    them into the Process Landscape where possible (organization admin+). Results appear progressively;
+    started is false when there is nothing to organize.
+- name: getClarityProcessTree
+  description: Fetch the organization's process tree, or the subtree under rootId. Narrow a large organization
+    with `rootId` (one subtree) or `ownerTeamId` (one team's processes) — a whole-organization tree is
+    large enough to be refused by response-size caps
+- name: getClarityProcessLandscape
+  description: Fetch the organization's full process landscape with process summaries, team assignments,
+    and page-level stats
+- name: getClarityHierarchyPeople
+  description: List the people attached to every authorized linked process node in the organization's
+    Process Landscape. Returns a flat list where each person carries `nodeId` and `processId`, plus their
+    role, invite status, and capture count. Narrow it with `rootId` (one subtree), `ownerTeamId` (one
+    owning team), and `userId` or `search` (one person) — an unfiltered organization roster is large enough
+    to be refused by response-size caps. To find the processes where one person has not captured yet,
+    filter to that person and read `captureCount` per row. `truncated` is true when the node subtree or
+    any single process roster was capped.
+- name: listClarityLandscapeCaptures
+  description: List the organization's Process Landscape captures. By default, only captures eligible
+    to seed new process proposals are returned; excluded captures can be included for inspection.
+- name: generateClarityProcessLandscape
+  description: Start a process-landscape generation run for the organization from its eligible Clarity
+    captures (organization executives and owners)
+- name: createClarityLandscapeNode
+  description: Create an area folder in the process tree. An active area (the default) requires organization
+    admin+ or manager+ on a team of the organization; a "proposal" area may be added by any organization
+    member.
+- name: listClarityProcessLinks
+  description: List process-to-process links in the organization's Clarity landscape that are visible
+    within the caller's team access scope. Use `node_id` to find links touching a specific process node.
+- name: createClarityProcessLink
+  description: Create a process-to-process link in the organization's Clarity landscape when the caller
+    can manage both endpoint teams. If the same live source, target, and type already exists, the existing
+    link is returned.
+- name: updateClarityProcessLink
+  description: Update a process-to-process link in the organization's Clarity landscape when the caller
+    can manage both endpoint teams.
+- name: deleteClarityProcessLink
+  description: Delete a process-to-process link from the organization's Clarity landscape when the caller
+    can manage both endpoint teams.
+- name: setClarityLandscapePriorities
+  description: Set or clear heatmap priorities in one batch (team managers for their processes; organization
+    admin+ across the organization)
+- name: listClarityOrganizationInterviews
+  description: List Clarity interviews across an organization
+- name: getClarityOrganizationInterview
+  description: Load a single organization Clarity interview with transcript
+- name: inviteClarityOrganizationNotetaker
+  description: Invite the in-meeting notetaker bot (Recall.ai) to a live meeting; the recording lands
+    as an organization Clarity interview
+- name: finalizeClarityOrganizationInterview
+  description: Manually mark an in-progress organization interview as complete without requiring final
+    media uploads
+- name: updateClarityOrganizationInterview
+  description: Rename an organization landscape Clarity capture
+- name: deleteClarityOrganizationInterview
+  description: Delete an organization-level Clarity interview
+- name: createClarityOrganizationDocumentUploadUrl
+  description: Create a signed URL for uploading a PDF, Word (.docx), TXT, Markdown, or BPMN document
+    as an organization-level Clarity capture
+- name: completeClarityOrganizationDocumentUpload
+  description: Complete an organization document capture after uploading to GCS; extracts text and stores
+    it as a transcript so it feeds Process Landscape generation
+- name: listMyOrganizations
+  description: List the organizations the current user belongs to, with their role (organization:member,
+    organization:admin, organization:owner, or organization:executive) and member count in each. Use this
+    to check whether the user has an admin-or-above role before calling organization-scoped endpoints,
+    which reject lower roles with 403.
+- name: getClarityExport
+  description: Get a Clarity export run by ID
+- name: getQueue
+  description: Get a queue by ID.
+- name: listQueueAggregations
+  description: List a queue's aggregation definitions.
+- name: createQueueAggregation
+  description: Create an immutable aggregation definition on a queue.
+- name: evaluateQueueAggregation
+  description: Evaluate an aggregation definition against the current data without persisting it.
+- name: getQueueAggregationResult
+  description: Read an aggregation definition's cached result.
+- name: refreshQueueAggregation
+  description: Force a fresh recompute of an aggregation definition.
+- name: deleteQueueAggregation
+  description: Soft-delete an aggregation definition.
+- name: getQueueJsonSchema
+  description: 'Get a queue''s Case schema settings: whether it requires typed cases, and the schema it
+    validates them against.'
+- name: createQueueJsonSchema
+  description: Declare a queue's first Case schema by hand, so a person can type a queue up front instead
+    of waiting for its producing agent to declare the shape. Fails if the queue already has a schema —
+    replace an existing one with PUT. Every object schema, including nested objects, must set additionalProperties
+    to false or the request fails with 400 "Object schemas must set additionalProperties to false".
+- name: replaceQueueJsonSchema
+  description: Replace a queue's Case schema with a new version. Every declared field is frozen against
+    automated change, so this is the only way one can be edited. Every object schema, including nested
+    objects, must set additionalProperties to false or the request fails with 400 "Object schemas must
+    set additionalProperties to false".
+- name: attachQueueJsonSchema
+  description: Put a queue on an existing Case schema, so both queues share one document and a later change
+    moves them together. The queue must not already have a schema.
+- name: updateQueueJsonSchemaSettings
+  description: Turn a queue's schema guard on or off, and freeze or unfreeze the schema document. A guarded
+    queue with no schema yet asks its producing agent to declare one; a frozen schema refuses every change
+    until it is unfrozen.
+- name: detachQueueJsonSchema
+  description: Stop validating new cases on a queue. Typed cases already written keep their payload and
+    their pinned schema version.
+- name: updateQueue
+  description: Update a queue.
+- name: deleteQueue
+  description: Delete a queue. Interrupts all associated active runs first and returns the number of deleted
+    cases plus the IDs of runs that were stopped.
+- name: exportCases
+  description: 'Export a queue''s cases, respecting the same status, severity, failure source, approval,
+    priority, label, date-range, json_data field, and free-text filters as the list view. Set awaiting_my_approval
+    to export only the cases holding an unanswered approval row assigned to you; like the list view it
+    resolves to the authenticated caller, so a credential with no user behind it is rejected rather than
+    exporting an empty file. `format: "json"` (default) returns a re-importable JSON payload; `format:
+    "csv"` returns a text/csv file with the columns id, title, status, priority, labels, created_at, updated_at,
+    completed_at, postponed_to, data.'
+- name: getCase
+  description: Get a case by ID. Returns the case, its event history, and every case-approval batch ever
+    created on the case (newest first).
+- name: updateCase
+  description: Edit a case's title and/or its data payload. Provide at least one field. For the payload,
+    send free-form `data` OR a structured `json_data` object, never both. `json_data` is validated against
+    the queue's Case schema and requires the queue to have one; a case that is already typed against a
+    schema keeps its structured payload and rejects a free-text `data` write. Works on pending, in-progress,
+    and settled cases. Other attributes (status, priority, labels) have their own dedicated endpoints.
+    Returns the updated case with its event history and approval batches.
+- name: setCaseJsonDataFields
+  description: 'Set one or more fields of a typed case''s structured `json_data` payload in one atomic
+    write, leaving every other field as stored. Prefer this over `PATCH /cases/{case_id}` with a full
+    `json_data` object when changing some fields: the write reads and locks the latest payload in the
+    database, so a concurrent edit to another field, or to another item of the same array, is preserved.
+    Each `set` entry names a `path`, a JSONPath declared in the queue''s current Case schema, and the
+    `value` to store there. A path is dotted object fields (`$.invoice.amount`) with optional array indices
+    in brackets (`$.lines[0]` for a whole item, `$.lines[0].amount` for one field of it). An index must
+    name an item that already exists; an out-of-range index or a non-array parent is refused, and a write
+    never adds or removes items. A `value` can be any JSON value, including an object for an object field.
+    Paths must be distinct, and no path may sit inside another in the same request (`$.lines` beside `$.lines[0]`,
+    or `$.lines[0]` beside `$.lines[0].amount`). An index names a position, so when the array can change
+    between your read and your write, add `expect` entries that pin the item, such as its id field (`$.lines[0].id`):
+    if any stored value differs, nothing is written and the response is a 409. The resulting payload is
+    validated against the queue''s current Case schema and the case is re-pinned to that schema version;
+    if any entry is refused, nothing is written. A case without a structured payload yet must be given
+    one with `PATCH /cases/{case_id}` first. Returns the updated case with its event history and approval
+    batches.'
+- name: listCaseRuns
+  description: List Runs (agent runs) that have claimed or received handover of a case, newest first.
+    Capped at 50 ownership events.
+- name: listCaseRunRecentMessages
+  description: Return the latest qualifying messages (assistant text + tool calls) for a Run on a case,
+    newest last. Used to populate the live body of an active Run card in the case Activity timeline.
+- name: deleteCase
+  description: Delete a case. Interrupts any associated active runs first.
+- name: bulkReprocessCases
+  description: Re-process multiple cases on a chosen agent. Any active runs on the selected cases are
+    interrupted first; the cases are then reset to pending and assigned to the chosen agent for the next
+    dispatcher tick. The chosen agent must already be connected to the queue as a case-queue-consumer
+    (with the trigger enabled or disabled) and not belong to a different automation than the queue.
+- name: bulkUpdateCaseStatus
+  description: Update the status of multiple cases to pending, completed, failed, or canceled. Interrupts
+    any active runs and releases their case ownership, but never cancels their human-in-the-loop state
+    — pending requests and open approval batches stay answerable/resolvable from the run view. Settling
+    a case archives the pending requests on every run attached to it, both the runs this call interrupted
+    and any that were already terminal, so they leave the activity inbox instead of outliving the case
+    there. Resetting to pending archives nothing and re-dispatches cases to the queue's trigger consumer.
+- name: bulkUpdateCasePriority
+  description: 'Set the priority of multiple cases. Priority only affects the order pending cases are
+    picked up in: due postponed cases are handled first, then higher priority. It never interrupts runs
+    or changes case status. Set `none` to clear priority back to the default.'
+- name: listCaseAttachments
+  description: List the files attached to a case, oldest first. Includes attachments whose upload failed,
+    so a missing source document is visible rather than silent.
+- name: createCaseAttachmentUploadUrl
+  description: Issue a signed URL for uploading a file to a case. The client must PUT the bytes to the
+    returned URL with the returned Content-Type, then call the finalize endpoint so the attachment becomes
+    visible on the case.
+- name: finalizeCaseAttachment
+  description: Confirm an uploaded case attachment against storage. Answers with the attachment in its
+    settled state — `ready` when the bytes are present, `failed` (with a reason) when the upload never
+    completed.
+- name: getCaseAttachmentDownloadUrl
+  description: Mint a short-lived signed URL for one case attachment. `disposition=inline` serves the
+    file for the in-app viewer; `attachment` forces a download.
+- name: deleteCaseAttachment
+  description: Remove a file from a case. The row is soft-deleted; deletion of the stored object is attempted
+    best-effort.
+- name: assignCaseLabels
+  description: Assign one or more labels to a case. Creates the labels on the queue if they don't already
+    exist.
+- name: listCaseLabels
+  description: List all labels assigned to a case.
+- name: listQueueLabels
+  description: List every label defined on a queue along with the count of cases each label is assigned
+    to.
+- name: unlinkCaseLabels
+  description: Remove the given labels from a case.
+- name: createQueueLabel
+  description: Create a label on a queue without assigning it to a case.
+- name: deleteQueueLabel
+  description: Delete a label from a queue. Cascade-deletes all assignments of this label on existing
+    cases.
+- name: updateQueueLabel
+  description: Update a label's key, value, or color. Renaming key/value affects every case assigned to
+    this label.
+- name: listQueueAgents
+  description: List agents bound to a queue as producers (agents that push cases into the queue) or consumers
+    (agents triggered by cases in the queue).
+- name: getCaseQueueEvalRubrics
+  description: List a queue's active case-level evaluation rubrics — the Pass/Fail questions a whole case
+    is judged against at settlement. Shows the queue's current version's set (auto-generated from the
+    connected Assignments' AOPs, plus any manually-authored rubrics).
+- name: createCaseQueueEvalRubric
+  description: Add one case-level evaluation rubric to a queue's current rubric set. Case-level rubrics
+    judge the whole case (across every Run that touched it) as a Pass/Fail question at settlement. The
+    rubric is added to the queue's current version (build-set) — the set new cases are judged against;
+    a queue only gets one after its first Agent-processed case settles, so this fails with 409 before
+    then, and once the version holds 12 rubrics by default (25 on teams with the newer rubric generator
+    enabled); the error message states the ceiling.
+- name: replaceCaseQueueEvalRubrics
+  description: Replace the entire case-level evaluation rubric set on a queue's current version (1 to
+    N rubrics, N being 12 by default and 25 on teams with the newer rubric generator enabled). Existing
+    rubrics are removed and the supplied list becomes the new set. An empty list is refused — whole-case
+    evaluation regenerates rubrics for an empty set at the next settlement, so a cleared set would not
+    stay cleared; remove individual rubrics instead. Targets the queue's current version (build-set),
+    which exists once its first Agent-processed case settles — this fails with 409 before then. Cases
+    already judged keep their original verdicts.
+- name: updateCaseQueueEvalRubric
+  description: Edit a single case-level evaluation rubric's title and/or description. The edit produces
+    a NEW rubric (with a new id and slug) so previously judged cases stay attributed to the original criterion;
+    the response contains the new rubric.
+- name: deleteCaseQueueEvalRubric
+  description: Remove a single case-level evaluation rubric. Cases settled after this are no longer judged
+    against it; already-judged cases keep their original verdicts. Removing the queue's last remaining
+    rubric is refused with 409 — whole-case evaluation regenerates rubrics for an empty set at the next
+    settlement, so the removal would not stay removed.
+- name: listCases
+  description: 'List cases in a queue. Supports status, date-range, free-text, and json_data field filters
+    via query params. Set count_only=true to skip Case row selection and transformation. The normal response
+    shape is returned with cases: [] and the matching total. For label filters, use POST /v2/queues/:queue_id/cases/search.'
+- name: searchCases
+  description: 'Search cases in a queue with rich filters (multi-status, date ranges, label-based filters,
+    and field-value filters over a typed queue''s json_data). Use this when the simple query-string filters
+    on GET /v2/queues/:queue_id/cases aren''t enough. Each json_data entry is {path, operator, value}
+    where path is a declared scalar in JSONPath dotted form ($.invoice.amount); entries are ANDed, so
+    two comparisons on one path express a range. A path the queue''s Case schema does not declare is rejected
+    rather than ignored, as is a value that does not match the field''s declared type. The contains operator
+    is case-sensitive (unlike the free-text search parameter). Set count_only=true to skip Case row selection,
+    enrichment, and transformation. The normal response shape is returned with cases: [] and the matching
+    total.'
+- name: createCases
+  description: 'Create one or more cases in a queue. Provide either a single `case` object or a `cases`
+    array (1-100); providing both returns 400. Each case takes a title (max 500 chars), optional labels
+    that will be assigned to the case on creation (missing labels are created on the queue), and an optional
+    priority (`none`, `medium`, or `high`; `medium`/`high` raise it above the default in the queue, `none`
+    is the default; priority only affects the order pending cases are picked up in: due postponed cases
+    are handled first, then higher priority). For the case payload, send free-form `data` OR a structured
+    `json_data` object, never both, and a single request must be all free-text or all structured. `json_data`
+    is validated against the queue''s Case schema and requires the queue to have one; a schema-guarded
+    queue accepts only `json_data`, while a queue without the guard also accepts free-text `data`. A guarded
+    queue that has no schema yet accepts free-text `data` only when typed Case schemas are off for that
+    queue — the team has them turned off AND the queue is not inside an automation (there is then no way
+    to declare a schema, so the guard cannot apply). A queue inside an automation always has them on,
+    so a guarded one refuses free-text `data` until its schema is declared.'
+- name: getRun
+  description: Get information about an agent run. Can be polled to check status.
+- name: postRunMessage
+  description: Post a message to an agent run. This will persist the message and resume the agent execution
+    if the run is in a resumable state (waiting, completed, or interrupted).
+- name: listRunMessages
+  description: Get paginated messages for an agent run. Messages are returned in chronological order.
+- name: respondToHumanRequest
+  description: 'Respond to a human-in-the-loop request. Use ''approved'' (true/false) for approval-type
+    requests, or ''answers'' ({question: answer}) for question-type requests. Only works when the run
+    is in ''waiting'' status.'
+- name: stopRun
+  description: Stop an agent run. No-op if the run is not currently running.
+- name: listMyTeams
+  description: List teams the authenticated caller can act on. Team-scoped API keys see only the key's
+    team; managed Ask Duvo keys stay within their origin boundary; human user-scoped API keys and OAuth
+    callers see every team they're a member of.
+- name: updateAgentFolder
+  description: Rename an agent folder or move it to a new parent.
+- name: deleteAgentFolder
+  description: Delete an agent folder. If the folder contains assignments or subfolders, pass `force=true`
+    to delete it and move the contained assignments to the root level.
+- name: getConnection
+  description: Get one of your connections by ID.
+- name: getConnectionCredentials
+  description: Get the header keys configured for a connection. Sensitive values (api keys, tokens, passwords)
+    are returned as empty strings — the response only reveals which credential fields are set, never their
+    values.
+- name: updateConnection
+  description: Update an existing connection. For sensitive header values, sending an empty string keeps
+    the existing value; send a new value to overwrite. Toggling `shared` moves the connection between
+    personal and team-shared.
+- name: deleteConnection
+  description: Delete a connection (disconnects the user's connection and removes any triggers bound to
+    it).
+- name: deleteCustomIntegration
+  description: Delete a custom integration type (team-level catalog entry) and cascade-remove related
+    connections. Requires manager-or-above role.
+- name: getSecret
+  description: Get an env-var secret by id. Returns metadata and env var keys; secret values are never
+    exposed.
+- name: updateSecret
+  description: Update an env-var secret. Send `values` to replace all entries, or any of `rename_keys`,
+    `remove_keys`, `add_values` for a non-destructive patch. Editing a team-shared secret or toggling
+    sharing requires lead builder role.
+- name: deleteSecret
+  description: Soft-delete an env-var secret. Deleting a team-shared secret requires lead builder role.
+- name: listRevisionSecrets
+  description: List env-var secrets attached to a specific revision (build) of an assignment. Returns
+    metadata and env-var keys only — secret values are never exposed.
+- name: attachRevisionSecret
+  description: Attach an env-var secret to a revision so its keys are injected into Runs spawned from
+    that revision. Personal secrets can only be attached by their owner; team-shared secrets require builder
+    permissions.
+- name: detachRevisionSecret
+  description: Detach an env-var secret from a revision. Personal secrets can only be detached by their
+    owner; team-shared secrets require builder permissions.
+- name: listRevisionLogins
+  description: List logins attached to a specific revision (build) of an assignment. Returns metadata
+    only — passwords and OTP secrets are never exposed.
+- name: attachRevisionLogin
+  description: Attach a login to a revision so the agent can use it during Runs spawned from that revision.
+    Personal logins can only be attached by their owner; team-shared logins require builder permissions.
+- name: detachRevisionLogin
+  description: Detach a login from a revision. Personal logins can only be detached by their owner; team-shared
+    logins require builder permissions.
+- name: getNotification
+  description: Get a single notification by id for the authenticated user. Requires the Notification Center
+    feature; returns 404 when it is not enabled for the team.
+- name: markNotificationRead
+  description: Mark a notification as read for the authenticated user. Idempotent — calling it again on
+    an already-read notification still returns success. Pass `openedFrom` to record which channel the
+    reader came through (`in_app` when they were already in Duvo, or `email`/`slack`/`teams` from the
+    `notificationSource` param on an external link); omit it when the read is not somebody opening the
+    notification. Requires the Notification Center feature; returns 404 when it is not enabled for the
+    team.
+- name: dismissNotification
+  description: 'Dismiss an important notification for the authenticated user. A row pinned to their Important
+    section is unpinned and the card stays, because the connection is still broken; a row that is not
+    pinned for them — one they cannot reconnect themselves — is removed from their feed instead, matching
+    what the card''s Dismiss button does. Only important notifications (currently: connection_broken)
+    can be dismissed. Idempotent. Requires the Notification Center feature; returns 404 when it is not
+    enabled for the team.'
+- name: listClarityProcessLabels
+  description: List process tags available in an organization.
+- name: createClarityProcessLabel
+  description: Create process tags for an organization.
+- name: updateClarityProcessLabel
+  description: Update process tags for an organization.
+- name: deleteClarityProcessLabel
+  description: Delete process tags from an organization.
+- name: listClarityProcessAssignedLabels
+  description: List process tags on a process.
+- name: assignClarityProcessLabels
+  description: Assign process tags to a process.
+- name: unlinkClarityProcessLabels
+  description: Remove process tags from a process.
+- name: listAvailableClarityProcessLabels
+  description: List process tags available for a process.
+- name: listAgents
+  description: List agents for your team.
+- name: createAgent
+  description: 'Create a new agent. Optionally include a build configuration to create the first build
+    in the same request. On a team that versions its automations, an agent created inside an automation
+    joins that automation''s draft revision: its first build is a draft and goes live when the draft is
+    made active.'
+- name: listAutomations
+  description: List the team's automations, each with its live agent and queue counts. An automation is
+    the workspace container an agent or queue belongs to on a team that has moved to Automations — its
+    id is what `POST /queues` and `POST /agents` need as `automation_id`.
+- name: createAutomation
+  description: Create a new automation. Its first agent is created alongside it so the caller lands on
+    something editable; `first_agent` seeds that agent's name, configuration, and connections instead
+    of the defaults. On a team on revision semantics the automation holds a single draft revision and
+    no live revision, with the agent's first build bound into that draft, and the first activation makes
+    the draft revision 1; on any other team the automation is a bare container and the build stands on
+    its own.
+- name: listAgentFolders
+  description: List all agent folders for the authenticated team.
+- name: createAgentFolder
+  description: Create a new agent folder.
+- name: moveAgentsToFolder
+  description: Move one or more agents (assignments) into a folder, or to the root level.
+- name: moveAutomationsToFolder
+  description: Move one or more automations into an agent folder, or to the root level.
+- name: listQueues
+  description: List queues for your team.
+- name: createQueue
+  description: Create a new queue.
+- name: getBatchQueueStats
+  description: Get case status counts for many Queues in ONE call. Use this after listQueues whenever
+    you need per-Queue counts — cases waiting on a human, needing review, pending, failed — instead of
+    calling listCases or searchCases once per Queue. Results are keyed by Queue ID and include zero counts
+    for Queues with no matching cases; Queue IDs from other teams are silently dropped. For a count on
+    a single Queue with richer filters, listCases with count_only=true is the alternative.
+- name: listRuns
+  description: 'List runs for the current team. Supports filtering by agent, user, queue, status, etc.
+    Messages, evaluation data, and queue metadata are included where available. Set count_only=true to
+    skip Run row selection and enrichment. The normal response shape is returned with data: [] and the
+    matching total. To sweep a whole team, follow `next_cursor` rather than raising `offset`.'
+- name: startRun
+  description: Start a new agent run. Returns immediately with run info - does not wait for completion.
+- name: listSkills
+  description: List all skills for the current team, including system skills.
+- name: createSkill
+  description: Create or update a skill from a JSON body. The server constructs SKILL.md from the provided
+    fields and stores it. If a skill with the same name already exists in the team, it is updated.
+- name: listClarityProcesses
+  description: List Clarity processes for the current team, most recently updated first. Returns lightweight
+    metadata (capture counts, contributors, status) suitable for building a picker; the per-process read
+    model is available via `GET /v2/teams/:team_id/clarity-v2/processes/:process_id` for v2 rows and `GET
+    /v2/teams/:team_id/clarity/processes/:id` for legacy v1 rows. Both v1 (legacy) and v2 processes are
+    returned by default; use `search`, `status`, and `version` to narrow discovery. Capped at 100 per
+    page.
+- name: listClarityProcessSummaries
+  description: 'Cross-process portfolio digest for every completed Clarity process on the team: per-process
+    summary, SWOT, projected impact, and a step skeleton (role, system, and flow edges) — without step
+    prose or source excerpts. Paginated (default 5, max 10). Use this to answer portfolio-wide questions
+    in one pass; fetch a single process''s full detail via getClarityProcessSnapshot only for the few
+    that matter.'
+- name: createClarityProcess
+  description: Create a new Clarity v2 process for the current team (Builder+). Optional `name` defaults
+    server-side when omitted. Response uses camelCase `createdAt` to match existing FE clients.
+- name: listFiles
+  description: List files for the current team.
+- name: createFileUploadUrl
+  description: Generate a signed URL for uploading a file directly to GCS.
+- name: renameFile
+  description: Rename a file in team storage.
+- name: deleteFile
+  description: Delete a file from team storage.
+- name: getFileDownloadUrl
+  description: Generate a signed download URL for a file.
+- name: getFileContent
+  description: Get the content of a text file.
+- name: updateFileContent
+  description: Update the content of a text file.
+- name: listIntegrations
+  description: 'List the team''s integration catalog: built-in integration types plus the custom connection
+    types this team owns or has been granted by another team in its organization. OAuth authorization
+    flows are browser-based and cannot be performed via this API; use the Duvo dashboard to complete OAuth-based
+    connections.'
+- name: createCustomIntegration
+  description: Create a custom integration type (team-level catalog entry) that users can then connect
+    as user-provided MCP connections. Requires manager-or-above role.
+- name: listConnections
+  description: List the authenticated user's connections (connected integration instances) for the current
+    team. Includes team-shared instances visible to the caller, and instances another team has granted
+    to this one, when the org-level Connections sharing setting is on. The `type` query parameter filters
+    by integration type, not native OAuth provider key.
+- name: createConnection
+  description: Create a new user-provided connection (custom MCP server) for the current team. OAuth-based
+    integrations (native) require an interactive browser flow — start them with the dedicated OAuth endpoints
+    (`/v2/teams/:team_id/connections/oauth/native/:provider/start` or `/v2/teams/:team_id/connections/oauth/mcp/start`)
+    instead of calling this endpoint directly.
+- name: probeMcpServer
+  description: Probe an MCP server URL and list the tools it exposes. Useful as a dry-run before creating
+    a connection — verifies the URL is reachable, that authentication headers (if any) are correct, and
+    surfaces the tool catalog. Performs no writes; sits alongside `/v2/teams/:team_id/connections/oauth/mcp/check`
+    (which probes the same URL for OAuth support).
+- name: listSecrets
+  description: List env-var secrets the caller can reach in this team — team-shared (user_id IS NULL),
+    the caller's own personal entries, and secrets another team in the organization has granted to this
+    team. Returns metadata and env-var keys only; secret values are never exposed.
+- name: createSecret
+  description: 'Create an env-var secret. Personal by default; pass `shared: true` to create a team-shared
+    secret (requires lead builder role).'
+- name: createTeamInvite
+  description: Invite one person to a team. Pass `processId` to invite them to a specific Clarity process
+    instead of the whole team (that requires the `team:clarity-member` role). Creating the invitation
+    does NOT email anyone — call sendTeamInviteEmail with the returned id to deliver it, or use bulkCreateTeamInvites,
+    which creates and emails in one step.
+- name: deleteTeamInvite
+  description: Revoke a pending invitation so its link and email can no longer be used. Accepts either
+    a team invitation (requires Superadmin or above on the invitation's team) or a Clarity process invitation
+    (requires the process creator or a team admin). Revoking one side also revokes its linked counterpart
+    when a process invitation created both. An invitation already accepted or declined is refused with
+    409, including one accepted a moment before, and process access the invitee already holds through
+    an earlier acceptance is kept, so revoking never undoes an acceptance.
+- name: sendTeamInviteEmail
+  description: Email an invitation to its recipient. Use this to deliver an invitation created by createTeamInvite
+    (which never sends mail on its own), or to resend one the recipient never received. The accept link
+    is always built from the server-configured app origin.
+- name: bulkCreateTeamInvites
+  description: 'Invite several people to a team in one call, emailing each invitation immediately. Returns
+    per-batch counts: `succeeded` were invited, `skipped` were already on the team, already had a pending
+    invitation, or were a duplicate of an earlier entry in the same batch, `failed` could not be emailed
+    (those invitations are rolled back). The accept link is always built from the server-configured app
+    origin.'
+- name: updateTeamInvite
+  description: Change the role on a pending team invitation. Only pending invitations can be updated —
+    one already accepted or declined is rejected. Requires the Manager role or above on the invitation's
+    own team.
+- name: getTeamInviteLink
+  description: 'Get the team''s shareable invite link — the one URL anyone can use to join the team, as
+    opposed to a per-person invitation. Returns `hasLink: false` when no link has been created. Requires
+    the Manager role or above.'
+- name: createTeamInviteLink
+  description: Create or regenerate the team's shareable invite link — the one URL anyone can use to join
+    the team. Regenerating invalidates the previous link, so anyone still holding the old URL can no longer
+    join. Requires the Manager role or above.
+- name: deleteTeamInviteLink
+  description: Delete the team's shareable invite link so the URL stops working. Per-person invitations
+    are unaffected. Requires the Manager role or above.
+- name: listNotifications
+  description: List notifications for the authenticated user's current team, most recent first. Filter
+    with type, unread, severity or minSeverity (mutually exclusive), important, agentRunId, or processId;
+    paginate with limit/cursor. Pass batchId to list only the live members of a notification batch, optionally
+    ordered by sort=importance (only valid together with batchId). Requires the Notification Center feature;
+    returns 404 when it is not enabled for the team.
+- name: getNotificationFeed
+  description: List the notification feed for the authenticated user's current team, most recent activity
+    first. Each item is either an individual notification or a notification batch (a per-agent group of
+    job_issue/eval_issue/job_done/schedule_issue notifications). Filter with type, unread, and either
+    severity (exact match) or minSeverity (threshold; the two are mutually exclusive); paginate with limit/cursor.
+    Either severity filter also narrows a surfaced batch's counts to its qualifying members, and hides
+    a batch with no qualifying live member. The feed is eventually consistent — a batch's counts can lag
+    a concurrent write by one page fetch. Requires the Notification Center feature; returns 404 when it
+    is not enabled for the team.
+- name: getNotificationBatch
+  description: Get a single notification batch by id for the authenticated user, with per-type live-member
+    counts, unread count, and worst severity. Serves cold deep links and sidebar retention for batches
+    the caller can no longer see in the feed. Counts every live member by default; the optional type/severity/minSeverity
+    filters narrow them to matching members only, exactly as the feed narrows a batch row it returns under
+    the same filters. Requires the Notification Center feature; returns 404 when it is not enabled for
+    the team, the batch does not exist, it belongs to another recipient/team, or no live member matches
+    the given filters.
+- name: markNotificationBatchRead
+  description: 'Mark every unread live member of a notification batch as read for the authenticated user.
+    Pass `types` to narrow the mark-read to those member types, and `severity` (exact) or `minSeverity`
+    (threshold, mutually exclusive with `severity`) to narrow it by urgency — e.g. the page''s active
+    filters; omit them to mark every live member. Narrowing matters when the batch card was rendered under
+    a filter: the rows marked read should be the rows the card counted. Pass `openedFrom` to record which
+    channel the reader came through, on every member this call marks read. Returns the count of members
+    that were updated. Requires the Notification Center feature; returns 404 when it is not enabled for
+    the team or the batch does not exist or belongs to another recipient/team.'
+- name: getUnreadNotificationCount
+  description: Get the unread notification count for the authenticated user's current team. Each notification
+    batch with unread members counts as 1, regardless of its member count. Requires the Notification Center
+    feature; returns 404 when it is not enabled for the team.
+- name: getNotificationCounts
+  description: Per-type notification counts for the authenticated user's current team. Narrow with `unread`,
+    `important`, and with either `severity` (counts only that exact severity) or `minSeverity` (counts
+    that urgency and above) — the two are mutually exclusive and a request carrying both is rejected with
+    400. Pass the same filters the feed is showing, so the counts describe the list the reader would land
+    on. Requires the Notification Center feature; returns 404 when it is not enabled for the team.
+- name: markAllNotificationsRead
+  description: Mark all notifications as read for the authenticated user's current team. Returns the count
+    of notifications that were updated. Requires the Notification Center feature; returns 404 when it
+    is not enabled for the team.
+- name: deleteReadNotifications
+  description: Soft-delete all read notifications for the authenticated user's current team. Returns the
+    count of notifications that were deleted. Destructive — only call on explicit user request. Requires
+    the Notification Center feature; returns 404 when it is not enabled for the team.
+- name: deleteAllNotifications
+  description: Soft-delete all notifications for the authenticated user's current team, read or unread.
+    Returns the count of notifications that were deleted. Destructive — only call on explicit user request,
+    never bulk-delete unprompted. Requires the Notification Center feature; returns 404 when it is not
+    enabled for the team.
+- name: listTeamMembers
+  description: List members of a team. The authenticated session or API key must be scoped to the requested
+    team.
+- name: updateTeamMemberRole
+  description: Update an existing team member's role. Requires the Manager role or above; only an Owner
+    may grant or remove the Owner role, and the last remaining Owner cannot be demoted. A member whose
+    Owner role is inherited from the organization cannot be changed here.
+- name: removeTeamMember
+  description: Remove a member from a team. Removing another member requires the Superadmin role or above;
+    any member may remove themselves (leaving the team). The last remaining Owner cannot be removed, and
+    a member whose Owner role is inherited from the organization can only leave voluntarily.
+- name: listTeamInvites
+  description: List a team's pending invitations — everyone invited who has not yet accepted or declined.
+    Pass `processId` to list the pending invitations for a single Clarity process instead.
+- name: listCredentials
+  description: List browser-login credentials visible to the caller for the current team — team-shared
+    (user_id IS NULL) plus the caller's own personal logins. Optionally filter by `domain`. Passwords
+    and OTP secrets are never returned; only metadata flags indicating whether they are set.
+- name: createCredential
+  description: 'Create a login. At least one of `password` or `otp_secret` must be provided. Personal
+    by default; pass `shared: true` to create a team-shared login (requires lead builder role).'
+- name: getCredential
+  description: Get a login by id. Returns the encrypted password/otp_secret blobs — only the owner or
+    team members can access it.
+- name: updateCredential
+  description: Update a login by id. At least one of password or otp_secret must remain set after the
+    update. Editing a team-shared login or toggling sharing requires lead builder role.
+- name: deleteCredential
+  description: Delete a login by id. Deleting a team-shared login requires lead builder role.
+- name: listActiveClarityExports
+  description: List active (queued or running) Clarity export jobs for the current user
+- name: startClarityExport
+  description: Start a Clarity → SAP Signavio export job
+- name: listClarityFolders
+  description: List the team's process folders with process and suggestion counts
+- name: createClarityFolder
+  description: Create a process folder
+- name: updateClarityFolder
+  description: Rename a process folder. Renaming a landscape-linked folder permanently stops landscape
+    name-sync.
+- name: deleteClarityFolder
+  description: Delete a process folder. Contained processes fall back to Unfiled.
+- name: reorderClarityFolders
+  description: Reorder the team's process folders to match the given id order. The payload must name every
+    folder exactly once.
+- name: setupClarityFoldersFromLandscape
+  description: 'Create one linked folder per landscape group node containing this team''s processes. Idempotent:
+    groups that already have a linked folder are skipped.'
+- name: moveClarityProcessesToFolder
+  description: Move processes into a folder (or back to Unfiled)
+- name: fileSuggestedClarityProcesses
+  description: File every unfiled process the viewer can see into its suggested folder
+- name: listClarityTeamInterviews
+  description: List team-level Clarity interviews
+- name: deleteClarityTeamInterview
+  description: Delete a team-level Clarity interview
+- name: createClarityTeamDocumentUploadUrl
+  description: Create a signed URL for uploading a PDF, Word (.docx), TXT, Markdown, or BPMN document
+    as a team-level Clarity capture
+- name: completeClarityTeamDocumentUpload
+  description: Complete a team document capture after uploading to GCS; extracts text and stores it as
+    a transcript so it feeds Process Landscape generation
+- name: getClarityTeamSettings
+  description: Get clarity team settings for financial calculations
+- name: updateClarityTeamSettings
+  description: Update clarity team settings for financial calculations
+- name: getClarityPortfolioIntelligence
+  description: Get portfolio intelligence for the current team
+- name: generateClarityPortfolioIntelligence
+  description: Generate portfolio intelligence from all completed clarity processes. Returns 202 Accepted
+    immediately and processes in background.
+- name: movePulseDashboard
+  description: Move a Pulse dashboard from the team in the URL to another team, keeping only its latest
+    revision (chat history and older revisions are deleted). The caller must be a Manager or above on
+    both teams. Pass dryRun=true to preview which Connections reconnect vs drop without applying changes.
 notes: 'Hosted MCP surface for approved Duvo workspaces. Also exposed inside the API itself: openapi/duvo-ai-openapi-original.json
   declares POST/GET /v2/mcp and a probeMcpServer operation (POST /v2/teams/{teamId}/connections/mcp/probe)
   for connecting custom MCP servers.'
@@ -81,3 +1546,4 @@ tool_quality:
   scored: false
   note: Facts from the saved tools/list capture (mcp_tool_quality.py); recorded, not scored. Checks learned
     from Glimind's agent-readiness audit.
+tools_count: 399
