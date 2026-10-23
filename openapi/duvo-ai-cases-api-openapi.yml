@@ -7912,3 +7912,9 @@ components:
       type: http
       scheme: bearer
       description: API key authentication. Get your API key from the Duvo dashboard.
+x-provenance:
+  method: harvested
+  publisher: Duvo Ai
+  source: https://www.duvo.ai/openapi.json
+  note: split by refine-openapis from the provider's own published document, verified by fetch (openapi/_original/*.fetch.json);
+    stamped by stamp-openapi-provenance.py (roadmap#793)
